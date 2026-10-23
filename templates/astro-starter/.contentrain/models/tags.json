@@ -12,6 +12,12 @@
       "required": true,
       "type": "string"
     },
+    "path": {
+      "description": "This tag's address on the old site, kept where the permalink pattern would build another (a parent that did not move, a slug the store spells differently). Used only while its last part is this tag's slug: change the slug and the tag moves to the pattern's address, the old one redirecting there. Clearing it moves the tag too; add a redirect for the old address if it is still linked.",
+      "label": "Kept address",
+      "order": 45,
+      "type": "string"
+    },
     "slug": {
       "label": "Slug",
       "order": 20,

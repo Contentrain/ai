@@ -6,15 +6,17 @@ import { Font } from 'astro:assets'
 import Analytics from '../components/Analytics.astro'
 import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
+import { safeHref } from '../components/kit/_shared/safe-url'
 import SEO from '../components/SEO.astro'
 import { servedPath, withBase } from '../lib/base'
 import { siteContact } from '../lib/contact'
-import { cssLength, cssSpacing, cssWeight } from '../lib/css-size'
+import { cssColor, cssLength, cssSpacing, cssWeight } from '../lib/css-size'
 import { textDirection } from '../lib/direction'
 import { copyrightOf, getSite, getStrings } from '../lib/content'
+import { onWordPress } from '../lib/features'
 import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
-import { describePage, documentTitle, organizationLd, websiteLd } from '../lib/seo'
+import { describePage, documentTitle, localBusinessLd, organizationLd, websiteLd, type BusinessInput } from '../lib/seo'
 import { shareDescription, shareTitle } from '../lib/share'
 import { siteConfig } from '../site.config'
 import { overlays } from '../views/overlays'
@@ -61,6 +63,20 @@ const shareImage = image ?? site.social_image
 const footerColumns = footerMenus.filter(menu => menu.items.length > 0)
 // The "RSS feed" link is the source's only where its footer has one (the feed file is served either way).
 const rss = siteConfig.footer?.feed === false ? undefined : { label: t('footer.rss'), href: withBase('/rss.xml') }
+// Forms the source showed outside the page content with no place here, kept on WordPress (C5): each links to the
+// WordPress page that carries it — reachable, never silently gone. A form of a few pages (`on`: the theme builder's form
+// on /contact/) is linked at the end of those pages' content, as a form kept on WordPress is; a site-wide one (a footer
+// signup) once from the footer.
+const wordpressHost = siteConfig.features?.wordpress ? new URL(siteConfig.features.wordpress).host : ''
+const keptForms = siteConfig.features?.forms?.home === 'wordpress'
+  ? (siteConfig.features.chromeForms ?? []).flatMap((form) => {
+      const href = onWordPress(form.path)
+      return href ? [{ ...form, href }] : []
+    })
+  : []
+const footerForms = keptForms.filter(form => !form.on?.length).map(form => ({ label: t(form.role === 'newsletter' ? 'footer.subscribe_wordpress' : 'footer.form_wordpress').replace('{site}', wordpressHost), href: form.href }))
+const pageForms = keptForms.filter(form => form.on?.some(path => withBase(path) === Astro.url.pathname))
+const footerExtras = [...(rss ? [rss] : []), ...footerForms]
 // WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
 // them with a 301 where the host reads one, and this map sends the browser on everywhere else.
 const wpQueries = isHome ? await queryMap() : {}
@@ -96,7 +112,7 @@ const wpQueries = isHome ? await queryMap() : {}
       locale={lang}
       published={published}
       modified={modified}
-      jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...jsonLd] : jsonLd}
+      jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...[localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined), ...jsonLd] : jsonLd}
     />
     <Analytics />
   </head>
@@ -107,16 +123,20 @@ const wpQueries = isHome ? await queryMap() : {}
     <Header
       siteName={site.title}
       logo={site.logo ? { src: site.logo, alt: '' } : undefined}
+      showName={!site.logo}
       tagline={siteConfig.chrome?.tagline ? site.tagline : undefined}
       brandSize={siteConfig.chrome?.brand}
       bordered={siteConfig.chrome?.header?.border === false ? false : undefined}
+      position={siteConfig.chrome?.header?.sticky ? 'sticky' : undefined}
       brandWeight={cssWeight(siteConfig.chrome?.header?.brandWeight)}
       brandTracking={cssSpacing(siteConfig.chrome?.header?.brandTracking)}
       offsetTop={cssLength(siteConfig.chrome?.header?.offsetTop)}
       padTop={cssLength(siteConfig.chrome?.header?.padTop)}
       padBottom={cssLength(siteConfig.chrome?.header?.padBottom)}
       linkNav={siteConfig.chrome?.navLinks}
+      brandColor={cssColor(siteConfig.chrome?.brandColor)}
       menu={siteConfig.chrome?.menu}
+      search={siteConfig.chrome?.header?.search ? { action: withBase('/search/'), label: t('search.label'), placeholder: t('search.placeholder'), submitLabel: t('search.submit') } : undefined}
       homeHref={withBase('/')}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
@@ -125,6 +145,16 @@ const wpQueries = isHome ? await queryMap() : {}
     />
     <main id="main" class="flex-1">
       <slot />
+      {pageForms.length > 0 && (
+        <div class="container-prose flex flex-col gap-6 py-12">
+          {pageForms.map((form, index) => (
+            <div class="cr-form-mount block" data-cr-part="form" data-state="wordpress">
+              <p class="cr-form-note" id={`cr-kept-form-${index}`}>{t('form.wordpress_note').replace('{site}', wordpressHost)}</p>
+              <p class="cr-actions"><a href={safeHref(form.href)} class="cr-form-link" aria-describedby={`cr-kept-form-${index}`}>{t('form.wordpress')}</a></p>
+            </div>
+          ))}
+        </div>
+      )}
     </main>
     <Footer
       siteName={site.organization ?? site.title}
@@ -139,11 +169,11 @@ const wpQueries = isHome ? await queryMap() : {}
       linkSize={siteConfig.chrome?.footerColumns?.size ? `${siteConfig.chrome.footerColumns.size}px` : undefined}
       linkSizeNarrow={siteConfig.chrome?.footerColumns?.narrowSize ? `${siteConfig.chrome.footerColumns.narrowSize}px` : undefined}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
-      columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 && rss ? [...menu.items, rss] : menu.items }))}
-      links={[...(footerColumns[0]?.items ?? []), ...(rss ? [rss] : [])]}
+      columns={footerColumns.map((menu, index) => ({ label: menu.title ? undefined : menu.name, title: menu.title, titleHref: menu.titleHref, links: index === footerColumns.length - 1 && footerExtras.length ? [...menu.items, ...footerExtras] : menu.items }))}
+      links={[...(footerColumns[0]?.items ?? []), ...footerExtras]}
       social={social}
       contact={contact}
-      navLabel={footerColumns[0]?.name ?? t('nav.footer')}
+      navLabel={footerColumns[0]?.title ?? footerColumns[0]?.name ?? t('nav.footer')}
     />
     {overlays.map(Overlay => <Overlay />)}
   </body>

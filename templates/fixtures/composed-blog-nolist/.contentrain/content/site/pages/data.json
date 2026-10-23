@@ -1,0 +1,17 @@
+{
+  "d0a000000001": {
+    "body": "<p>Welcome to the bakery.</p>",
+    "slug": "welcome",
+    "title": "Welcome",
+    "wp_id": 801
+  },
+  "d0a000000002": {
+    "body": "",
+    "seo": {
+      "description": "Notes from the bakery."
+    },
+    "slug": "blog",
+    "title": "Journal",
+    "wp_id": 802
+  }
+}

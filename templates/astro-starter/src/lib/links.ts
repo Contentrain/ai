@@ -2,7 +2,9 @@
 // pages and the source site's absolute URLs; a public build points at none of
 // them. Every internal link resolves through the route table — the published
 // set — or is dropped: a menu item without a public target is left out, a link
-// in a body becomes its text. External links pass through unchanged.
+// in a body becomes its text. External links pass through unchanged. On a
+// sample build (`siteConfig.sampleOrigin`), a source page the sample does not
+// hold points at the live source site instead.
 
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,8 +12,9 @@ import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import { safeUrl } from '../components/kit/_shared/safe-url'
 import { servedPath, underBase, withBase, withoutBase } from './base'
 import type { NavItem } from '../components/kit/_shared/types'
-import { byId, getRedirects, getSite, pageHref, postHref, resolve, termHref } from './content'
+import { byId, getRedirects, getSite, getStrings, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
+import { scrollingTables, tableLabel } from './body-tables'
 import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
@@ -27,6 +30,27 @@ const BASE = 'http://link.invalid'
 const bareHost = (hostname: string) => hostname.toLowerCase().replace(/^www\./, '')
 const hostOf = (url: string) => {
   try { return bareHost(new URL(url.includes('//') ? url : `http://${url}`).hostname) } catch { return undefined }
+}
+
+/**
+ * A sample build's link to a source page it does not hold, on the live source site: a root path or an address on one
+ * of the source's hosts, rebuilt from its parsed path, query and fragment on `sampleOrigin`'s origin, never the stored
+ * string. Undefined off a sample build, for an origin that is not http(s), or for this site's own other hosts.
+ */
+function liveSource(parsed: URL): string | undefined {
+  const origin = siteConfig.sampleOrigin
+  if (!origin) return undefined
+  let live: URL
+  try { live = new URL(origin) } catch { return undefined }
+  if (live.protocol !== 'http:' && live.protocol !== 'https:') return undefined
+  const source = parsed.origin === BASE || siteConfig.sourceHosts.some(url => hostOf(url) === bareHost(parsed.hostname))
+  if (!source) return undefined
+  // Set part by part: a path that begins `//` must stay a path on the source, never become another host.
+  const out = new URL(live.origin)
+  out.pathname = parsed.pathname
+  out.search = parsed.search
+  out.hash = parsed.hash
+  return out.origin === live.origin ? out.href : undefined
 }
 
 /** A served file address (`/blog/doc.pdf` under a `base`) is `public/doc.pdf`. */
@@ -120,7 +144,7 @@ export function publicLinks(): Promise<Linker> {
       if (SERVED.has(path)) return `${path}${parsed.search}${parsed.hash}`
       // A file the media stage copied into public/ is served here; one it could not copy stays at its old address.
       if (FILE.test(path)) return inPublic(path) ? `${path}${parsed.search}${parsed.hash}` : raw
-      return routes.has(path) ? `${path}${parsed.search}${parsed.hash}` : undefined
+      return routes.has(path) ? `${path}${parsed.search}${parsed.hash}` : liveSource(parsed)
     }
     return url => link(url, new Set())
   })()
@@ -194,7 +218,8 @@ function mediaText(html: string, index: MediaIndex): string {
 
 /**
  * Rich text made public: internal links become site paths, links to what is not public become their text,
- * images without an alt take their media library entry's, and local raster images are served optimized.
+ * images without an alt take their media library entry's, local raster images are served optimized, and a table no
+ * table block holds scrolls in its own region.
  */
 export async function publicHtml(html: string): Promise<string>
 export async function publicHtml(html: string | undefined): Promise<string | undefined>
@@ -213,6 +238,7 @@ export async function publicHtml(html: string | undefined): Promise<string | und
       return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
     })
   }
+  if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings()))
   return result.includes('<img') ? optimizedImages(mediaText(result, await media())) : result
 }
 
@@ -266,7 +292,9 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
       for (const type of siteConfig.types ?? []) {
         if (type.collection === collection) {
           const entry = await entryById(collection, target.ref)
-          return entry ? link(entryHref(type, entry)) : undefined
+          // A list-only type's entry has no page: the item is dropped, as one pointing at a draft is.
+          const href = entry ? entryHref(type, entry) : undefined
+          return href ? link(href) : undefined
         }
         const taxonomy = type.taxonomies?.find(candidate => candidate.collection === collection)
         if (taxonomy) {
@@ -305,9 +333,10 @@ const AREAS = {
 /**
  * The menus an area shows, as WordPress places them: a menu assigned to theme locations shows where
  * they are, so moving or unassigning it in Studio moves it on the site; a menu with no location shows
- * where site.config names it. Each comes with its name, the navigation's accessible name.
+ * where site.config names it. Each comes with its name, the navigation's accessible name, and the heading the source
+ * printed above it, if any (`title`: a footer column's), and where that heading links when it is a link (`titleHref`).
  */
-export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, items: NavItem[] }>> {
+export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, title?: string | undefined, titleHref?: string | undefined, items: NavItem[] }>> {
   const configured = area === 'header' ? [siteConfig.menus.primary] : [...siteConfig.menus.footer]
   const all = await getCollection('menus')
   const placed = all.filter(menu => (menu.data.locations?.length ? menu.data.locations.some(AREAS[area]) : configured.includes(menu.data.slug)))
@@ -316,7 +345,7 @@ export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: s
     return index === -1 ? configured.length : index
   }
   const ordered = placed.toSorted((a, b) => rank(a) - rank(b) || String(a.data.locations ?? '').localeCompare(String(b.data.locations ?? '')))
-  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, items: await menuItems(menu) })))
+  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, title: menu.data.title || undefined, titleHref: (menu.data.title && menu.data.title_href) || undefined, items: await menuItems(menu) })))
 }
 
 type Menu = CollectionEntry<'menus'>

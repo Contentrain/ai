@@ -1,0 +1,11 @@
+---
+// The behaviour islands' module for a kit component that is its own island (a Stats section set to count up), rendered
+// only where that component asks for it: a page without one ships no script. Same module and init as Behavior.astro.
+---
+<script>
+  import { initBehaviors } from './behaviors'
+
+  initBehaviors()
+  // With Astro's client router a page arrives without a reload: wire its islands too (ready roots are skipped).
+  document.addEventListener('astro:page-load', () => initBehaviors())
+</script>

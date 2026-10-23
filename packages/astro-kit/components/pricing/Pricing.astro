@@ -4,19 +4,26 @@
 // out by more than its colour. Each plan's features are a markdown list,
 // rendered at build time. Variants: `layout="table"` is a comparison table
 // (plan columns, feature rows); `billingToggle="radio"` swaps monthly and yearly
-// prices with two radio inputs and CSS `:has()` — no script.
+// prices with two radio inputs and CSS `:has()` — no script. A plan's struck price, its note under the price and its
+// line by the button swap the same way, and the section's `billingAltNote` shows only with the second option; each
+// is printed only where it is given. An Alt line never falls back to the main one: with the second option chosen, a
+// plan without it shows no line there (a note "for the first month" would be wrong under a yearly price).
+// The price itself is the one exception: a plan with no `priceAlt` (free, "Contact us", or one price for both periods)
+// keeps its price line, struck price included, under both options; a card never loses its price.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { renderMarkdown } from '../../../lib/markdown'
+import { muted, mutedReset } from '../_shared/muted'
 
 const pricing = tv({
   slots: {
     header: 'mx-auto mb-10 flex max-w-2xl flex-col items-center gap-3 text-center',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    intro: 'text-lg opacity-80',
+    intro: `text-lg ${muted}`,
     list: 'grid items-stretch gap-6 sm:grid-cols-2',
     toggle: 'mx-auto mb-8 flex w-fit rounded-full border border-line p-1',
     toggleOption: 'rounded-full px-4 py-1.5 text-sm font-medium has-[:checked]:bg-accent has-[:checked]:text-accent-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
@@ -24,13 +31,17 @@ const pricing = tv({
     table: 'w-full min-w-[32rem] border-collapse text-start',
     cell: 'border-b border-line px-4 py-3 text-center align-top',
     rowHead: 'border-b border-line px-4 py-3 text-start font-normal',
-    plan: 'relative flex flex-col gap-5 rounded-card border border-line bg-surface p-6 text-ink md:p-8',
+    plan: `relative flex flex-col gap-5 rounded-card border border-line bg-surface p-6 text-ink md:p-8 ${mutedReset}`,
     badge: 'absolute -top-3 start-6 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-ink',
     name: 'text-lg [font-weight:var(--font-weight-heading,600)]',
     price: 'flex items-baseline gap-1',
     amount: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight',
-    period: 'text-sm opacity-75',
-    description: 'text-pretty opacity-80',
+    period: `text-sm ${muted}`,
+    was: `me-1 text-lg ${muted}`,
+    note: `-mt-2 text-sm ${muted}`,
+    foot: `text-sm ${muted}`,
+    altNote: 'mx-auto -mt-5 mb-8 w-fit text-center text-sm font-medium text-accent-text',
+    description: `text-pretty ${muted}`,
     features: 'prose-site prose max-w-none text-current prose-ul:ps-5 prose-li:my-1',
     action: 'mt-auto pt-2',
   },
@@ -47,7 +58,7 @@ const pricing = tv({
       plain: {},
     },
     compact: { true: { list: 'gap-4', plan: 'gap-3 p-4 md:p-5', amount: 'text-3xl' }, false: {} },
-    tone: { default: {}, muted: { plan: 'border-transparent' }, inverse: { plan: 'border-transparent' }, accent: { intro: 'opacity-100', plan: 'border-transparent', badge: 'bg-ink text-surface' } },
+    tone: { default: {}, muted: { plan: 'border-transparent' }, inverse: { plan: 'border-transparent' }, accent: { plan: 'border-transparent', badge: 'bg-ink text-surface' } },
   },
   defaultVariants: { columns: '3', featureStyle: 'plain', compact: false, tone: 'default' },
 })
@@ -67,6 +78,15 @@ interface Plan {
   /** The other billing period's price and period (`billingToggle="radio"`). */
   priceAlt?: string | undefined
   periodAlt?: string | undefined
+  /** The struck original price before the price, for each period ("$35"). */
+  priceWas?: string | undefined
+  priceWasAlt?: string | undefined
+  /** One line under the price, for each period ("USD for the first month"). */
+  priceNote?: string | undefined
+  priceNoteAlt?: string | undefined
+  /** One line at the card's foot, by the button, for each period ("Pay $0 today, $35 after the first month"). */
+  priceFoot?: string | undefined
+  priceFootAlt?: string | undefined
 }
 
 interface Props {
@@ -86,6 +106,10 @@ interface Props {
   billingMainLabel?: string | undefined
   billingAltLabel?: string | undefined
   billingLegend?: string | undefined
+  /** A line by the toggle shown only with its second option ("Save $70 by paying annually"). */
+  billingAltNote?: string | undefined
+  /** Read before a struck price by screen readers ("Was"), which do not announce the strike. */
+  wasLabel?: string | undefined
   /** Table cell texts for screen readers. */
   includedLabel?: string | undefined
   notIncludedLabel?: string | undefined
@@ -93,24 +117,28 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id } = Astro.props
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', billingAltNote, wasLabel = 'Was', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `pricing`, `pricing-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'pricing')
 const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
-// The radio group's name must be unique on the page: the section's id, or a hash of its plans when it has none.
-const group = id ?? `pricing-${[...JSON.stringify(plans)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
+// The radio group's name must be unique on the page: the section's id is.
+const group = id
 const toggled = billingToggle === 'radio' && plans.some(plan => plan.priceAlt)
 // The cards' list items, as plain strings, for the table's feature rows (the markdown list's `- ` / `* ` lines).
 const itemsOf = (md?: string) => (md ?? '').split('\n').flatMap((line) => { const m = /^\s*[-*]\s+(.*\S)/.exec(line); return m ? [m[1]!.replace(/[*_`]/g, '')] : [] })
 const rows = layout === 'table' ? [...new Set(plans.flatMap(plan => itemsOf(plan.features)))] : []
 const included = plans.map(plan => new Set(itemsOf(plan.features)))
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
 const PlanHeading = heading ? 'h3' : 'h2'
 const features = await Promise.all(plans.map(plan => renderMarkdown(plan.features)))
 ---
 {plans.length > 0 && (
-  <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+  <Section kit="pricing" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
@@ -128,7 +156,7 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
                 <th scope="col" class={s.cell({ class: plan.featured ? 'bg-surface-muted' : undefined })}>
                   <span class="block text-lg [font-weight:var(--font-weight-heading,600)]">{plan.name}</span>
                   <span class="block text-2xl [font-weight:var(--font-weight-heading,700)]">{plan.price}</span>
-                  {plan.period && <span class="block text-sm opacity-75">{plan.period}</span>}
+                  {plan.period && <span class:list={['block text-sm', muted]}>{plan.period}</span>}
                   {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <span class="mt-1 inline-block rounded-full bg-accent px-3 py-0.5 text-xs font-semibold text-accent-ink">{plan.badge ?? featuredLabel}</span>}
                 </th>
               ))}
@@ -169,26 +197,39 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
             <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="alt" class="sr-only" />{billingAltLabel}</label>
           </fieldset>
         )}
+        {toggled && billingAltNote && <p class={s.altNote()} data-price="alt">{billingAltNote}</p>}
         <ul class={s.list({ class: measuredGrid(measured) })}>
           {plans.map((plan, i) => (
             <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
               {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <p class={s.badge()}>{plan.badge ?? featuredLabel}</p>}
               <PlanHeading class={s.name()}>{plan.name}</PlanHeading>
-              <p class={s.price()} data-price="main">
+              <p class={s.price()} data-price={toggled && !plan.priceAlt ? undefined : 'main'}>
+                {plan.priceWas && <del class={s.was()}><span class="sr-only">{wasLabel} </span>{plan.priceWas}</del>}
                 <span class={s.amount()}>{plan.price}</span>
                 {plan.period && <span class={s.period()}>{plan.period}</span>}
               </p>
               {toggled && plan.priceAlt && (
                 <p class={s.price()} data-price="alt">
+                  {plan.priceWasAlt && <del class={s.was()}><span class="sr-only">{wasLabel} </span>{plan.priceWasAlt}</del>}
                   <span class={s.amount()}>{plan.priceAlt}</span>
                   {plan.periodAlt && <span class={s.period()}>{plan.periodAlt}</span>}
                 </p>
               )}
+              {plan.priceNote && <p class={s.note()} data-price="main">{plan.priceNote}</p>}
+              {toggled && plan.priceAlt && plan.priceNoteAlt && <p class={s.note()} data-price="alt">{plan.priceNoteAlt}</p>}
               {plan.description && <p class={s.description()} data-kit-text>{plan.description}</p>}
               {features[i] && <div class={s.features()} set:html={features[i]} />}
               {plan.ctaLabel && plan.ctaHref && (
                 <div class={s.action()}>
+                  {plan.priceFoot && <p class={s.foot({ class: 'mb-3' })} data-price="main">{plan.priceFoot}</p>}
+                  {toggled && plan.priceAlt && plan.priceFootAlt && <p class={s.foot({ class: 'mb-3' })} data-price="alt">{plan.priceFootAlt}</p>}
                   <Button action={{ label: plan.ctaLabel, href: plan.ctaHref, style: plan.featured ? 'primary' : 'ghost' }} class="w-full" />
+                </div>
+              )}
+              {!(plan.ctaLabel && plan.ctaHref) && (plan.priceFoot || (toggled && plan.priceAlt && plan.priceFootAlt)) && (
+                <div class={s.action()}>
+                  {plan.priceFoot && <p class={s.foot()} data-price="main">{plan.priceFoot}</p>}
+                  {toggled && plan.priceAlt && plan.priceFootAlt && <p class={s.foot()} data-price="alt">{plan.priceFootAlt}</p>}
                 </div>
               )}
             </li>

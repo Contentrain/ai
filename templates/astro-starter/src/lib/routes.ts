@@ -4,6 +4,7 @@
 
 import { siteConfig } from '../site.config'
 import { withoutBase } from './base'
+import { dayParts } from './dates'
 
 /**
  * `:category` is a post's category with its parents (`news/local`), as WordPress fills `%category%`; see
@@ -22,14 +23,12 @@ export function fillPattern(pattern: string, params: PathParams): string {
   })
 }
 
-/** The dated parts of a post address, in the site's own calendar (UTC, as WordPress stores GMT dates). */
+/**
+ * The dated parts of a post address, on the site's own calendar: WordPress fills them from the post's local date, so
+ * the day is read in the site's time zone (`siteConfig.timeZone`, see lib/dates.ts), UTC when it has none.
+ */
 export function dateParams(date: Date | undefined): PathParams {
-  if (!date) return {}
-  return {
-    year: String(date.getUTCFullYear()),
-    month: String(date.getUTCMonth() + 1).padStart(2, '0'),
-    day: String(date.getUTCDate()).padStart(2, '0'),
-  }
+  return date ? dayParts(date) : {}
 }
 
 /** Page `n` of a paginated list: the list itself for page 1, `<base>page/<n>/` after — as WordPress does. */

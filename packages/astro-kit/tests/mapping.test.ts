@@ -32,6 +32,10 @@ describe('mapping tables', () => {
     expect(rulesFor(tables.gutenberg!, 'core/details')[0]).toMatchObject({ component: 'faq', variant: { style: 'plain' } })
   })
 
+  it('maps a classic theme\'s other iframe, and a [video] shortcode\'s provider address, to the Embed', () => {
+    expect(rulesFor(tables.classic!, 'classic/embed')).toEqual([expect.objectContaining({ component: 'embed', props: expect.objectContaining({ url: 'dom:iframe, video source@src', title: 'dom:iframe@title' }) })])
+  })
+
   it('catches what a broken rule gets wrong', () => {
     const broken: MappingTable = {
       format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose',
@@ -521,9 +525,12 @@ describe('the page reads a section in the source order (G-text)', () => {
   it('figures first where the source writes the figure first, the counter title first where Elementor does', () => {
     expect(statsRule('gutenberg')?.variant).toEqual({ order: 'value-first' })
     expect(statsRule('gutenberg')?.when?.order).toEqual(['figure', 'label'])
-    expect(statsRule('divi')?.variant).toEqual({ order: 'value-first' })
+    // A source counter that animated counts up on the new site too (`motion: count`, the countup island).
+    expect(statsRule('divi')?.variant).toEqual({ order: 'value-first', motion: 'count' })
     // The Elementor counter names itself before its number: the kit's default.
     expect(statsRule('elementor')?.variant?.order).toBeUndefined()
+    expect(statsRule('elementor')?.variant?.motion).toBe('count')
+    expect(statsRule('gutenberg')?.variant?.motion).toBeUndefined()
   })
 })
 

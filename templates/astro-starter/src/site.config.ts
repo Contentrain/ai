@@ -48,8 +48,11 @@ export interface CustomType {
    * Absent: the type's pages show no thread.
    */
   model?: string
-  /** Address of one entry: `/projects/:slug/`. */
-  single: string
+  /**
+   * Address of one entry: `/projects/:slug/`. Absent: a list-only type, whose entries have no page of their own (WordPress
+   * gives them only a query address): they print by title, unlinked, in the archive and term lists, and nothing links to them.
+   */
+  single?: string
   /** `label`: the word the source's archive title prints before the name ("Archives: Projects"), where `lists.prefixed`. */
   archive?: { pattern: string, title: string, label?: string }
   /** Term lists: the entries whose `field` (a `relations` field) holds the term, at `pattern` (`/project-type/:slug/`). */
@@ -97,8 +100,12 @@ export interface SiteConfig {
    * Absent: `uncategorized`.
    */
   defaultCategory?: string
-  /** The front page: the posts index, or one page by slug. */
-  home: { kind: 'posts' } | { kind: 'page', slug: string }
+  /**
+   * The front page: the posts index, or one page by `slug`, or (`view`, no slug) the composed view a migration drew for
+   * a front with no page entry (a posts-front site whose theme draws a front): its title and SEO are the site's. The posts
+   * are then at `permalinks.blog`, or at `/` under it when that is `/` (the list's first page in the view, `/page/2/` on).
+   */
+  home: { kind: 'posts' } | { kind: 'page', slug?: string, view?: number }
   /**
    * The document title of a page with a title of its own: `{title}` and `{site}` are filled in.
    * A migration copies the source's pattern (Yoast's separator, WordPress's en dash); an entry's
@@ -142,9 +149,10 @@ export interface SiteConfig {
    * fit) or, where the source uses one, its `aspect` (`16 / 9`); absent, 16 / 9. `gap`: the grid's column gap (a CSS
    * length); absent, 2rem. `headingWidth`: the width of the archive title's box (a CSS length); absent, 42rem.
    * `tieOrder`: how posts of the same moment are ordered, as the source's database returned them (`asc` the lower ID first);
-   * absent, `desc`.
+   * absent, `desc`. `moreLabel`: the source's own read-more words under each card ("READ ARTICLE"); absent, none.
+   * `dateStyle`: how the cards write their date, as the source does; absent, long.
    */
-  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc' }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc', moreLabel?: string, dateStyle?: 'full' | 'long' | 'medium' | 'short' }
   /**
    * The footer as the source prints it (a migration reads each off the rendered footer); a key absent keeps the
    * starter's own. `feed`: the "RSS feed" link in the last column (`/rss.xml` itself is always served). `border`: a
@@ -158,7 +166,7 @@ export interface SiteConfig {
    * `copyright`: the footer's line ("All rights reserved"; `{year}` is the current year), instead
    * of "© year Site".
    * `titleLinks`: post titles in lists take the link colour (`--color-link`), as the source's do;
-   * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
+   * `navLinks`: so does the header navigation. `brandColor`: the header site title's colour, `link` or a colour. `footerAlign`: `center` when the source's footer is
    * one centred column; absent, brand and links to the sides. `footerColumns`: the link columns packed at the end edge, `gap` px apart, links `size` px (`narrowSize` px below 768), side by side below 768 at `narrowGap` px (absent: stacked); absent, they share the footer's width.
    * `header`: what the source's header does differently (no line under the bar, the site name's weight and letter-spacing, the space above and inside the bar); a key absent: the starter's own.
    * `breadcrumbs: 'always'`: the source prints a breadcrumb on top-level pages too, from the home page: they show
@@ -166,7 +174,7 @@ export interface SiteConfig {
    * `menu: 'mega'`: the header menu's submenus open as a wide panel of columns (the second level heads each column, the
    * third is listed under it) instead of a list under the item. Absent, the flyout.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }, header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }, breadcrumbs?: 'always', menu?: 'mega' }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, brandColor?: string, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }, header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string, /** The source header stays at the top while scrolling (a sticky or fixed header). */ sticky?: true, /** The source header holds a search form: the bar's field sends to `/search/`. */ search?: true }, breadcrumbs?: 'always', menu?: 'mega' }
   /**
    * The site singleton's fields that hold the contact details, by field name (a migration finds them
    * in the source's settings: an ACF options page). The footer prints what is set: `address`,
@@ -176,6 +184,12 @@ export interface SiteConfig {
    * Studio. `order`: the details' order as the source prints them; absent, address, phone, email.
    */
   contact?: { address?: string, phone?: string, email?: string, socials?: string, labels?: { address?: string, phone?: string, email?: string }, order?: ReadonlyArray<'address' | 'phone' | 'email'> }
+  /**
+   * The source site's time zone: an IANA name (`America/Los_Angeles`, WordPress `timezone_string`) or a fixed offset
+   * (`-07:00`, WordPress `gmt_offset`). A post's address (`:year`, `:month`, `:day`) and its printed date are read on
+   * this calendar, as WordPress fills them from the post's local date. Absent, UTC.
+   */
+  timeZone?: string
   /** Custom post types: each gets its single pages, archive and term lists. */
   types?: readonly CustomType[]
   /**
@@ -184,6 +198,13 @@ export interface SiteConfig {
    * build time, so moving the site to a new domain in Studio does not turn the old links external.
    */
   sourceHosts: readonly string[]
+  /**
+   * Only on a migration's sample build: the source site's origin (`https://site.com`). The sample
+   * holds a few pages, so a link to one of the source's other pages has no route here; with this
+   * set it points at that page on the live source site instead of being dropped. Unset, such a
+   * link is not public and is dropped, as on every full migration.
+   */
+  sampleOrigin?: string
   /**
    * Contentrain Studio's public forms and comments API, from studio.json at the
    * project root (see astro.config.mjs). Without it, forms and comment threads
@@ -198,12 +219,17 @@ export interface SiteConfig {
    * write to (`mailto`), or a link to the form on WordPress. Comments stay on WordPress or go to Studio.
    * Until Studio is bound, a Studio form links to the form on `wordpress` when it is set, else shows `email` (the
    * address the source site published) to write to — never an empty place on the page.
+   * `chromeForms`: forms the source showed outside the page content (a footer or theme band's newsletter signup, a
+   * theme builder's contact form) that have no place on this site. With forms kept on `wordpress`, each links to the
+   * WordPress page (`path`) that carries it: at the end of the content of the pages in `on` (the form on /contact/),
+   * else once from the footer (a site-wide signup). `role` picks the footer link's words (subscribe, or the form).
    */
   features?: {
     wordpress?: string
     email?: string
     forms?: { home: 'studio' } | { home: 'endpoint', action: string } | { home: 'mailto', address: string } | { home: 'wordpress' }
     comments?: { home: 'studio' } | { home: 'wordpress' }
+    chromeForms?: ReadonlyArray<{ role: 'newsletter' | 'contact' | 'other', path: string, on?: readonly string[] }>
   }
 }
 

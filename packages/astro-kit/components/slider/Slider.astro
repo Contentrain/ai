@@ -1,5 +1,5 @@
 ---
-// A carousel of images with optional captions. Without JavaScript it is a
+// A carousel of images, videos (a file, or a YouTube/Vimeo one loaded only on click) or text cards, with optional captions. Without JavaScript it is a
 // horizontally scrolling, snapping row — every slide is reachable. With it,
 // Embla turns the row into a paged carousel with previous/next buttons and
 // slide dots. The markup and the script are in SliderTrack.astro; given a
@@ -8,11 +8,16 @@ import Section from '../_shared/Section.astro'
 import type { ImageSource } from '../_shared/image'
 import type { ActionInput, MeasuredStyle } from '../_shared/types'
 import SliderTrack from './SliderTrack.astro'
+import { instanceId } from '../_shared/instance-id'
 
 interface Slide {
-  /** The image's address (or, until 0.7, an `ImageInput`). */
-  image: ImageSource
+  /** The image's address (or, until 0.7, an `ImageInput`). Optional: a text card (a quote, a testimonial) is a slide too. */
+  image?: ImageSource | undefined
   imageAlt?: string | undefined
+  /** A video file's address (mp4, webm): drawn in place of the image (its poster), played only when the reader asks. */
+  video?: string | undefined
+  /** A video on another site (its YouTube/Vimeo/Loom/Wistia page, or `youtube:<id>` / `vimeo:<id>`): a poster until the reader clicks it. */
+  embed?: string | undefined
   title?: string | undefined
   text?: string | undefined
   /** The slide's link, flat so a page stays within Contentrain's nesting depth. */
@@ -37,6 +42,8 @@ interface Props {
   slideLabel?: string | undefined
   /** Word between a slide number and the count ("of"). */
   ofLabel?: string | undefined
+  /** An embedded video's play button, before its name ("Play"). */
+  playLabel?: string | undefined
   loop?: boolean | undefined
   perView?: '1' | '2' | '3' | undefined
   aspect?: 'wide' | 'standard' | 'square' | undefined
@@ -45,10 +52,14 @@ interface Props {
   measured?: MeasuredStyle | undefined
   /** Unique on the page: names the track the buttons control. */
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const props = Astro.props
+// The section and its track share one id (the track is `<id>-track`), taken once here so the track keeps it.
+const id = props.measured ? instanceId(Astro.locals, props.id, 'slider') : undefined
 ---
 {props.measured
-  ? <Section measured={props.measured} tone="none" spacing="sm" id={props.id}><SliderTrack {...props} id={props.id ?? 'slider'} framed={false} /></Section>
+  ? <Section kit="slider" measured={props.measured} tone="none" spacing="sm" id={id} entry={Astro.props.entry}><SliderTrack {...props} id={id} framed={false} /></Section>
   : <SliderTrack {...props} />}

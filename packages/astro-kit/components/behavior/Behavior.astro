@@ -1,0 +1,90 @@
+---
+// A behavior island: a widget of the source site that no kit component carries (a slider, tabs, an accordion, a
+// counter, a filter), kept as the site's own markup and made to work again by the kit's one small module
+// (`_shared/behaviors.ts`). The markup is content, a rich-text field the writer already ran through the island
+// pass (no style element, no script, no form, no overlay, no `data-cr-*` of its own, ids prefixed); the behavior
+// is ours. The `data-cr-*` attributes on the root are the only ones on the page, and they come from these props.
+//
+// With no script, or a selector the browser refuses, the island stays as printed: every item in reading order,
+// nothing hidden. Only a page that has an island loads the module (Astro bundles a component's script once, for the
+// pages that use it).
+import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
+import type { MeasuredStyle } from '../_shared/types'
+
+interface Props {
+  /** What the module makes of it. */
+  kind: 'disclosure' | 'tablist' | 'carousel' | 'dialog' | 'countup' | 'toggle' | 'filter' | 'anchor' | 'lightbox'
+  /** The island's markup (rendered HTML of a richtext field, after the writer's island pass). */
+  html?: string | undefined
+  /** The engine's selectors inside the island: the items (slides, counters, filtered cards), a tab's title, a panel. */
+  items?: string | undefined
+  title?: string | undefined
+  panel?: string | undefined
+  /** The source behavior's fact id: the gates find this element by it (`data-cr-fact`). */
+  fact?: string | undefined
+  /** Button labels the module writes (ui-strings slider.prev / slider.next / dialog.close). */
+  previousLabel?: string | undefined
+  nextLabel?: string | undefined
+  closeLabel?: string | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`). */
+  measured?: MeasuredStyle | undefined
+  /** Section id, unique per page; without one `behavior`, `behavior-2`, … in render order. */
+  id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
+}
+
+const { kind, html, items, title, panel, fact, previousLabel, nextLabel, closeLabel, tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `behavior`, `behavior-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'behavior')
+// Selectors and ids go into attributes only, never into markup or a script; an empty one is left out.
+const attr = (value: string | undefined): string | undefined => (value && value.length <= 300 ? value : undefined)
+const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
+// Scripting off: a dialog the island holds closed is laid out in place, so its content is never hidden. A fixed sheet.
+const NOSCRIPT = '<style>.cr-behavior dialog:not([open]){display:block;position:static;margin:0;max-width:none}</style>'
+---
+{html && (
+  <Section kit="behavior" tone={tone} id={id} measured={measured} entry={Astro.props.entry}>
+    <div
+      class="cr-behavior"
+      data-cr-behavior={kind}
+      data-cr-items={attr(items)}
+      data-cr-title={attr(title)}
+      data-cr-panel={attr(panel)}
+      data-cr-fact={factId}
+      data-cr-prev={previousLabel}
+      data-cr-next={nextLabel}
+      data-cr-close={closeLabel}
+      set:html={html}
+    />
+    <noscript set:html={NOSCRIPT} />
+  </Section>
+)}
+
+<script>
+  import { initBehaviors } from '../_shared/behaviors'
+
+  initBehaviors()
+  // With Astro's client router a page arrives without a reload: wire its islands too (ready roots are skipped).
+  document.addEventListener('astro:page-load', () => initBehaviors())
+</script>
+
+<style is:global>
+  .cr-behavior-controls { display: flex; gap: 0.5rem; justify-content: center; margin-block-start: 1rem; }
+  .cr-behavior-control { cursor: pointer; border: 1px solid currentColor; border-radius: var(--radius-control, 0.375rem); padding: 0.375rem 0.875rem; background: transparent; }
+  .cr-behavior-control:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  .cr-behavior-control:disabled { cursor: default; opacity: 0.4; }
+  .cr-behavior-dialog { margin: auto; max-width: min(92vw, 40rem); max-height: 85dvh; border: 1px solid var(--color-line); border-radius: var(--radius-card, 0.75rem); padding: 1.5rem; }
+  .cr-behavior-dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+  .cr-behavior-lightbox img { display: block; max-width: 100%; max-height: 75dvh; margin-inline: auto; }
+  /* A source video player kept as a poster link (data-cr-video): a play button over it, drawn in CSS (nothing loads). */
+  .cr-behavior a[data-cr-video] { position: relative; display: block; }
+  .cr-behavior a[data-cr-video] img { display: block; width: 100%; height: auto; }
+  .cr-behavior a[data-cr-video]::before { content: ''; position: absolute; z-index: 1; top: 50%; left: 50%; width: 4rem; height: 4rem; translate: -50% -50%; border-radius: 9999px; background: var(--color-accent); box-shadow: 0 4px 12px rgb(0 0 0 / 0.25); }
+  .cr-behavior a[data-cr-video]::after { content: ''; position: absolute; z-index: 2; top: 50%; left: 50%; translate: -35% -50%; border-top: 0.75rem solid transparent; border-bottom: 0.75rem solid transparent; border-left: 1.25rem solid var(--color-accent-ink, #fff); }
+  /* No poster (only the title): a 16:9 dark panel, the title along its foot, the button in its middle. */
+  .cr-behavior a[data-cr-video]:not(:has(img)) { aspect-ratio: 16 / 9; display: flex; align-items: flex-end; padding: 1rem 1.25rem; border-radius: var(--radius-card, 0.75rem); background: var(--color-ink, #111827); color: var(--color-surface, #fff); font-weight: 600; text-decoration: none; }
+  .cr-behavior a[data-cr-video]:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+</style>

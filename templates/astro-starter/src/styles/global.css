@@ -17,13 +17,19 @@
   --color-surface-muted: #f6f7f9;
   --color-ink: #111827;
   --color-ink-muted: #4b5563;
+  /* Quieter text on a dark band (the kit's inverse tone): the surface drawn toward the ink, so it reads as the light
+     text's quieter twin and keeps the band's contrast. A theme whose ink is not dark enough for it sets its own. */
+  --color-ink-muted-inverse: color-mix(in oklab, var(--color-surface) 80%, var(--color-ink));
   --color-line: #e5e7eb;
   --color-accent: #2563eb;
   --color-accent-ink: #ffffff;
   /* Text in the accent (a category link, an eyebrow): the accent itself unless a site sets a readable one — an accent
-     made for fills can be too light for text on the page (lime on white). The inverse twin is the one on a dark band. */
+     made for fills can be too light for text on the page (lime on white). The inverse twin is the one on a dark band:
+     the accent drawn halfway to the surface, so it keeps its hue and reads on the ink (the default blue at 8.6:1, every
+     usual accent at 4.5:1 or more; a near-black one does not, and needs the site's own). A site whose own accent
+     reads there sets it back. */
   --color-accent-text: var(--color-accent);
-  --color-accent-text-inverse: var(--color-accent);
+  --color-accent-text-inverse: color-mix(in oklab, var(--color-accent) 50%, var(--color-surface));
   --color-brand: var(--color-accent);
   --color-brand-ink: var(--color-accent-ink);
 
@@ -31,6 +37,10 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Headings' own face and letter spacing, for a site or a design direction whose headings are set apart (a display
+     face, a looser or tighter track): --font-heading and --tracking-heading. Neither is set here: unset, a heading
+     keeps the face it inherits (an article's serif, a block's preset family) and the track its classes draw, exactly
+     as before. Set, every heading takes the face, and every heading the kit draws tight takes the track. */
 
   /* Layout widths: the reading column and the page frame. */
   --container-prose: 46rem;
@@ -126,9 +136,17 @@
   .prose-site.prose-lg :where(h2):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.3333333); }
   .prose-site.prose-lg :where(h3):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.5); }
   .prose-site.prose-lg :where(h4):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.5555556); }
+  /* A kit heading drawn with the tight track takes the heading track instead (see --tracking-heading). */
+  :is(h1, h2, h3, h4, h5, h6).tracking-tight { letter-spacing: var(--tracking-heading, var(--tracking-tight)); }
 }
 
 @layer base {
+  /* Every heading, the kit's and the prose's, in the heading face when a theme sets one (see @theme). Unset, the
+     declaration is invalid where it is computed and the heading inherits its face, as it always did. */
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     scroll-padding-top: 1rem;
@@ -154,6 +172,7 @@
     --tracking-wide: 0;
     --tracking-wider: 0;
     --tracking-widest: 0;
+    --tracking-heading: 0;
   }
 
   :focus-visible {

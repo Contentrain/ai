@@ -3,15 +3,16 @@
 // links and the copyright line.
 import { tv } from 'tailwind-variants'
 import type { LinkInput } from '../_shared/types'
-import { contactKeys, footerLinkSizeClasses, footerVars, type ContactInput } from './footer'
+import { contactKeys, footerLinkSizeClasses, footerVars, wordmarkBox, type ContactInput } from './footer'
 import { safeHref } from '../_shared/safe-url'
+import { muted as quiet, mutedInverse } from '../_shared/muted'
 
 const footer = tv({
   slots: {
     root: 'mt-auto',
     inner: 'container-page py-10 text-sm',
-    muted: 'opacity-75',
-    link: 'text-current no-underline opacity-75 hover:opacity-100 hover:underline',
+    muted: quiet,
+    link: `no-underline ${quiet} hover:text-current hover:underline`,
   },
   variants: {
     layout: {
@@ -21,7 +22,7 @@ const footer = tv({
     tone: {
       default: { root: 'bg-surface text-ink' },
       muted: { root: 'bg-surface-muted text-ink' },
-      inverse: { root: 'bg-ink text-surface' },
+      inverse: { root: `bg-ink text-surface ${mutedInverse}` },
     },
     // The border on the footer's top side: the default tone's own unless `border` says otherwise.
     border: { on: { root: 'border-t border-line' }, off: {} },
@@ -45,8 +46,8 @@ const footer = tv({
 interface Props {
   siteName: string
   tagline?: string | undefined
-  /** Link groups for the `columns` layout. */
-  columns?: Array<{ title?: string | undefined, label?: string | undefined, links: LinkInput[] }> | undefined
+  /** Link groups for the `columns` layout. `titleHref`: the heading is a link to it (a source heading printed as one). */
+  columns?: Array<{ title?: string | undefined, titleHref?: string | undefined, label?: string | undefined, links: LinkInput[] }> | undefined
   /** A single row of links (the footer menu). */
   links?: LinkInput[] | undefined
   social?: LinkInput[] | undefined
@@ -79,9 +80,13 @@ interface Props {
   linkSizeNarrow?: string | undefined
   /** A border on the footer's top side: absent, the default tone has one and the others do not. */
   border?: boolean | undefined
+  /** The site name drawn once more as a row as wide as the footer: `fit` whole, `crop` cut by the footer's bottom edge (only its top shows). `none` (absent): no row. Decoration, so hidden from screen readers: the name is already the footer's brand. */
+  wordmark?: 'none' | 'fit' | 'crop' | undefined
+  /** Where the wordmark row sits: after everything else (`last`, absent) or before it (`first`). */
+  wordmarkOrder?: 'last' | 'first' | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize, linkSizeNarrow, border } = Astro.props
+const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize, linkSizeNarrow, border, wordmark, wordmarkOrder } = Astro.props
 const { root, inner, muted, link } = footer({ layout, tone, align, pack: layout === 'columns' ? pack : undefined, narrow: layout === 'columns' && pack === 'end' ? narrow : undefined, border: (border ?? (tone ?? 'default') === 'default') ? 'on' : 'off' })
 // Custom properties the packed columns and sized links read; none when none is set.
 const vars = footerVars({ layout, columnCount: columns.length, pack, narrow, packGap, packGapNarrow, linkSize, linkSizeNarrow })
@@ -92,9 +97,15 @@ const contactOrder = contactKeys(contact?.order)
 const line = copyright === false ? undefined : copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 // The line and the cookie settings control share one paragraph; neither: no paragraph.
 const hasBottom = Boolean(line || consentLabel)
+// The wordmark: the name set in an SVG whose text is stretched (letter spacing only) to the box's width, so it fills the
+// footer's width at every size whatever its letters are. The box is 1000 wide; the font size guesses the name's width on
+// the wide side, letter by letter, so the stretch only adds space. `crop` ends the box halfway up the letters: they run
+// over its bottom edge and are cut there. A name in a script letter spacing breaks (Arabic, Indic, …) gets none.
+const mark = wordmark === 'fit' || wordmark === 'crop' ? wordmarkBox(siteName, wordmark) : undefined
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
 <footer class={root()}>
+  {mark && wordmarkOrder === 'first' && <div class="container-page pt-10" data-kit-wordmark><svg viewBox={`0 0 1000 ${mark.height}`} class="block h-auto w-full fill-current" aria-hidden="true" focusable="false"><text x="0" y={mark.baseline} textLength="1000" lengthAdjust="spacing" font-size={mark.size} class="[font-family:var(--font-heading,inherit)] [font-weight:var(--font-weight-heading,700)]">{siteName}</text></svg></div>}
   <div class:list={[inner(), ...footerLinkSizeClasses({ linkSize, linkSizeNarrow })]} data-kit-footer style={vars || undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
@@ -114,7 +125,7 @@ const hasBottom = Boolean(line || consentLabel)
     {layout === 'columns'
       ? columns.map(column => (
         <nav aria-label={column.label ?? column.title} data-cr-part="nav-footer">
-          {column.title && <p class="mb-3 font-semibold">{column.title}</p>}
+          {column.title && <p class="mb-3 font-semibold">{column.titleHref ? <a href={safeHref(column.titleHref)} class="text-current no-underline hover:underline">{column.title}</a> : column.title}</p>}
           <ul class="flex flex-col gap-2">
             {column.links.map(item => <li><a href={safeHref(item.href)} class={link()}>{item.label}</a></li>)}
           </ul>
@@ -143,4 +154,5 @@ const hasBottom = Boolean(line || consentLabel)
       </ul>
     )}
   </div>
+  {mark && wordmarkOrder !== 'first' && <div class="container-page" data-kit-wordmark><svg viewBox={`0 0 1000 ${mark.height}`} class="block h-auto w-full fill-current" aria-hidden="true" focusable="false"><text x="0" y={mark.baseline} textLength="1000" lengthAdjust="spacing" font-size={mark.size} class="[font-family:var(--font-heading,inherit)] [font-weight:var(--font-weight-heading,700)]">{siteName}</text></svg></div>}
 </footer>

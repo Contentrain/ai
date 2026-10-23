@@ -9,15 +9,19 @@ import Embed from '../embed/Embed.astro'
 import FeatureList from '../feature-list/FeatureList.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
+import { muted, proseOnBand } from '../_shared/muted'
+import { BLEED } from '../_shared/bleed'
 
 const split = tv({
   slots: {
     grid: 'grid items-center gap-10 md:gap-16',
     copy: 'flex flex-col gap-5',
-    eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
+    eyebrow: `text-sm font-semibold tracking-wide uppercase ${muted}`,
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    body: 'prose prose-site max-w-none text-pretty',
+    // The body in the band's own colours, as the heading beside it (on default and muted that is the page's ink).
+    body: `prose prose-site max-w-none text-pretty ${proseOnBand}`,
     actions: 'flex flex-wrap gap-3 pt-2',
     media: 'overflow-hidden',
     image: 'h-auto w-full object-cover',
@@ -33,6 +37,10 @@ const split = tv({
       none: { media: 'rounded-none' },
       rounded: { media: 'rounded-[var(--radius-image,var(--radius-card))]' },
       circle: { media: 'mx-auto aspect-square w-full max-w-lg rounded-full', image: 'h-full' },
+      // A fixed set of masks (never a value from content): an arch over the image, a cut corner, a soft blob.
+      arch: { media: 'rounded-t-full', image: 'h-full' },
+      chamfer: { media: '[clip-path:polygon(0_0,82%_0,100%_18%,100%_100%,0_100%)]' },
+      blob: { media: 'rounded-[38%_62%_55%_45%/48%_42%_58%_52%]' },
     },
     // edge: the image runs on to the viewport's edge on its side (wide screens).
     imageBleed: { none: {}, edge: { media: 'rounded-none' } },
@@ -42,7 +50,8 @@ const split = tv({
     sticky: { true: { media: 'md:sticky md:top-8 md:self-start' }, false: {} },
     align: { start: {}, center: { copy: 'items-center text-center', actions: 'justify-center' } },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100' }, brand: { eyebrow: 'opacity-100' }, none: {} },
+    // A fill sets no accent text of its own: a link in the body is drawn in the fill's ink (underlined, as prose draws it).
+    tone: { default: {}, muted: {}, inverse: {}, accent: { body: '[--tw-prose-links:currentColor]' }, brand: { body: '[--tw-prose-links:currentColor]' }, none: {} },
   },
   defaultVariants: { imageSide: 'end', ratio: '1:1', imageFit: 'contain', imageShape: 'rounded', imageBleed: 'none', stackOrder: 'text-first', sticky: false, align: 'start', tone: 'default' },
 })
@@ -52,11 +61,6 @@ const split = tv({
 const COLUMNS = {
   text: { '1:1': 'md:grid-cols-2', '5:7': 'md:grid-cols-[5fr_7fr]', '7:5': 'md:grid-cols-[7fr_5fr]' },
   image: { '1:1': 'md:grid-cols-2', '5:7': 'md:grid-cols-[7fr_5fr]', '7:5': 'md:grid-cols-[5fr_7fr]' },
-} as const
-// The viewport's edge, from the content's edge: what is left of the page's width, halved.
-const BLEED = {
-  end: 'md:-me-[calc((100vw-min(var(--container-page),100vw-2*var(--spacing-gutter,2rem)))/2)]',
-  start: 'md:-ms-[calc((100vw-min(var(--container-page),100vw-2*var(--spacing-gutter,2rem)))/2)]',
 } as const
 
 interface Feature {
@@ -85,7 +89,8 @@ interface Props {
   imageSide?: 'start' | 'end' | undefined
   ratio?: '1:1' | '5:7' | '7:5' | undefined
   imageFit?: 'contain' | 'cover' | undefined
-  imageShape?: 'none' | 'rounded' | 'circle' | undefined
+  /** The image's outline: none, rounded (the default), a circle, or one of a fixed set of masks: an arch, a cut corner (`chamfer`), a soft `blob`. */
+  imageShape?: 'none' | 'rounded' | 'circle' | 'arch' | 'chamfer' | 'blob' | undefined
   imageBleed?: 'none' | 'edge' | undefined
   mediaKind?: 'image' | 'video' | undefined
   featureStyle?: 'check' | 'icon' | undefined
@@ -96,18 +101,22 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, headingLevel = 2, eyebrow, body, actions = [], image, features = [], videoUrl, playLabel, imageSide, ratio = '1:1', imageFit, imageShape, imageBleed, mediaKind, featureStyle = 'check', stackOrder, sticky = false, align, tone, measured, id } = Astro.props
+const { heading, headingLevel = 2, eyebrow, body, actions = [], image, features = [], videoUrl, playLabel, imageSide, ratio = '1:1', imageFit, imageShape, imageBleed, mediaKind, featureStyle = 'check', stackOrder, sticky = false, align, tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `split`, `split-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'split')
 const s = split({ imageSide, ratio, imageFit, imageShape, imageBleed, stackOrder, sticky, align, tone })
 const Heading = `h${headingLevel}` as 'h2'
 const columns = COLUMNS[imageSide === 'start' ? 'image' : 'text'][ratio]
 const bleed = imageBleed === 'edge' ? BLEED[imageSide === 'start' ? 'start' : 'end'] : undefined
 const video = mediaKind === 'video' && videoUrl
-const headingId = id && heading ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 const html = await renderMarkdown(body)
 ---
-<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined}>
+<Section kit="split" measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined} entry={Astro.props.entry}>
   <div class:list={[s.grid(), columns]}>
     <div class={s.copy()}>
       {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}

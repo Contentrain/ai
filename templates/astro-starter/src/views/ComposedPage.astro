@@ -4,8 +4,9 @@
 // their own containers; text between them is set in the reading column.
 import Breadcrumb from '../components/kit/breadcrumb/Breadcrumb.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { getStrings, type Page } from '../lib/content'
-import { breadcrumbLd, summarize } from '../lib/seo'
+import { withBase } from '../lib/base'
+import { getSite, getStrings, type Page } from '../lib/content'
+import { breadcrumbLd, pageTrail, summarize } from '../lib/seo'
 
 interface Props {
   page: Page
@@ -27,7 +28,7 @@ interface Props {
 
 const { page, trail, isHome, showTitle = !isHome, description } = Astro.props
 const { data } = page
-const t = await getStrings()
+const [t, site] = await Promise.all([getStrings(), getSite()])
 const origin = Astro.site ?? Astro.url
 const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 ---
@@ -42,7 +43,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
   noindex={data.seo?.noindex}
   nofollow={data.seo?.nofollow}
   modified={data.modified_at}
-  jsonLd={trail.length > 0 ? [breadcrumbLd(crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href })))] : []}
+  jsonLd={isHome ? [] : [breadcrumbLd(pageTrail({ name: site.title, url: new URL(withBase('/'), origin).href }, crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href }))))]}
 >
   {(trail.length > 0 || showTitle) && (
     <header class="container-prose pt-12 md:pt-16">

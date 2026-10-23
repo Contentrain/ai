@@ -1,0 +1,20 @@
+{
+  "e7b000000001": {
+    "name": "Latest news",
+    "path": "/category/latest-news/",
+    "slug": "latest-news",
+    "wp_id": 11
+  },
+  "e7b000000002": {
+    "name": "Reviews",
+    "path": "/category/reviews/",
+    "slug": "reviews",
+    "wp_id": 12
+  },
+  "e7b000000003": {
+    "name": "Press, renamed",
+    "path": "/category/press/",
+    "slug": "press-renamed",
+    "wp_id": 13
+  }
+}

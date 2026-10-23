@@ -8,7 +8,9 @@
   ],
   "shared": [
     "Section.astro",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -141,6 +143,11 @@
       "content": false,
       "description": "BCP 47 locale the dates are written in (site.language)."
     },
+    "timeZone": {
+      "type": "string",
+      "content": false,
+      "description": "Time zone the dates are read in (the site's: an IANA name or a ±hh:mm offset); absent, UTC."
+    },
     "surface": {
       "type": "string",
       "content": false,
@@ -156,11 +163,24 @@
       "content": false,
       "description": "Text of the archive link."
     },
+    "readMoreLabel": {
+      "type": "string",
+      "content": false,
+      "description": "The source's own read-more words under each card's excerpt (READ ARTICLE), passed to every card; absent, none."
+    },
+    "dateStyle": {
+      "type": "select",
+      "options": ["full", "long", "medium", "short"],
+      "default": "long",
+      "content": false,
+      "description": "How the cards write their date (Intl dateStyle), as the source does; absent, long."
+    },
     "tone": {
       "type": "string",
       "content": false,
       "description": "Section background: default, muted, inverse or accent."
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,

@@ -1,0 +1,30 @@
+{
+  "f0a000000001": {
+    "body": "",
+    "seo": {
+      "description": "A studio for small shops."
+    },
+    "slug": "welcome",
+    "title": "Welcome",
+    "wp_id": 501
+  },
+  "f0a000000002": {
+    "body": "<p>A small team since 2019.</p>",
+    "slug": "about",
+    "title": "About",
+    "wp_id": 502
+  },
+  "f0a000000003": {
+    "body": "",
+    "parent": "f0a000000002",
+    "slug": "team",
+    "title": "Team",
+    "wp_id": 503
+  },
+  "f0a000000004": {
+    "body": "",
+    "slug": "coming-soon",
+    "title": "Coming soon",
+    "wp_id": 504
+  }
+}

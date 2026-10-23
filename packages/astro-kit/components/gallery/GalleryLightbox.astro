@@ -1,0 +1,110 @@
+---
+// The viewer of a Gallery set to `open: 'lightbox'`: one modal dialog for the whole set, printed (with its script) only
+// for that option, so a gallery that does not ask for it ships neither. Each tile is a link to its large file
+// (`data-kit-lightbox-item`); a plain click opens that file here instead, and previous / next step through the set.
+//
+// The dialog is modal (`showModal`): the page behind it is inert, so focus stays inside it, and Escape closes it.
+// Closing hands focus back to the tile it was opened from. ←/→ step (mirrored right to left), Home and End jump to
+// the ends, and a click outside the image closes. The counter and the caption are announced as they change. Nothing
+// animates. Text goes in through `textContent` only. With no script the tiles stay links to the files.
+interface Props {
+  /** The dialog's id; the gallery names it in `data-kit-lightbox`. */
+  id: string
+  /** The dialog's name: the gallery's heading, or its region label. */
+  label: string
+  closeLabel: string
+  prevLabel: string
+  nextLabel: string
+  /** The counter's word between position and total ("2 of 5"). */
+  ofLabel: string
+  /** One image: no previous / next buttons and no counter. */
+  single: boolean
+}
+
+const { id, label, closeLabel, prevLabel, nextLabel, ofLabel, single } = Astro.props
+const step = 'grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border border-surface/40 text-surface hover:bg-surface/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface'
+---
+<dialog id={id} aria-label={label} data-of={ofLabel} class="m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-ink p-4 text-surface open:grid open:grid-rows-[auto_minmax(0,1fr)_auto] open:gap-3 md:p-8">
+  <div class="flex justify-end">
+    <button type="button" class="cursor-pointer rounded-md border border-surface/40 px-4 py-2 text-sm text-surface hover:bg-surface/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface" data-kit-lightbox-close>{closeLabel}</button>
+  </div>
+  <div class="grid min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:gap-4">
+    {single ? <span /> : <button type="button" class={step} aria-label={prevLabel} data-kit-lightbox-prev><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg></button>}
+    <img alt="" class="mx-auto block max-h-full max-w-full rounded-[var(--radius-image,var(--radius-card))] object-contain" data-kit-lightbox-image hidden />
+    {single ? <span /> : <button type="button" class={step} aria-label={nextLabel} data-kit-lightbox-next><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></button>}
+  </div>
+  <p class="m-0 flex flex-wrap justify-center gap-x-3 text-center text-sm" aria-live="polite">
+    <span data-kit-lightbox-caption></span>
+    {!single && <span data-kit-lightbox-count></span>}
+  </p>
+</dialog>
+
+<script>
+  function wire(root: HTMLElement): void {
+    const dialog = document.getElementById(root.dataset.kitLightbox ?? '')
+    if (!(dialog instanceof HTMLDialogElement)) return
+    // Only tiles with a real address: one the kit printed as `#` (a refused URL) stays a plain link.
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('a[data-kit-lightbox-item]')].filter(link => link.getAttribute('href') !== '#')
+    const image = dialog.querySelector<HTMLImageElement>('[data-kit-lightbox-image]')
+    const caption = dialog.querySelector<HTMLElement>('[data-kit-lightbox-caption]')
+    const count = dialog.querySelector<HTMLElement>('[data-kit-lightbox-count]')
+    if (!links.length || !image || !caption) return
+    // One tile left once the refused ones are out: nothing to step to, so no step buttons and no counter. The buttons
+    // keep their place in the row (hidden from sight, focus and readers alike), so the image does not move.
+    if (links.length < 2) {
+      for (const button of dialog.querySelectorAll<HTMLElement>('[data-kit-lightbox-prev], [data-kit-lightbox-next]')) button.style.visibility = 'hidden'
+      if (count) count.hidden = true
+    }
+    let index = 0
+    let opener: HTMLAnchorElement | null = null
+    const show = (at: number) => {
+      index = (at + links.length) % links.length
+      const link = links[index]!
+      image.src = link.href
+      image.alt = link.querySelector('img')?.alt ?? ''
+      image.hidden = false
+      caption.textContent = link.dataset.caption ?? ''
+      if (count) count.textContent = `${index + 1} ${dialog.dataset.of ?? 'of'} ${links.length}`
+    }
+    links.forEach((link, i) => link.addEventListener('click', (event) => {
+      // A click asking for a new tab or window, or a download, keeps the link's own meaning.
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      event.preventDefault()
+      opener = link
+      show(i)
+      if (!dialog.open) dialog.showModal()
+    }))
+    dialog.querySelector('[data-kit-lightbox-close]')?.addEventListener('click', () => dialog.close())
+    dialog.querySelector('[data-kit-lightbox-prev]')?.addEventListener('click', () => show(index - 1))
+    dialog.querySelector('[data-kit-lightbox-next]')?.addEventListener('click', () => show(index + 1))
+    dialog.addEventListener('keydown', (event) => {
+      const back = getComputedStyle(dialog).direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
+      const forward = back === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft'
+      const to = event.key === back ? index - 1 : event.key === forward ? index + 1 : event.key === 'Home' ? 0 : event.key === 'End' ? links.length - 1 : null
+      if (to === null || links.length < 2) return
+      event.preventDefault()
+      show(to)
+    })
+    // The dialog fills the screen: a click anywhere but on the image or a button is a click outside the image.
+    dialog.addEventListener('click', (event) => {
+      if (event.target instanceof Element && (event.target === image || event.target.closest('button'))) return
+      dialog.close()
+    })
+    dialog.addEventListener('close', () => { opener?.focus(); opener = null })
+  }
+
+  function init(): void {
+    for (const root of document.querySelectorAll<HTMLElement>('[data-kit-lightbox]')) {
+      if (root.dataset.kitReady !== undefined) continue
+      root.dataset.kitReady = ''
+      try { wire(root) }
+      catch {
+        // Left as printed: every tile is still a link to its file.
+      }
+    }
+  }
+
+  init()
+  // With Astro's client router a page arrives without a reload: wire its galleries too (ready ones are skipped).
+  document.addEventListener('astro:page-load', init)
+</script>

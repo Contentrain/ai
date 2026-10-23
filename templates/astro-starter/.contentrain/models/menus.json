@@ -26,6 +26,18 @@
       "type": "slug",
       "unique": true
     },
+    "title": {
+      "description": "The heading printed above this menu where the site shows it (a footer column's heading). Empty: none is printed. The name is only the menu's label in Studio.",
+      "label": "Heading",
+      "order": 15,
+      "type": "string"
+    },
+    "title_href": {
+      "description": "Where the heading links, when the site prints it as a link. Empty: the heading is plain text.",
+      "label": "Heading link",
+      "order": 16,
+      "type": "url"
+    },
     "wp_id": {
       "label": "WP term ID",
       "order": 40,

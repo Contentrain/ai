@@ -13,8 +13,11 @@ const prose = tv({
   base: 'prose prose-site max-w-none',
   variants: {
     size: { base: 'prose-base', lg: 'prose-lg' },
+    // From md, the body's start edge sits at this share of its container's width (the axis an editorial layout sets
+    // its text on); it runs to the container's end. Below md it is the full column, as without it.
+    inset: { none: '', '15': 'md:ms-[15%]', '27': 'md:ms-[27%]', '34': 'md:ms-[34%]', '42': 'md:ms-[42%]' },
   },
-  defaultVariants: { size: 'lg' },
+  defaultVariants: { size: 'lg', inset: 'none' },
 })
 
 interface Props {
@@ -26,9 +29,11 @@ interface Props {
   searchable?: boolean | undefined
   class?: string | undefined
   size?: 'base' | 'lg' | undefined
+  /** From md, the body starts at this share of its container's width (`15` … `42` %). `none` (absent): as before. */
+  inset?: 'none' | '15' | '27' | '34' | '42' | undefined
 }
 
-const { html, markdown, searchable = true, class: className, size } = Astro.props
+const { html, markdown, searchable = true, class: className, size, inset } = Astro.props
 const body = html ?? await renderMarkdown(markdown)
 ---
-{body && <div class={prose({ size, class: className })} data-pagefind-body={searchable ? '' : undefined} set:html={body} />}
+{body && <div class={prose({ size, inset, class: className })} data-pagefind-body={searchable ? '' : undefined} set:html={body} />}

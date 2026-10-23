@@ -74,8 +74,10 @@ describe('catalog', () => {
   })
 
   it('says for every component which builder elements feed it', () => {
-    // The band stands in for no builder element: the migration's plan picks it for a section nothing closer fits.
-    for (const c of catalog.components.filter(component => component.id !== 'band')) expect(Object.values(c.sources).flat().length, c.id).toBeGreaterThan(0)
+    // The band stands in for no builder element: the migration's plan picks it for a section nothing closer fits. A
+    // behavior island neither: the writer's island pass places it for a source widget no component carries (PR-E E2),
+    // never a builder element's mapping, so a source element never reaches it unchecked.
+    for (const c of catalog.components.filter(component => component.id !== 'band' && component.id !== 'behavior')) expect(Object.values(c.sources).flat().length, c.id).toBeGreaterThan(0)
   })
 
   for (const c of catalog.components) {
@@ -168,6 +170,24 @@ describe('templates/astro-starter', () => {
     expect([...used].filter(key => !(key in strings))).toEqual([])
   })
 
+  it('has every interface string a component meta names, in every language it ships', async () => {
+    // A prop's description names its key (`(ui-strings pricing.was)`); the writer passes the site's language through it, so
+    // a key missing from one table leaves that language's site in English.
+    const dir = join(ROOT, '..', '..', 'templates', 'astro-starter', '.contentrain', 'content', 'site', 'ui-strings')
+    const tables = await Promise.all((await readdir(dir)).filter(f => f.endsWith('.json')).map(async f => [f, JSON.parse(await readFile(join(dir, f), 'utf8')) as Record<string, string>] as const))
+    expect(tables.length).toBeGreaterThan(1)
+    const named = new Set(catalog.components.flatMap(c => Object.values(c.props ?? {}).flatMap(p => [...((p as { description?: string }).description ?? '').matchAll(/ui-strings\s+([a-z][\w-]*\.[\w.-]*\w)/g)].map(m => m[1]!))))
+    expect(named.size).toBeGreaterThan(0)
+    for (const [file, strings] of tables) expect([...named].filter(key => !strings[key]?.trim()), file).toEqual([])
+  })
+
+  it('Pricing names an interface string for every label it prints', () => {
+    // A Turkish site showed "Most popular" and "Monthly / Yearly" in English: none of these named a key.
+    const props = catalog.components.find(c => c.id === 'pricing')!.props as Record<string, { description?: string }>
+    const keys = Object.fromEntries(['featuredLabel', 'includedLabel', 'notIncludedLabel', 'billingMainLabel', 'billingAltLabel', 'billingLegend', 'wasLabel'].map(name => [name, /ui-strings\s+([\w.-]*\w)/.exec(props[name]?.description ?? '')?.[1]]))
+    expect(keys).toEqual({ featuredLabel: 'pricing.featured', includedLabel: 'pricing.included', notIncludedLabel: 'pricing.not_included', billingMainLabel: 'pricing.billing_main', billingAltLabel: 'pricing.billing_alt', billingLegend: 'pricing.billing_legend', wasLabel: 'pricing.was' })
+  })
+
   it.each([
     ['templates/astro-starter', 'the starter'],
     ['templates/fixtures/wp-demo', 'the wp-demo fixture'],
@@ -204,6 +224,6 @@ describe('text in the accent', () => {
     for (const used of ['text-accent', 'hover:text-accent', 'group-hover:text-accent', 'prose-a:text-accent', 'decoration-accent', "'text-accent'"]) expect(ACCENT_AS_TEXT.test(used), used).toBe(true)
     for (const fine of ['text-accent-text', 'hover:text-accent-text', 'text-accent-ink', 'bg-accent', 'border-accent']) expect(ACCENT_AS_TEXT.test(fine), fine).toBe(false)
     const section = await readFile(join(COMPONENTS, '_shared', 'Section.astro'), 'utf8')
-    expect(section).toContain("inverse: 'bg-ink text-surface [--color-accent-text:var(--color-accent-text-inverse)]'")
+    expect(section).toContain('inverse: `bg-ink text-surface [--color-accent-text:var(--color-accent-text-inverse)]')
   })
 })

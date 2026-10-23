@@ -7,8 +7,12 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "card-image.ts",
+    "image-widths.ts",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -38,6 +42,14 @@
       ],
       "default": "start",
       "description": "Text alignment inside cards and of the header."
+    },
+    "layout": {
+      "options": [
+        "grid",
+        "rows"
+      ],
+      "default": "grid",
+      "description": "Cards in a grid, or one item per row: title, text and link on one axis, a hairline between rows, no card box (columns and style do not apply)."
     },
     "tone": {
       "options": [
@@ -99,6 +111,11 @@
             "label": "Image description",
             "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
           },
+          "icon": {
+            "type": "image",
+            "label": "Icon",
+            "description": "A small image above the title (decoration)."
+          },
           "eyebrow": {
             "type": "string",
             "label": "Eyebrow",
@@ -107,6 +124,12 @@
         }
       },
       "description": "The cards. image is an ImageInput ({ src, alt, width?, height? })."
+    },
+    "index": {
+      "type": "boolean",
+      "default": false,
+      "content": false,
+      "description": "With layout rows: a numbered list, each row led by its number (01, 02, …) in the muted role."
     },
     "headingLevel": {
       "type": "integer",
@@ -225,6 +248,12 @@
           "description": "The section's minimum height."
         }
       }
+    },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the title gets `<id>-title`. Without one, `card-grid`, `card-grid-2`, … in render order, so every section on a page has its own."
     }
   },
   "slots": {},

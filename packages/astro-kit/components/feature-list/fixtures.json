@@ -151,5 +151,6 @@
       "style": "list"
     }
   },
+  {"name": "list-icon-images", "props": {"heading": "In the package", "style": "list", "items": [{"title": "A design built around your products", "iconImage": "/kit-fixtures/icon-1.svg"}, {"title": "Checkout with cards and wallets", "iconImage": "/kit-fixtures/icon-1.svg"}, {"title": "Thirty days of launch support", "icon": "chat"}]}},
   {"name": "measured-gap", "props": {"heading": "Why us", "measured": {"columns": {"390": 1, "768": 2, "1280": 3}, "gap": 16}, "items": [{"title": "Fast", "text": "Static HTML."}, {"title": "Kept", "text": "Every address survives."}, {"title": "Editable", "text": "Content in Studio."}]}}
 ]

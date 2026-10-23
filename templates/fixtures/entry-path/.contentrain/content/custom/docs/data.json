@@ -1,0 +1,39 @@
+{
+  "e7d000000001": {
+    "body": "<p>Open the file manager from the dashboard.</p>",
+    "docs-category": [
+      "e7c000000002"
+    ],
+    "path": "/docs/wordpress-hosting/site-management/wordpress-file-manager/",
+    "published_at": "2024-03-01T10:00:00.000Z",
+    "slug": "wordpress-file-manager",
+    "title": "A docs page in a tree",
+    "wp_id": 202500
+  },
+  "e7d000000002": {
+    "body": "<p>Turn off Bot Fight Mode for the REST API.</p>",
+    "docs-category": [
+      "e7c000000001"
+    ],
+    "path": "/wordpress-help/development/fix-curl-error-35/",
+    "published_at": "2024-03-02T10:00:00.000Z",
+    "slug": "fix-curl-error-35",
+    "title": "A help article under its own category",
+    "wp_id": 300519
+  },
+  "e7d000000003": {
+    "body": "<p>Start here.</p>",
+    "published_at": "2024-03-03T10:00:00.000Z",
+    "slug": "getting-started",
+    "title": "A docs page at the pattern",
+    "wp_id": 202501
+  },
+  "e7d000000004": {
+    "body": "<p>An editor renamed this guide.</p>",
+    "path": "/docs/old-guide/",
+    "published_at": "2024-03-04T10:00:00.000Z",
+    "slug": "migrated-guide",
+    "title": "A renamed docs page",
+    "wp_id": 202502
+  }
+}

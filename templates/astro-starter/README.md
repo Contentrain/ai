@@ -19,16 +19,16 @@ pnpm lhci        # Lighthouse CI on the built site
 | `.contentrain/models/` | The content models: `site` (singleton), `posts`, `pages`, `categories`, `tags`, `authors`, `media`, `menus`, `menu-items`, and the `ui-strings` dictionary. |
 | `src/content.config.ts` | One Astro collection per model, loaded with `contentrainLoader` and validated by a schema that mirrors the model. Public builds show published entries only. |
 | `src/site.config.ts` | What is not content: permalink patterns, the front page, posts per page, menu slugs and the Studio binding. |
-| `src/lib/site-routes.ts`, `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. |
+| `src/lib/site-routes.ts`, `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. A page with nothing to build (no body, form, cover, child pages or composed view; `src/lib/empty-page.ts`) never fails it: the front page builds as the plain latest-posts home, any other page answers with a 301 to its nearest parent or the home and stays out of the sitemap. |
 | `src/lib/links.ts` | Links to what the public can see: menu targets, body links and section links resolve through the route table; a link to a draft, a private page or the source site's old address is dropped or rewritten. |
-| `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. A migration adds composed pages (`views/composed/`) and the overlays every page draws after the footer, such as a popup (`views/overlays/`); both are empty by default. |
+| `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. A migration adds composed pages (`views/composed/`; one that prints the post list it is given is named in `listViews`, any other leaves page 1 of the posts a plain list) and the overlays every page draws after the footer, such as a popup (`views/overlays/`); both are empty by default. |
 | `src/layouts/BaseLayout.astro` | Document shell: SEO head, font, skip link, header, footer. |
 | `src/components/SEO.astro`, `src/lib/seo.ts`, `src/lib/share.ts` | Title, description, canonical, robots, Open Graph, Twitter, RSS discovery and a JSON-LD graph (WebSite, Organization, BlogPosting, BreadcrumbList, CollectionPage). `<title>` follows `titleTemplate`; link previews show the page's own words: `og:title` is `seo.og_title`, else `seo.title`, else the page title without the site suffix; `og:description` is `seo.og_description`, else the meta description. |
 | `src/components/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
 | `src/components/studio/` | Studio forms and comment threads. |
 | `src/styles/global.css` | The one stylesheet. Design tokens are in `@theme`. |
 | `public/_headers` | Response headers (Netlify, Cloudflare Pages): an SVG under `/media/` opened on its own runs no script and loads nothing (CSP `default-src 'none'`, `sandbox`, `nosniff`). |
-| `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. |
+| `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. An old attachment page's path gets a redirect page too, so it still redirects when its `_redirects` line is cut at the host's rule limit. |
 
 ### Old addresses on your host
 
@@ -112,6 +112,31 @@ preview; a site you publish builds without it.
   post's primary category (`primary_category`, from Yoast or Rank Math), else
   its category with the lowest term ID, with its parents (`news/local`); a post
   with none takes `siteConfig.defaultCategory` (default `uncategorized`).
+  `:year`, `:month` and `:day`, and every printed date, are read in
+  `siteConfig.timeZone` (an IANA name or a `±hh:mm` offset; absent, UTC), as
+  WordPress fills them from the post's local date: a post written in the
+  evening of a UTC−n site keeps its address and its day.
+  A page's `:path` is its parents' slugs and its own; the top page of that
+  trail may carry `path_prefix` (the folders before its address on the old
+  site when its parent page was not moved: `company` for
+  `/company/about-us/`). The migration sets it on those pages only; an editor
+  clears it, or gives the page a parent, to move the page.
+  A post may carry `path`: its address on the old site, kept where the pattern
+  would build another (a slug the store spells differently:
+  `/announcements/kristen_mathiasen/` for `kristen-mathiasen`). It is an
+  override, never a second address: it holds only while its last segment is
+  the post's slug as the store spells it. An editor who changes the slug moves
+  the post to the pattern's address, and the old address answers a 301 to it;
+  clearing the field moves the post without a redirect.
+  Pages, categories, tags, and a custom type's entries and terms read `path`
+  the same way, so a migration can keep each entry's own address where no
+  pattern rebuilds it: a child page whose parent did not move
+  (`/company/about-us/`), a page in a custom type's tree
+  (`/docs/hosting/site-management/file-manager/`), a term segment that
+  differs per entry (`/wordpress-help/development/<slug>/`), a nested term
+  whose parent was not moved, or a dated post whose day the site's time zone
+  set. A page's `path` wins over its parents and `path_prefix`; the front page
+  is always the root. A custom type's model needs a `path` field for it.
 
 ## Studio binding: forms, comments and media
 

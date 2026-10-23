@@ -10,6 +10,8 @@ import type { MeasuredStyle } from '../_shared/types'
 import PostCard from '../post-card/PostCard.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 export interface PostItem {
   title: string
@@ -25,7 +27,7 @@ const list = tv({
   slots: {
     header: 'mb-10 flex max-w-2xl flex-col gap-3',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    intro: 'text-lg opacity-80',
+    intro: `text-lg ${muted}`,
     items: 'grid gap-8',
     more: 'mt-10',
   },
@@ -61,18 +63,28 @@ interface Props {
   excerptLines?: 2 | 3 | 4 | undefined
   /** BCP 47 locale the dates are written in. */
   locale?: string | undefined
+  /** The time zone the dates are read in (the site's: an IANA name or a `±hh:mm` offset); absent, UTC. */
+  timeZone?: string | undefined
   /** Card surface: none, or each post its own card. */
   surface?: 'plain' | 'card' | undefined
   /** Where the full archive lives; with `moreLabel` a link follows the list. */
   moreHref?: string | undefined
   moreLabel?: string | undefined
+  /** The source's own read-more words under each card's excerpt ("READ ARTICLE"), passed to every card; absent, none. */
+  readMoreLabel?: string | undefined
+  /** How the cards write their date (`Intl.DateTimeFormat` `dateStyle`), as the source does; absent, long. */
+  dateStyle?: 'full' | 'long' | 'medium' | 'short' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, surface, moreHref, moreLabel, tone, measured, id = 'posts' } = Astro.props
+const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, timeZone, surface, moreHref, moreLabel, readMoreLabel, dateStyle, tone, measured, id: givenId } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'posts')
 const s = list({ layout, columns })
 const headingId = heading ? `${id}-title` : undefined
 // Cards sit one heading level under the section's; with no section heading they are the page's h2s.
@@ -82,7 +94,7 @@ const sizes = layout === 'list' || layout === 'compact' ? '256px' : columns === 
 const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 'list' || (layout === 'featured' && i === 0) ? 'horizontal' : 'vertical'
 ---
 {posts.length > 0 && (
-  <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+  <Section kit="post-list" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
@@ -98,6 +110,7 @@ const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 
             excerpt={showExcerpt && layout !== 'compact' ? post.excerpt : undefined}
             date={post.date}
             locale={locale}
+            timeZone={timeZone}
             image={showImage && layout !== 'compact' ? post.image : undefined}
             category={showCategory && layout !== 'compact' ? post.category : undefined}
             author={showAuthor && layout !== 'compact' ? post.author : undefined}
@@ -106,6 +119,8 @@ const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 
             surface={surface}
             excerptLines={excerptLines}
             sizes={sizes}
+            moreLabel={readMoreLabel}
+            dateStyle={dateStyle}
           />
         </li>
       ))}

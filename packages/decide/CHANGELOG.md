@@ -1,5 +1,90 @@
 # @contentrain/decide
 
+## 0.2.54
+
+### Patch Changes
+
+- Updated dependencies [03391d9]
+- Updated dependencies [03391d9]
+  - @contentrain/types@1.73.0
+
+## 0.2.53
+
+### Patch Changes
+
+- Updated dependencies [1f33067]
+  - @contentrain/types@1.72.0
+
+## 0.2.52
+
+### Patch Changes
+
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
+## 0.2.51
+
+### Patch Changes
+
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+  - @contentrain/types@1.70.0
+
+## 0.2.50
+
+### Patch Changes
+
+- Updated dependencies [c17f75c]
+  - @contentrain/types@1.69.0
+
+## 0.2.49
+
+### Patch Changes
+
+- Updated dependencies [a1b715f]
+  - @contentrain/types@1.68.0
+
+## 0.2.48
+
+### Patch Changes
+
+- Updated dependencies [d57a8bb]
+  - @contentrain/types@1.67.0
+
+## 0.2.47
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+
+## 0.2.46
+
+### Patch Changes
+
+- Updated dependencies [861bdd2]
+  - @contentrain/types@1.65.0
+
+## 0.2.45
+
+### Patch Changes
+
+- 7bc2e87: The Anthropic provider builds its request for the model it asks. Before Claude 4.7, nothing changes: `temperature: 0` and one forced tool call, the same request bytes and request-shape hash as before. Claude 4.7 and later models return HTTP 400 for a non-default `temperature`, and Opus and Sonnet 5.5 for a forced tool call, so they are asked through structured outputs (a JSON schema) and the answer is read from the text block. The default model is unchanged.
+
+## 0.2.44
+
+### Patch Changes
+
+- Updated dependencies [ad803f7]
+  - @contentrain/types@1.64.0
+
+## 0.2.43
+
+### Patch Changes
+
+- Updated dependencies [04ce5eb]
+  - @contentrain/types@1.63.1
+
 ## 0.2.42
 
 ### Patch Changes

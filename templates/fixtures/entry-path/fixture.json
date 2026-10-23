@@ -1,0 +1,141 @@
+{
+  "siteConfig": [
+    {
+      "from": "    post: '/blog/:slug/',",
+      "to": "    post: '/:year/:month/:day/:slug/',"
+    },
+    {
+      "from": "    category: '/category/:slug/',",
+      "to": "    category: '/category/latest-news/:slug/',"
+    },
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  types: [{\n    collection: 'docs',\n    model: 'docs',\n    single: '/docs/:slug/',\n    taxonomies: [{ collection: 'docsCategory', pattern: '/docs-category/:path/', field: 'docs-category', title: 'Docs category' }],\n    card: { title: 'title', date: 'published_at' },\n    body: 'body',\n    fields: [{ name: 'docs-category', label: 'Docs category', type: 'relations', collection: 'docsCategory' }],\n  }],\n  sourceHosts: [],"
+    }
+  ],
+  "absentFromDist": [
+    "\"/about-us/\"",
+    "\"/best-employer-surveys-product-page/\"",
+    "/2016/10/18/evening-post/",
+    "/category/latest-news/latest-news/",
+    "/category/latest-news/reviews/",
+    "\"/docs/wordpress-file-manager/\"",
+    "\"/docs/fix-curl-error-35/\"",
+    "\"/docs-category/blocks-and-extensions-spectra-blocks/\""
+  ],
+  "distFiles": {
+    "company/about-us/index.html": {
+      "contains": [
+        "About us under a parent not moved",
+        "<link rel=\"canonical\" href=\"https://example.com/company/about-us/\">"
+      ]
+    },
+    "programs/best-employer-surveys-product-page/index.html": {
+      "contains": [
+        "A product page under a parent not moved",
+        "<link rel=\"canonical\" href=\"https://example.com/programs/best-employer-surveys-product-page/\">"
+      ]
+    },
+    "renamed-page/index.html": {
+      "contains": [
+        "A renamed page",
+        "<link rel=\"canonical\" href=\"https://example.com/renamed-page/\">"
+      ]
+    },
+    "contact/index.html": {
+      "contains": [
+        "Contact at the pattern"
+      ]
+    },
+    "2016/10/17/evening-post/index.html": {
+      "contains": [
+        "An evening post at its own date",
+        "<link rel=\"canonical\" href=\"https://example.com/2016/10/17/evening-post/\">"
+      ]
+    },
+    "2016/10/10/midday-post/index.html": {
+      "contains": [
+        "A midday post at the pattern"
+      ]
+    },
+    "category/latest-news/index.html": {
+      "contains": [
+        "Latest news",
+        "<link rel=\"canonical\" href=\"https://example.com/category/latest-news/\">"
+      ]
+    },
+    "category/reviews/index.html": {
+      "contains": [
+        "Reviews",
+        "<link rel=\"canonical\" href=\"https://example.com/category/reviews/\">"
+      ]
+    },
+    "docs/wordpress-hosting/site-management/wordpress-file-manager/index.html": {
+      "contains": [
+        "A docs page in a tree",
+        "<link rel=\"canonical\" href=\"https://example.com/docs/wordpress-hosting/site-management/wordpress-file-manager/\">"
+      ]
+    },
+    "wordpress-help/development/fix-curl-error-35/index.html": {
+      "contains": [
+        "A help article under its own category",
+        "<link rel=\"canonical\" href=\"https://example.com/wordpress-help/development/fix-curl-error-35/\">"
+      ]
+    },
+    "docs/getting-started/index.html": {
+      "contains": [
+        "A docs page at the pattern"
+      ]
+    },
+    "docs-category/spectra-blocks/index.html": {
+      "contains": [
+        "Spectra blocks"
+      ]
+    },
+    "docs-category/spectra-blocks/blocks-and-extensions-spectra-blocks/index.html": {
+      "contains": [
+        "Blocks and extensions",
+        "/docs/wordpress-hosting/site-management/wordpress-file-manager/"
+      ]
+    },
+    "docs-category/general-renamed/index.html": {
+      "contains": [
+        "General, renamed"
+      ]
+    },
+    "category/latest-news/press-renamed/index.html": {
+      "contains": [
+        "Press, renamed"
+      ]
+    },
+    "tag/travel-notes/index.html": {
+      "contains": [
+        "Travel notes, renamed"
+      ]
+    },
+    "docs/migrated-guide/index.html": {
+      "contains": [
+        "A renamed docs page"
+      ]
+    },
+    "_redirects": {
+      "contains": [
+        "/company/old_name/ /renamed-page/ 301",
+        "/docs-category/general/ /docs-category/general-renamed/ 301",
+        "/category/press/ /category/latest-news/press-renamed/ 301",
+        "/tag/travel/ /tag/travel-notes/ 301",
+        "/docs/old-guide/ /docs/migrated-guide/ 301"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/company/about-us/",
+        "https://example.com/2016/10/17/evening-post/",
+        "https://example.com/category/latest-news/",
+        "https://example.com/docs/wordpress-hosting/site-management/wordpress-file-manager/",
+        "https://example.com/wordpress-help/development/fix-curl-error-35/",
+        "https://example.com/docs-category/spectra-blocks/blocks-and-extensions-spectra-blocks/"
+      ]
+    }
+  }
+}

@@ -6,7 +6,9 @@ import { getEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import type { CustomField, CustomType } from '../site.config'
 import { entryHref, refIds, termHref, termsById, text, type TypeEntry } from './custom'
-import { imageOf, type Media } from './content'
+import { getStrings, imageOf, type Media } from './content'
+import { optimizedImages } from './body-images'
+import { scrollingTables, tableLabel } from './body-tables'
 import { servedPath } from './base'
 
 export type Shown =
@@ -50,7 +52,11 @@ export function targetsOf(types: readonly CustomType[], entries: ReadonlyMap<str
   const out = new Map<string, { href: string, title: string }>()
   const titleOf = (entry: TypeEntry, field: string) => text(entry.data[field]) ?? text(entry.data.name) ?? entry.id
   for (const type of types) {
-    for (const entry of entries.get(type.collection) ?? []) out.set(`${type.collection}:${entry.id}`, { href: entryHref(type, entry), title: titleOf(entry, type.card.title) })
+    // A list-only type's entry has no page: a relation to it prints its title, as one to an entry without a target does.
+    for (const entry of entries.get(type.collection) ?? []) {
+      const href = entryHref(type, entry)
+      if (href) out.set(`${type.collection}:${entry.id}`, { href, title: titleOf(entry, type.card.title) })
+    }
     for (const taxonomy of type.taxonomies ?? []) {
       const terms = termsById(taxonomy.collection, entries.get(taxonomy.collection) ?? [])
       for (const term of terms.values()) out.set(`${taxonomy.collection}:${term.id}`, { href: termHref(taxonomy, term, terms), title: titleOf(term, 'name') })
@@ -79,7 +85,13 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
     if (shown.length === 0) return undefined
     return type === 'relation' || shown.length === 1 ? shown[0] : { kind: 'list', items: shown }
   }
-  if (type === 'richtext' || type === 'markdown') return typeof value === 'string' ? { kind: 'html', html: value } : undefined
+  // Printed as written, but its images are served like a body's and a table in it scrolls in its region (it does not
+  // pass through publicHtml).
+  if (type === 'richtext' || type === 'markdown') {
+    if (typeof value !== 'string') return undefined
+    const html = await optimizedImages(value)
+    return { kind: 'html', html: html.includes('<table') ? scrollingTables(html, tableLabel(await getStrings())) : html }
+  }
   if (type === 'date' || type === 'datetime') return value instanceof Date ? { kind: 'time', value, dateOnly: type === 'date' } : undefined
   // The label is the row's term; a true value is its mark.
   if (type === 'boolean') return value === true ? { kind: 'text', text: '✓' } : undefined

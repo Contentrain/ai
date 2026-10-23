@@ -1,12 +1,15 @@
 ---
 // Questions and answers as native disclosure widgets (<details>) — no script.
-// `exclusive` groups them by name, so opening one closes the others. With
-// `schema`, the page also carries FAQPage structured data for search engines
-// and AI answers.
+// `exclusive` groups them by name, so opening one closes the others. The first
+// FAQ on a page with an answered question also carries the page's FAQPage
+// structured data for search engines and AI answers (`schema={false}`: none).
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import { measuredColumns } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { instanceId } from '../_shared/instance-id'
+import { firstOnPage } from '../_shared/once-per-page'
+import { muted } from '../_shared/muted'
 
 export interface FaqItem {
   question: string
@@ -19,7 +22,7 @@ const faq = tv({
     root: '',
     head: 'mb-8 flex flex-col gap-3',
     heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
-    intro: 'max-w-2xl text-lg opacity-80',
+    intro: `max-w-2xl text-lg ${muted}`,
     list: 'flex flex-col',
     item: 'group',
     question: '',
@@ -37,7 +40,7 @@ const faq = tv({
     columns: { '1': {}, '2': { list: 'lg:block lg:columns-2 lg:gap-x-12', item: 'break-inside-avoid' } },
     // The marker in each question's row: a plus that turns into a cross, or a chevron that turns over.
     icon: { plus: {}, chevron: { marker: 'group-open:rotate-180' } },
-    numbered: { true: { list: '[counter-reset:faq]', item: '[counter-increment:faq]', question: 'before:me-4 before:tabular-nums before:opacity-60 before:content-[counter(faq,decimal-leading-zero)]' }, false: {} },
+    numbered: { true: { list: '[counter-reset:faq]', item: '[counter-increment:faq]', question: 'before:me-4 before:tabular-nums before:text-[color:var(--kit-muted,var(--color-ink-muted))] before:content-[counter(faq,decimal-leading-zero)]' }, false: {} },
     style: {
       lines: { list: 'divide-y divide-line border-y border-line' },
       cards: { list: 'gap-3', item: 'rounded-card border border-line px-5', summary: 'py-5' },
@@ -76,15 +79,19 @@ interface Props {
   exclusive?: boolean | undefined
   /** Open the first answer. */
   openFirst?: boolean | undefined
-  /** Add FAQPage structured data (JSON-LD). Once per page. */
+  /** FAQPage structured data (JSON-LD) from the answered questions; on by default, printed by the first FAQ on the page only. */
   schema?: boolean | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id = 'faq' } = Astro.props
+const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = true, tone, measured, id: givenId } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'faq')
 const s = faq({ layout, columns, icon, numbered, style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
 // Two columns and the split layout need the page's width; one column reads in the narrow one.
 const measuredCols = measuredColumns(measured)
@@ -93,17 +100,25 @@ const wide = layout === 'split' || columns === '2' || measuredCols !== undefined
 const listClass = measuredCols && (style === 'cards' || style === 'plain' ? measuredCols : `${measuredCols} divide-y-0 border-b-0`)
 const itemClass = measuredCols ? (style === 'cards' ? 'break-inside-avoid mb-3' : style === 'plain' ? 'break-inside-avoid' : 'break-inside-avoid border-b border-line') : undefined
 const headingId = heading ? `${id}-title` : undefined
-const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
-const structured = schema && items.length > 0
+const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|#160|#xa0);/gi, ' ').replace(/\s+/g, ' ').trim()
+// An answer with no text and nothing to see (an empty paragraph, a stray break) opens onto nothing: its question is
+// drawn alone, in the item's style, with no disclosure to press. An image or a frame alone is still an answer.
+const MEDIA = /<(?:img|picture|video|audio|iframe|svg|embed|object|canvas)\b/i
+const answered = items.map(item => plain(item.answer) !== '' || MEDIA.test(item.answer))
+const firstAnswered = answered.indexOf(true)
+// FAQPage needs each question's acceptedAnswer text, so a question without one is left out of it. One per page: a FAQ
+// with nothing to state does not take the page's turn.
+const withText = items.filter(item => plain(item.answer) !== '')
+const structured = schema && withText.length > 0 && firstOnPage(Astro.locals, 'faq-page')
   ? JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: items.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: plain(item.answer) } })),
+      mainEntity: withText.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: plain(item.answer) } })),
     }).replace(/</g, '\\u003c')
   : null
 ---
 {items.length > 0 && (
-  <Section measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
+  <Section kit="faq" measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     <div class={s.root()}>
       {(heading || intro) && (
         <header class={s.head()}>
@@ -112,8 +127,8 @@ const structured = schema && items.length > 0
         </header>
       )}
       <div class={s.list({ class: listClass })}>
-        {items.map((item, i) => (
-          <details class={s.item({ class: itemClass })} name={exclusive ? id : undefined} open={openFirst && i === 0}>
+        {items.map((item, i) => answered[i] ? (
+          <details class={s.item({ class: itemClass })} name={exclusive ? id : undefined} open={openFirst && i === firstAnswered}>
             <summary class={s.summary()}>
               <span class={s.question()}>{item.question}</span>
               {icon === 'chevron'
@@ -122,6 +137,12 @@ const structured = schema && items.length > 0
             </summary>
             <div class={s.answer()} set:html={item.answer} />
           </details>
+        ) : (
+          <div class={s.item({ class: itemClass })}>
+            <div class={s.summary({ class: style === 'plain' ? 'block cursor-auto' : 'cursor-auto' })}>
+              <span class={s.question()}>{item.question}</span>
+            </div>
+          </div>
         ))}
       </div>
     </div>

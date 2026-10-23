@@ -15,5 +15,22 @@
     "slug": "about",
     "title": "About",
     "wp_id": 302
+  },
+  "d0a000000003": {
+    "body": "<p>Welcome to the studio.</p>",
+    "slug": "welcome",
+    "title": "Welcome",
+    "wp_id": 303
+  },
+  "d0a000000004": {
+    "body": "",
+    "seo": {
+      "og_description": "Notes from the studio.",
+      "og_title": "The journal",
+      "title": "Journal - Golden Agency"
+    },
+    "slug": "blog",
+    "title": "Journal",
+    "wp_id": 304
   }
 }

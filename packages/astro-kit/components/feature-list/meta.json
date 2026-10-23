@@ -5,8 +5,12 @@
   "category": "section",
   "uses": [],
   "shared": [
+    "KitImage.astro",
     "Section.astro",
+    "image-widths.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -83,6 +87,11 @@
               "chat"
             ],
             "description": "The kit icon shown with the icon style; check when absent."
+          },
+          "iconImage": {
+            "type": "image",
+            "label": "Icon image",
+            "description": "The feature's own icon as an image file (the old site's icon, moved as an svg): drawn instead of the named icon; the check style ignores it."
           }
         }
       },
@@ -210,10 +219,11 @@
         }
       }
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `feature-list`, `feature-list-2`, … in render order, so every section on a page has its own."
     }
   },
   "slots": {},

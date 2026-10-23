@@ -4,6 +4,7 @@
 // assistive technology unless `labelStyle` shows it.
 import { tv } from 'tailwind-variants'
 import { safeUrl } from '../_shared/safe-url'
+import { instanceId } from '../_shared/instance-id'
 
 const search = tv({
   slots: {
@@ -37,7 +38,9 @@ interface Props {
   id?: string | undefined
 }
 
-const { action = '/search', label = 'Search', placeholder, submitLabel = label, size, width, button, labelStyle, id = 'site-search' } = Astro.props
+const { action = '/search', label = 'Search', placeholder, submitLabel = label, size, width, button, labelStyle, id: givenId } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'site-search')
 const s = search({ size, width, button, labelStyle })
 ---
 <form role="search" method="get" action={safeUrl(action)} class={s.form()} data-cr-part="search-box">

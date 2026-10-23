@@ -5,14 +5,16 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { muted } from '../_shared/muted'
 
 const cloud = tv({
   slots: {
-    heading: 'mb-8 text-sm font-semibold tracking-wide uppercase opacity-80',
+    heading: `mb-8 text-sm font-semibold tracking-wide uppercase ${muted}`,
     list: 'grid grid-cols-2 items-center gap-x-8 gap-y-10 sm:grid-cols-3',
     item: 'flex items-center justify-center',
     logo: 'h-10 w-auto max-w-full object-contain transition duration-200',
@@ -46,7 +48,7 @@ const cloud = tv({
       'mono-light': { logo: 'brightness-0 invert' },
     },
     align: { center: { heading: 'text-center' }, start: { heading: 'text-start' } },
-    tone: { default: {}, muted: {}, inverse: {}, accent: { heading: 'opacity-100' } },
+    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
   },
   compoundVariants: [
     { layout: 'row', align: 'center', class: { list: 'justify-center' } },
@@ -76,13 +78,17 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, items, layout, columns, logoHeight, style, align, tone, measured, id } = Astro.props
+const { heading, items, layout, columns, logoHeight, style, align, tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `logo-cloud`, `logo-cloud-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'logo-cloud')
 const s = cloud({ layout, columns, logoHeight, style, align, tone })
 // Measured columns and gap shape the grid layout only; a row or a strip keeps its own flow.
 const grid = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 const marquee = layout === 'marquee'
 // A linked logo with no name is read as the site it goes to, never as a made-up word.
 const hostOf = (href: string) => {
@@ -95,7 +101,7 @@ const shown = items.flatMap((item) => {
 // About four seconds a logo: the strip reads at a pace, whatever its length.
 const duration = `${Math.max(20, shown.length * 4)}s`
 ---
-<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+<Section kit="logo-cloud" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
   {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
   <div class:list={[marquee && 'kit-marquee overflow-hidden']} style={marquee ? `--kit-marquee-duration:${duration}` : undefined}>
     <ul class={s.list({ class: grid })}>

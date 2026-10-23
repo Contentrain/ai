@@ -1,0 +1,29 @@
+{
+  "e7a000000001": {
+    "body": "<p>Written in the evening, Pacific time; the site's time zone was not read.</p>",
+    "categories": [
+      "e7b000000001"
+    ],
+    "excerpt": "Written in the evening, Pacific time.",
+    "path": "/2016/10/17/evening-post/",
+    "published_at": "2016-10-18T03:16:50Z",
+    "slug": "evening-post",
+    "title": "An evening post at its own date",
+    "wp_id": 301
+  },
+  "e7a000000002": {
+    "body": "<p>Written at midday.</p>",
+    "categories": [
+      "e7b000000002",
+      "e7b000000003"
+    ],
+    "excerpt": "Written at midday.",
+    "published_at": "2016-10-10T15:03:11Z",
+    "slug": "midday-post",
+    "tags": [
+      "e7f000000001"
+    ],
+    "title": "A midday post at the pattern",
+    "wp_id": 302
+  }
+}

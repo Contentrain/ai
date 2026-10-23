@@ -1,0 +1,139 @@
+// What an embed URL becomes: the player/map address the iframe loads after a
+// click, the page a plain link opens without JavaScript, and the provider.
+// Only known providers get an iframe; anything else stays a link, so a page
+// can never frame an arbitrary address that came in with the content.
+
+export type EmbedProvider = 'youtube' | 'vimeo' | 'google-maps' | 'openstreetmap' | 'spotify' | 'soundcloud' | 'calendly' | 'typeform' | 'google-forms' | 'loom' | 'wistia'
+
+export interface EmbedTarget {
+  provider: EmbedProvider
+  /** Loaded into the iframe on activation (autoplays where the provider allows it: the click was the consent). */
+  src: string
+  /** Opened by the plain link: the provider's own page. */
+  href: string
+  kind: 'video' | 'map' | 'audio' | 'widget'
+  /** YouTube Shorts and other vertical players. */
+  portrait?: boolean
+}
+
+const https = (value: string): URL | null => {
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url : null
+  }
+  catch { return null }
+}
+
+const YOUTUBE_ID = /^[\w-]{11}$/
+/** `t=1m30s`, `t=90`, `start=90` → seconds. */
+const seconds = (value: string | null): number => {
+  if (!value) return 0
+  if (/^\d+$/.test(value)) return Number(value)
+  const m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(value)
+  return m ? Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0) : 0
+}
+
+function youtube(url: URL): EmbedTarget | null {
+  const host = url.hostname.replace(/^(?:www|m)\./, '')
+  let id: string | null = null
+  let portrait = false
+  if (host === 'youtu.be') id = url.pathname.slice(1).split('/')[0] ?? null
+  else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+    const [first, second] = url.pathname.split('/').filter(Boolean)
+    if (first === 'watch') id = url.searchParams.get('v')
+    else if (first === 'embed' || first === 'live' || first === 'v') id = second ?? null
+    else if (first === 'shorts') { id = second ?? null; portrait = true }
+  }
+  if (!id || !YOUTUBE_ID.test(id)) return null
+  const start = seconds(url.searchParams.get('t') ?? url.searchParams.get('start'))
+  const query = new URLSearchParams({ autoplay: '1', rel: '0' })
+  if (start) query.set('start', String(start))
+  return {
+    provider: 'youtube',
+    kind: 'video',
+    src: `https://www.youtube-nocookie.com/embed/${id}?${query}`,
+    href: portrait ? `https://www.youtube.com/shorts/${id}` : `https://www.youtube.com/watch?v=${id}${start ? `&t=${start}s` : ''}`,
+    ...(portrait ? { portrait } : {}),
+  }
+}
+
+function vimeo(url: URL): EmbedTarget | null {
+  const host = url.hostname.replace(/^www\./, '')
+  if (host !== 'vimeo.com' && host !== 'player.vimeo.com') return null
+  const parts = url.pathname.split('/').filter(Boolean)
+  const at = parts[0] === 'video' ? 1 : parts.findIndex(p => /^\d+$/.test(p))
+  const id = parts[at]
+  if (!id || !/^\d+$/.test(id)) return null
+  // Unlisted videos carry a hash: `vimeo.com/123/abcdef` or `?h=abcdef`.
+  const hash = url.searchParams.get('h') ?? (parts[at + 1] && /^[\da-f]+$/i.test(parts[at + 1]!) ? parts[at + 1]! : null)
+  const query = new URLSearchParams({ autoplay: '1', dnt: '1' })
+  if (hash) query.set('h', hash)
+  return { provider: 'vimeo', kind: 'video', src: `https://player.vimeo.com/video/${id}?${query}`, href: `https://vimeo.com/${id}${hash ? `/${hash}` : ''}` }
+}
+
+const GOOGLE = new Set(['www.google.com', 'google.com'])
+
+/** Framed as given: the host is known to serve an embeddable page at that address. */
+const FRAMED: Array<[EmbedProvider, EmbedTarget['kind'], (url: URL) => boolean]> = [
+  // Exact hosts only: a pattern over Google's country domains also admits look-alikes (`google.com.evil.example`).
+  // A hand-pasted "embed a map" iframe is `google.com/maps?q=…&output=embed` as much as `/maps/embed?pb=…` (what `mapTarget` writes too).
+  ['google-maps', 'map', u => (GOOGLE.has(u.hostname) && (u.pathname.startsWith('/maps/embed') || (u.pathname === '/maps' && u.searchParams.get('output') === 'embed'))) || (u.hostname === 'maps.google.com' && u.searchParams.get('output') === 'embed')],
+  ['openstreetmap', 'map', u => u.hostname === 'www.openstreetmap.org' && u.pathname === '/export/embed.html'],
+  ['spotify', 'audio', u => u.hostname === 'open.spotify.com' && u.pathname.startsWith('/embed/')],
+  ['soundcloud', 'audio', u => u.hostname === 'w.soundcloud.com' && u.pathname.startsWith('/player')],
+  ['calendly', 'widget', u => u.hostname === 'calendly.com'],
+  ['typeform', 'widget', u => /^[\w-]+\.typeform\.com$/.test(u.hostname) && u.pathname.startsWith('/to/')],
+  // A Google Form's own embed address (`/forms/d/e/<id>/viewform?embedded=true`): the form, not the rest of Google Docs.
+  ['google-forms', 'widget', u => u.hostname === 'docs.google.com' && /^\/forms\/d\/(?:e\/)?[\w-]+\/viewform$/.test(u.pathname)],
+  ['loom', 'video', u => /^(?:www\.)?loom\.com$/.test(u.hostname) && u.pathname.startsWith('/embed/')],
+  ['wistia', 'video', u => u.hostname === 'fast.wistia.net' && u.pathname.startsWith('/embed/')],
+]
+
+/** A video page or player URL, or a known provider's embed address. `null` = not embeddable. */
+export function embedTarget(value: string): EmbedTarget | null {
+  const url = https(value)
+  if (!url) return null
+  const found = youtube(url) ?? vimeo(url)
+  if (found) return found
+  url.protocol = 'https:'
+  for (const [provider, kind, test] of FRAMED) if (test(url)) return { provider, kind, src: url.href, href: url.href }
+  return null
+}
+
+/** A Google map of a place or address (what Elementor's and Divi's map widgets store). */
+export function mapTarget(address: string): EmbedTarget | null {
+  const q = address.trim()
+  if (!q) return null
+  const query = encodeURIComponent(q)
+  return { provider: 'google-maps', kind: 'map', src: `https://www.google.com/maps?q=${query}&output=embed`, href: `https://www.google.com/maps/search/?api=1&query=${query}` }
+}
+
+const VIDEO_PAGE: Record<string, (id: string) => string> = {
+  youtube: id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+  vimeo: id => `https://vimeo.com/${encodeURIComponent(id)}`,
+}
+
+/**
+ * A video to play in place: a video page or player URL, or `youtube:<id>` / `vimeo:<id>` (what the engine writes on a
+ * slide or an island link). Only a video comes back (never a map or a form); the id is checked by the same parser as a
+ * URL, so the player address is always built here, never taken from the content.
+ */
+export function videoTarget(value: string | undefined): EmbedTarget | null {
+  if (!value) return null
+  const short = /^(youtube|vimeo):([\w-]+)$/.exec(value.trim())
+  const target = embedTarget(short ? VIDEO_PAGE[short[1]!]!(short[2]!) : value)
+  return target?.kind === 'video' ? target : null
+}
+
+/** Hosts a video provider serves its players, thumbnails and streams from. */
+const VIDEO_HOST = /(?:^|\.)(?:youtube|youtube-nocookie|youtu|ytimg|googlevideo|ggpht|vimeo|vimeocdn|loom|wistia)\.(?:com|be|net)$/i
+
+/**
+ * An address on a video provider's own hosts (a YouTube thumbnail on i.ytimg.com, a Vimeo one on vimeocdn.com): never
+ * drawn as a poster, since loading it is a request to the provider before the reader asked for the video.
+ */
+export function onVideoHost(src: string | undefined): boolean {
+  if (!src) return false
+  try { return VIDEO_HOST.test(new URL(src, 'https://site.invalid').hostname) }
+  catch { return false }
+}

@@ -1,0 +1,18 @@
+{
+  "c1a000000001": {
+    "body": "<p>Written in the evening, Pacific time.</p>",
+    "excerpt": "Written in the evening, Pacific time.",
+    "published_at": "2016-10-18T03:16:50Z",
+    "slug": "evening-post",
+    "title": "An evening post",
+    "wp_id": 301
+  },
+  "c1a000000002": {
+    "body": "<p>Written at midday.</p>",
+    "excerpt": "Written at midday.",
+    "published_at": "2016-10-10T15:03:11Z",
+    "slug": "midday-post",
+    "title": "A midday post",
+    "wp_id": 302
+  }
+}

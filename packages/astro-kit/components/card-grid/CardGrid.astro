@@ -4,10 +4,13 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { cardImage } from '../_shared/card-image'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { safeHref } from '../_shared/safe-url'
+import { muted, mutedReset } from '../_shared/muted'
 
 const grid = tv({
   slots: {
@@ -15,7 +18,7 @@ const grid = tv({
     card: 'group relative flex flex-col gap-3 rounded-[var(--radius-card)]',
     media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
-    text: 'opacity-80',
+    text: muted,
   },
   variants: {
     columns: {
@@ -26,11 +29,34 @@ const grid = tv({
     style: {
       plain: {},
       bordered: { card: 'border border-line p-6', media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
-      elevated: { card: 'bg-surface p-6 text-ink shadow-md ring-1 ring-line/60', media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
+      elevated: { card: `bg-surface p-6 text-ink shadow-md ring-1 ring-line/60 ${mutedReset}`, media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
     },
     align: { start: { card: 'text-start' }, center: { card: 'items-center text-center' } },
   },
   defaultVariants: { columns: '3', style: 'plain', align: 'start' },
+})
+
+// `layout: 'rows'`: one item per row, its title, text and link on one axis (an image sits at the row's top, out of the
+// baseline: a head led by an icon too, else the icon's foot would be the baseline and push the text down by its
+// height), a hairline between rows and no card box.
+// With `index`, a numbered list whose numbers (01, 02, …) are drawn in the muted role, tabular; the list itself
+// carries the order for screen readers, so the drawn number is hidden from them.
+const rows = tv({
+  slots: {
+    list: 'flex flex-col divide-y divide-line border-y border-line',
+    row: 'group relative grid gap-x-8 gap-y-2 py-6 md:items-baseline',
+    number: `text-sm tabular-nums ${muted}`,
+    head: 'flex flex-col gap-2',
+    end: 'flex flex-col gap-3 md:items-end',
+    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))] md:w-48',
+    title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
+    text: muted,
+    link: 'font-medium text-accent-text underline-offset-4 hover:underline',
+  },
+  variants: {
+    index: { true: { row: 'md:grid-cols-[3rem_minmax(0,1fr)_minmax(0,2fr)_auto]' }, false: { row: 'md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]' } },
+  },
+  defaultVariants: { index: false },
 })
 
 interface Item {
@@ -42,6 +68,8 @@ interface Item {
   /** The image's address (or, until 0.7, an `ImageInput`). */
   image?: ImageSource | undefined
   imageAlt?: string | undefined
+  /** A small image (an icon) above the title: decoration, so it has no alt (an icon box's svg, a feature's mark). */
+  icon?: string | undefined
   eyebrow?: string | undefined
 }
 
@@ -52,42 +80,80 @@ interface Props {
   /** Heading level of the section title; card titles are one level below, or at this level when there is no title. */
   headingLevel?: 2 | 3 | undefined
   columns?: '2' | '3' | '4' | undefined
+  /** `rows`: one item per row (title, text and link on one axis, a hairline between rows, no card box); `columns`, `style` and the measured columns do not apply. `grid` (absent): cards, as before. */
+  layout?: 'grid' | 'rows' | undefined
+  /** With `layout: 'rows'`: a numbered list, each row led by its number (01, 02, …) in the muted role. */
+  index?: boolean | undefined
   style?: 'plain' | 'bordered' | 'elevated' | undefined
   align?: 'start' | 'center' | undefined
   tone?: Tone | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
+  /** Section id, unique per page; without one `card-grid`, `card-grid-2`, … in render order. Its title is `<id>-title`. */
+  id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { title, intro, items, headingLevel = 2, columns, style, align, tone, measured } = Astro.props
+const { title, intro, items, headingLevel = 2, columns, style, align, tone, measured, id: givenId, layout, index = false } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `card-grid`, `card-grid-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'card-grid')
 const { list, card, media, title: cardTitle, text } = grid({ columns, style, align })
-// Accent backgrounds have the least contrast headroom: text on them is never dimmed.
-const dim = tone === 'accent' ? 'opacity-100' : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 // One level under the section title, or the title's level when there is none.
 const CardHeading = `h${title ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
-const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined
+const headingId = title ? `${id}-title` : undefined
+const r = rows({ index })
+const List = index ? 'ol' : 'ul'
+const number = (i: number) => String(i + 1).padStart(2, '0')
 ---
-<Section measured={measured} tone={tone} aria-labelledby={headingId}>
+<Section kit="card-grid" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
   {(title || intro) && (
     <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
       {title && <Heading id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{title}</Heading>}
-      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']}>{intro}</p>}
+      {intro && <p class:list={['text-lg', muted]}>{intro}</p>}
     </header>
   )}
-  <ul class={list({ class: measuredGrid(measured) })}>
-    {items.map(item => (
-      <li class={card()}>
-        {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
-        {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
-        <CardHeading class={cardTitle()}>
-          {item.href && !item.linkLabel
-            ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
-            : item.title}
-        </CardHeading>
-        {item.text && <p class={text({ class: dim })} data-kit-text>{item.text}</p>}
-        {item.href && item.linkLabel && <a href={safeHref(item.href)} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
-      </li>
-    ))}
-  </ul>
+  {layout === 'rows' ? (
+    <List class={r.list()} role="list">
+      {items.map((item, i) => (
+        <li class={r.row()}>
+          {index && <span class={r.number()} aria-hidden="true">{number(i)}</span>}
+          <div class={r.head({ class: item.icon ? 'md:self-start' : undefined })}>
+            {item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-8 w-8 object-contain" />}
+            {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
+            <CardHeading class={r.title()}>
+              {item.href && !item.linkLabel
+                ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
+                : item.title}
+            </CardHeading>
+          </div>
+          {item.text ? <p class={r.text()} data-kit-text>{item.text}</p> : <span aria-hidden="true" />}
+          {(imageOf(item.image, item.imageAlt) || (item.href && item.linkLabel)) && (
+            <div class={r.end({ class: imageOf(item.image, item.imageAlt) ? 'md:self-start' : undefined })}>
+              {imageOf(item.image, item.imageAlt) && <div class={r.media()}><KitImage image={cardImage(imageOf(item.image, item.imageAlt), item.title, !!item.href && !item.linkLabel)!} sizes="(min-width: 768px) 12rem, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
+              {item.href && item.linkLabel && <a href={safeHref(item.href)} class={r.link()}>{item.linkLabel}</a>}
+            </div>
+          )}
+        </li>
+      ))}
+    </List>
+  ) : (
+    <ul class={list({ class: measuredGrid(measured) })}>
+      {items.map(item => (
+        <li class={card()}>
+          {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={cardImage(imageOf(item.image, item.imageAlt), item.title, !!item.href && !item.linkLabel)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
+          {item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-10 w-10 object-contain" />}
+          {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
+          <CardHeading class={cardTitle()}>
+            {item.href && !item.linkLabel
+              ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
+              : item.title}
+          </CardHeading>
+          {item.text && <p class={text()} data-kit-text>{item.text}</p>}
+          {item.href && item.linkLabel && <a href={safeHref(item.href)} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
+        </li>
+      ))}
+    </ul>
+  )}
 </Section>

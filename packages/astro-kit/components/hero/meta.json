@@ -7,8 +7,13 @@
   "shared": [
     "Button.astro",
     "KitImage.astro",
+    "Lines.astro",
     "Section.astro",
+    "bleed.ts",
+    "image-widths.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -80,6 +85,58 @@
       ],
       "default": "own",
       "description": "The level whose site size the heading takes when it is not the level it is written at: h1 on an h2 heading keeps a source's second h1 at the h1 size under a page that keeps one h1. own: the heading's own level under headingScale theme, nothing otherwise. Any other value than own sets the size by itself."
+    },
+    "headingLines": {
+      "options": [
+        "flow",
+        "lines"
+      ],
+      "default": "flow",
+      "description": "flow: the heading is one run of text. lines: each line the author broke it into (a line break, \\n, in the heading) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one heading, read as one sentence."
+    },
+    "stackOrder": {
+      "options": [
+        "text-first",
+        "media-first"
+      ],
+      "default": "text-first",
+      "description": "Split and centered: the image before the text, on phones and on the start side (split), or above the heading (centered). A cover ignores it."
+    },
+    "imageBleed": {
+      "options": [
+        "none",
+        "edge",
+        "overlap"
+      ],
+      "default": "none",
+      "description": "Split and centered: edge runs the image on to the window's edge on its side (both sides when centered); overlap also lets it cross the section's bottom edge by --hero-overlap (3rem), over the next section's top padding, when the image comes last: with stackOrder media-first it draws as edge, so it never covers the text. A cover ignores it."
+    },
+    "inset": {
+      "options": [
+        "none",
+        "15",
+        "27",
+        "34",
+        "42"
+      ],
+      "default": "none",
+      "description": "Layout centered only (split and cover ignore it). From md (768px) up, the copy's start edge sits at this share of the frame's width and its text is set at that edge, not centred: a statement on an axis, the void before it part of the page. Below md the hero is centred as without it. none: as before."
+    },
+    "height": {
+      "options": [
+        "auto",
+        "screen"
+      ],
+      "default": "auto",
+      "description": "The hero's height. screen: from sm (640px) up, at least the window's height (100svh, 100vh where unknown) less --header-h, the header's height where the site sets it (0 without, so a static header above adds to it): the page opens on one full screen, the statement placed in it by contentAt. Below sm the hero is as tall as its content, as with auto: no empty screen on a phone. A boxed cover (width content) ignores it. auto: as before."
+    },
+    "contentAt": {
+      "options": [
+        "start",
+        "end"
+      ],
+      "default": "start",
+      "description": "Where the content sits in a hero taller than it (height screen, or a cover with its own height). end: on the bottom edge, the section's bottom padding under it (a title on the image's lower edge, a statement after a void). start: where the layout puts it, as before."
     }
   },
   "props": {
@@ -195,10 +252,11 @@
       },
       "description": "Hero image; loaded first (the page's largest image)."
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `hero`, `hero-2`, … in render order, so every section on a page has its own."
     },
     "minHeight": {
       "type": "integer",

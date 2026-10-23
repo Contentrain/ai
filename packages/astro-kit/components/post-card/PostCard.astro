@@ -8,6 +8,7 @@ import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { cardImage } from '../_shared/card-image'
 
 const card = tv({
   slots: {
@@ -16,7 +17,8 @@ const card = tv({
     body: 'flex min-w-0 flex-col gap-2',
     meta: 'flex flex-wrap items-center gap-x-2 text-sm text-ink-muted',
     title: 'leading-snug [font-weight:var(--font-weight-heading,600)] text-balance text-ink',
-    excerpt: 'text-ink-muted',
+    // At most ~75 characters a line, however wide the card (a one-column list at 1280).
+    excerpt: 'max-w-[62ch] text-ink-muted',
   },
   variants: {
     layout: {
@@ -38,12 +40,15 @@ const card = tv({
 
 interface Props {
   title: string
-  href: string
+  /** The entry's address. Absent for an entry with no page of its own: the title is printed unlinked, never as a dead link. */
+  href?: string | undefined
   excerpt?: string | undefined
   /** Publication date: a Date, or ISO 8601 text as Contentrain stores it. */
   date?: Date | string | undefined
   /** BCP 47 locale the date is written in (site.language). */
   locale?: string | undefined
+  /** The time zone the date is read in (the site's, an IANA name or a `±hh:mm` offset); absent, UTC. */
+  timeZone?: string | undefined
   image?: ImageInput | undefined
   category?: LinkInput | undefined
   author?: string | undefined
@@ -53,6 +58,10 @@ interface Props {
   byline?: 'inline' | 'below' | undefined
   /** Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise). */
   excerptLines?: 2 | 3 | 4 | undefined
+  /** The source's own "read more" words under the excerpt ("READ ARTICLE"); absent, none. The card's title link is the link. */
+  moreLabel?: string | undefined
+  /** How the date is written (`Intl.DateTimeFormat` `dateStyle`), as the source writes it; absent, long. */
+  dateStyle?: 'full' | 'long' | 'medium' | 'short' | undefined
   /** The title in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkTitle?: boolean | undefined
   /** The image's `sizes` hint; absent, the card's own guess. A list passes the slot its columns give. */
@@ -63,18 +72,18 @@ interface Props {
   imageAspect?: string | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, sizes, imageHeight, imageAspect } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', timeZone = 'UTC', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, moreLabel, dateStyle = 'long', sizes, imageHeight, imageAspect } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
 const slots = card({ layout, surface, byline })
 const below = byline === 'below'
-const shown = date?.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
+const shown = date?.toLocaleDateString(locale, { dateStyle, timeZone })
 const imageStyle = imageHeight ? `height:${imageHeight}` : imageAspect ? `aspect-ratio:${imageAspect}` : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 ---
 <article class={slots.root()}>
   {image && layout !== 'minimal' && (
     <div class={slots.media()}>
-      <KitImage image={image} sizes={sizes ?? (layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw')} class:list={['w-full object-cover transition duration-300 group-hover:scale-[1.02]', !imageStyle && 'aspect-[16/9]']} style={imageStyle} />
+      <KitImage image={cardImage(image, title, !!href)!} sizes={sizes ?? (layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw')} class:list={['w-full object-cover transition duration-300 group-hover:scale-[1.02]', !imageStyle && 'aspect-[16/9]']} style={imageStyle} />
     </div>
   )}
   <div class={slots.body()}>
@@ -91,7 +100,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
       </p>
     )}
     <Heading class={slots.title({ class: linkTitle ? 'text-[color:var(--color-link,var(--color-accent))]' : undefined })}>
-      <a href={safeHref(href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a>
+      {href ? <a href={safeHref(href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a> : title}
     </Heading>
     {below && (author || date) && (
       <p class={slots.meta()}>
@@ -102,5 +111,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
     )}
     {excerpt && <p class={slots.excerpt({ class: excerptLines ? { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4' }[excerptLines] : undefined })}>{excerpt}</p>}
     {!below && author && <p class="text-sm text-ink-muted">{author}</p>}
+    {/* Words, not a second link to the same page: a click on them reaches the title link's overlay. */}
+    {href && moreLabel && <p class="text-sm font-semibold text-accent-text" aria-hidden="true">{moreLabel}</p>}
   </div>
 </article>

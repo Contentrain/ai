@@ -1,0 +1,37 @@
+{
+  "siteConfig": [
+    {
+      "from": "  home: { kind: 'posts' },",
+      "to": "  home: { kind: 'page', slug: 'welcome' },"
+    },
+    {
+      "from": "  postsPerPage: 10,",
+      "to": "  postsPerPage: 2,"
+    }
+  ],
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "Welcome to the bakery."
+      ]
+    },
+    "blog/index.html": {
+      "contains": [
+        "Fresh from the oven, every morning.",
+        "<li>Pinned recipe</li>",
+        "<li>The oven we kept</li>",
+        "Page 1 of 2",
+        "Notes from the bakery."
+      ]
+    },
+    "blog/page/2/index.html": {
+      "contains": [
+        "First loaf",
+        "Journal"
+      ],
+      "excludes": [
+        "Fresh from the oven"
+      ]
+    }
+  }
+}

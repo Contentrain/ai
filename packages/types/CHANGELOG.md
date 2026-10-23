@@ -1,5 +1,78 @@
 # @contentrain/types
 
+## 1.73.0
+
+### Minor Changes
+
+- 03391d9: `PlanSite.chrome.header.search: true`: the source's header holds a search form. The validator accepts only `true`. The Astro starter's BaseLayout passes the kit Header its search field (a GET form to `/search/` under the base, labels from `search.*` ui-strings) when `site.config` sets `chrome.header.search`; before, the starter never drew the header search a migrated site's header had (x06: `part_missing search` on 297 of 299 pages).
+- 03391d9: An item's `text` slot takes one ref or a list of the item's blocks in order (`RegionItem.text: SlotRef | SlotRef[]`), so the engine can fold a card's further paragraphs into the item. Widening only: a single ref validates as before, and `REGION_ITEM_SLOT_DEFS.text` keeps `many: false` with a new `list: true` flag (`RegionSlotDef.list`), so a prompt rendered from `kind`/`many` is byte-identical. A one-ref slot without `list` still refuses a list (`bad_slot`).
+
+## 1.72.0
+
+### Minor Changes
+
+- 1f33067: A placement can carry the source's in-page link targets it holds: `PlanPlacement.anchors` (`['ddl-bluetest']` for a `href="#ddl-bluetest"`), for a section whose component takes no `id` prop (prose). The writer renders each as an element id in the section, so the carried link still lands. The validator checks a non-empty list of element ids (no whitespace), each once.
+
+## 1.71.0
+
+### Minor Changes
+
+- a5bfce7: A front page composed from sections with no page entry: `site.home` of kind `page` names a `slug` or a `view` (validated: one, never both or neither). With `view`, the starter renders that composed view at `/` with a page synthesized from the site (its title, its home SEO from the `site` singleton's `seo` and `social_image`, no body). One mechanism carries a post list into a composed page: page 1 of the list is passed to the view as `list` (`{ posts, base, current, total }`, sticky posts first), and pages 2…N stay plain lists with the same title and SEO. It applies at `/` when that front keeps the list there (`permalinks.blog` is `/`), and at the posts page's address when that page has a composed view, which now keeps its own sections instead of being replaced by the list. Starter fixtures `composed-home` and `composed-blog` gate both.
+
+## 1.70.0
+
+### Minor Changes
+
+- 707351b: A footer column's heading can be a link, as the site printed it (a Beaver footer's `<h2><a href="/services/">OUR SERVICES</a></h2>`): `RawMenu.titleHref`, beside `title`. The importer writes it to the menu entry as `title_href` and adds a `title_href` ("Heading link", url) field to the menus model only when a source printed a linked heading; an address with no heading is dropped. The kit Footer's `columns[].titleHref` draws the heading as a link to it, in the heading's own colour; the starter reads it from the menu entry. A plain heading renders as before.
+- 707351b: PostCard: `moreLabel` prints the source's own read-more words under the excerpt ("READ ARTICLE"), only on a card with a link and as words (`aria-hidden`), so the title link stays the card's one link and a click on them reaches it. `dateStyle` (`full` | `long` | `medium` | `short`, default `long`) writes the date as the source does. The excerpt is capped at 75ch, so a one-column list at 1280 keeps lines readable. Nothing else changes for a card that sets neither. The plan's `site.lists.moreLabel` (plain words, 1-40 characters) and `site.lists.dateStyle` carry them; the starter's lists pass both to every card, and absent, the cards are as before.
+
+## 1.69.0
+
+### Minor Changes
+
+- c17f75c: `validateProjectPlan` names a fact behavior once per route: two sections of one route, or a section and a layout part drawn over it (header, footer, overlay), naming the same fact is an error. An empty `facts` list is an error too; leave the field out instead.
+
+## 1.68.0
+
+### Minor Changes
+
+- a1b715f: `PLAN_TOKEN_ROLES` gains a design direction's own voice and fields: `text-display`, `text-lead`, `leading-display` and `tracking-display` (a page's opening heading above `text-heading-1`, and the lead paragraph), `case-heading` (`uppercase` where the direction draws its headings in capitals), and `color-field-1` … `color-field-4` with their `-ink` (up to four coloured grounds a section can sit on, each with the text that reads on it). `validateProjectPlan` accepts the sizes only as CSS sizes, `leading-display` only as a unitless line-height of at least 0.8, `tracking-display` only as a letter-spacing no tighter than -0.05em (or -2px), `text-display` no larger than 9rem and, where it grows with the screen, held by `clamp()` or `min()`, `case-heading` only as `uppercase` or `none`, the fields only as colours, and a field only together with its ink. Absent, nothing changes.
+
+## 1.67.0
+
+### Minor Changes
+
+- d57a8bb: A plan section can name the fact behaviors its source element holds: `PlanPlacement.facts`, a list of planned behavior ids, each once. A writer can mark the section with them so a check on the built site finds each widget in the section that carries it. The validator rejects a duplicate id, an empty one, or one that is not a planned behavior. Absent, nothing changes.
+
+## 1.66.0
+
+### Minor Changes
+
+- 1bdca2f: A menu can carry the heading its site prints above it: `RawMenu.title` (a footer column's "Company"). It is not the menu's name, which is only an admin label. The importer writes it to the menu entry and adds a `title` ("Heading") field to the menus model only when a source printed one, so stores without headings stay as they were. The starter prints a footer column's heading only from that field, and a menu without one renders as before.
+
+## 1.65.0
+
+### Minor Changes
+
+- 861bdd2: `PLAN_TOKEN_ROLES` gains `font-heading` and `tracking-heading`, the starter's heading hooks: a plan can now carry a heading face and a heading track (a design direction's display face and letter spacing). `validateProjectPlan` accepts `tracking-heading` only as a letter-spacing (`normal`, `0`, or a signed length in em, rem or px). Absent, a heading inherits its face and draws its own track, as before.
+
+## 1.64.0
+
+### Minor Changes
+
+- ad803f7: The header site name takes the source theme's colour where it is not the header's text colour. `Header` gains `brandColor`: `link` paints the name in the site's link colour (a title that is a link styled like every other, as Hello Elementor's is), or a colour (`#hex`, `rgb()`, `hsl()`) is used as it is; anything else is ignored. `site.chrome.brandColor` carries it in the plan, validated (`link` or a colour; never a `;` or `url()`), and the starter's BaseLayout passes it through the same guard. Without it the header is exactly as before.
+
+## 1.63.1
+
+### Patch Changes
+
+- 04ce5eb: A WordPress installed in a directory (`https://example.com/blog`) moves to a site served from that directory.
+
+  - `@contentrain/types`: `validateProjectPlan` accepts a sub-directory install as `source.origin` (`https://example.com/blog`): its paths keep the prefix. An origin with a trailing slash, a query or a fragment is still refused.
+  - `@contentrain/astro-kit`: `KitImage` serves a root image address (`/media/a.svg`) that it does not optimize from the site's directory under Astro's `base`, where `public/` is served. Without `base` nothing changes.
+
+  The astro starter serves every address under astro.config `base` (`base: '/blog/'`, which a migration writes for such an install): the route table, links in menus and bodies, redirect pages and `_redirects` (old and new addresses), WordPress's query addresses, the sitemap, the feed (its channel link too), `llms.txt`, canonical and Open Graph URLs, JSON-LD, the favicon, search (Pagefind), body images and the file and link fields of a custom type's page. Plan and store paths stay the install's (`/about/`). `scripts/check-dist.mjs` fails a site served from a directory when a page or a host rule points outside it. Its `wp-query-map.json` check accepts an absolute target (an attachment whose file stays at the old site's address). Without `base` the built site is unchanged, except that an absolute link to the site's own feed (`https://example.com/rss.xml`) is written as `/rss.xml`, like every other link to the site.
+
 ## 1.63.0
 
 ### Minor Changes

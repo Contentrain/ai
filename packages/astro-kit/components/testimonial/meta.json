@@ -6,9 +6,13 @@
   "uses": [],
   "shared": [
     "KitImage.astro",
+    "Lines.astro",
     "Section.astro",
+    "image-widths.ts",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -76,6 +80,14 @@
       ],
       "default": "marks",
       "description": "marks: quotation marks around the text. glyph: one large decorative mark above. none: no marks."
+    },
+    "quoteLines": {
+      "options": [
+        "flow",
+        "lines"
+      ],
+      "default": "flow",
+      "description": "flow: the quote is one run of text. lines: each line the author broke it into (a line break, \\n, in the quote) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one quote in one paragraph; its marks go before the first line and after the last."
     }
   },
   "props": {
@@ -247,10 +259,11 @@
         }
       }
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `testimonial`, `testimonial-2`, … in render order, so every section on a page has its own."
     },
     "ratingLabel": {
       "type": "string",

@@ -4,10 +4,13 @@
 // slider's job; this one shows them all.
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
+import Lines from '../_shared/Lines.astro'
 import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { muted } from '../_shared/muted'
 
 export interface TestimonialItem {
   quote: string
@@ -35,7 +38,7 @@ const testimonial = tv({
     avatar: 'size-12 shrink-0 rounded-full object-cover',
     logo: 'ms-auto h-6 w-auto max-w-24 object-contain opacity-80',
     name: 'font-semibold',
-    role: 'text-sm opacity-75',
+    role: `text-sm ${muted}`,
   },
   variants: {
     layout: {
@@ -51,7 +54,7 @@ const testimonial = tv({
     avatarPlace: { start: {}, top: {} },
     // marks: the quotation marks around the text, as the source writes it. glyph: one large decorative mark above.
     quoteMark: { marks: {}, glyph: {}, none: {} },
-    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', role: 'opacity-100', logo: 'opacity-100' } },
+    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', logo: 'opacity-100' } },
     // The quote's size; `auto` is the layout's own (body size in a grid, large for a single quote).
     quoteSize: {
       auto: {},
@@ -87,14 +90,22 @@ interface Props {
   measured?: MeasuredStyle | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
+  /** `lines`: each line the author broke a quote into (`\n`) is a block of its own, `data-kit-line="1"`, `"2"`, …, for a theme to set its ink, indent or size; still one quote in one paragraph, its marks before the first line and after the last. `flow` (absent): as before. */
+  quoteLines?: 'flow' | 'lines' | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, measured, id } = Astro.props
+const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, measured, id: givenId, quoteLines } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `testimonial`, `testimonial-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'testimonial')
 const s = testimonial({ layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark, tone })
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 // Two quotes share the row: a third column would stand empty beside them and narrow both (IP-4 elementor launch G9).
 const measuredList = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
 const list = s.list({ class: measuredList ?? (items.length === 2 && (layout ?? 'grid') === 'grid' ? 'lg:grid-cols-2' : undefined) })
+// A quote drawn as lines: asked for, and broken into more than one (one line prints as it is).
+const lined = (text: string) => quoteLines === 'lines' && text.split('\n').filter(line => line.trim()).length > 1
 // The quotation marks are drawn, not written: the quote's text is the source's words, read once. A quote the source
 // already wrote inside marks keeps its own.
 const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
@@ -105,7 +116,7 @@ const spoken = (rating: number) => String(Math.round(rating * 10) / 10)
 const scrolls = layout === 'row'
 ---
 {items.length > 0 && (
-  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section kit="testimonial" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     <div class={list} tabindex={scrolls ? 0 : undefined} role={scrolls ? 'region' : undefined} aria-labelledby={scrolls && heading ? headingId : undefined} aria-label={scrolls && !heading ? label : undefined}>
       {items.map((item) => {
@@ -123,7 +134,10 @@ const scrolls = layout === 'row'
               </span>
             )}
             {quoteMark === 'glyph' && <span class:list={[s.glyph(), "before:content-['“']"]} aria-hidden="true"></span>}
-            <blockquote class={s.quote()}><p class:list={[quoteMark === 'marks' && !quoted(item.quote) && "before:content-[open-quote] after:content-[close-quote]"]}>{item.quote}</p></blockquote>
+            <blockquote class={s.quote()}>{lined(item.quote)
+              // Lines are blocks: the marks go on the first and the last, or the opening one would stand on a line of its own.
+              ? <p class:list={[quoteMark === 'marks' && !quoted(item.quote) && "[&>[data-kit-line]:first-of-type]:before:content-[open-quote] [&>[data-kit-line]:last-of-type]:after:content-[close-quote]"]}><Lines text={item.quote} /></p>
+              : <p class:list={[quoteMark === 'marks' && !quoted(item.quote) && "before:content-[open-quote] after:content-[close-quote]"]}>{item.quote}</p>}</blockquote>
             <figcaption class={s.person()}>
               {avatar && avatarPlace !== 'top' && <KitImage image={avatar} sizes="64px" class={s.avatar()} />}
               <span class="flex flex-col text-start">

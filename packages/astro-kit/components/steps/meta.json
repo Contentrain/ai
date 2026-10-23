@@ -7,8 +7,11 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "image-widths.ts",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -116,10 +119,11 @@
       },
       "description": "The steps, in order (Elementor icon boxes, Divi blurbs, Gutenberg columns of heading + text)."
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `steps`, `steps-2`, … in render order, so every section on a page has its own."
     },
     "currentLabel": {
       "type": "string",

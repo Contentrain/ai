@@ -1,5 +1,149 @@
 # contentrain
 
+## 0.18.12
+
+### Patch Changes
+
+- Updated dependencies [139dc72]
+  - @contentrain/mcp@3.11.12
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.11
+
+### Patch Changes
+
+- Updated dependencies [03391d9]
+- Updated dependencies [03391d9]
+  - @contentrain/types@1.73.0
+  - @contentrain/mcp@3.11.11
+  - @contentrain/query@7.6.54
+  - @contentrain/wp-import@0.16.3
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.10
+
+### Patch Changes
+
+- Updated dependencies [1f33067]
+  - @contentrain/types@1.72.0
+  - @contentrain/mcp@3.11.10
+  - @contentrain/query@7.6.53
+  - @contentrain/wp-import@0.16.2
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.9
+
+### Patch Changes
+
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+  - @contentrain/mcp@3.11.9
+  - @contentrain/query@7.6.52
+  - @contentrain/wp-import@0.16.1
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.8
+
+### Patch Changes
+
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+- Updated dependencies [92c95a8]
+  - @contentrain/types@1.70.0
+  - @contentrain/wp-import@0.16.0
+  - @contentrain/mcp@3.11.8
+  - @contentrain/query@7.6.51
+  - @contentrain/skills@0.9.6
+  - @contentrain/rules@0.7.3
+
+## 0.18.7
+
+### Patch Changes
+
+- Updated dependencies [c17f75c]
+  - @contentrain/types@1.69.0
+  - @contentrain/mcp@3.11.7
+  - @contentrain/query@7.6.50
+  - @contentrain/wp-import@0.15.3
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.6
+
+### Patch Changes
+
+- Updated dependencies [a1b715f]
+  - @contentrain/types@1.68.0
+  - @contentrain/mcp@3.11.6
+  - @contentrain/query@7.6.49
+  - @contentrain/wp-import@0.15.2
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.5
+
+### Patch Changes
+
+- Updated dependencies [d57a8bb]
+  - @contentrain/types@1.67.0
+  - @contentrain/mcp@3.11.5
+  - @contentrain/query@7.6.48
+  - @contentrain/wp-import@0.15.1
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.4
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+  - @contentrain/wp-import@0.15.0
+  - @contentrain/mcp@3.11.4
+  - @contentrain/query@7.6.47
+  - @contentrain/skills@0.9.6
+  - @contentrain/rules@0.7.3
+
+## 0.18.3
+
+### Patch Changes
+
+- Updated dependencies [861bdd2]
+  - @contentrain/types@1.65.0
+  - @contentrain/mcp@3.11.3
+  - @contentrain/query@7.6.46
+  - @contentrain/wp-import@0.14.3
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.2
+
+### Patch Changes
+
+- Updated dependencies [ad803f7]
+  - @contentrain/types@1.64.0
+  - @contentrain/mcp@3.11.2
+  - @contentrain/query@7.6.45
+  - @contentrain/wp-import@0.14.2
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
+## 0.18.1
+
+### Patch Changes
+
+- Updated dependencies [04ce5eb]
+  - @contentrain/types@1.63.1
+  - @contentrain/mcp@3.11.1
+  - @contentrain/query@7.6.44
+  - @contentrain/wp-import@0.14.1
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.6
+
 ## 0.18.0
 
 ### Minor Changes

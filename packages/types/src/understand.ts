@@ -165,7 +165,8 @@ export interface RegionItem {
   media?: SlotRef
   icon?: SlotRef
   title?: SlotRef
-  text?: SlotRef
+  /** One ref as asked, or a list of the item's blocks in order (the engine folds a card's further paragraphs in). */
+  text?: SlotRef | SlotRef[]
   meta?: SlotRef
   value?: SlotRef
   link?: SlotRef
@@ -202,11 +203,15 @@ export interface RegionSlots {
   copyright?: SlotRef
 }
 
-/** A slot's kind and whether it holds one ref or a list. */
-export interface RegionSlotDef { kind: RegionSlotKind, many: boolean }
+/**
+ * A slot's kind and whether it holds one ref or a list. `list`: a one-ref slot that also takes a list; the prompt still
+ * asks for one ref (it reads `many` only), the validator accepts both.
+ */
+export interface RegionSlotDef { kind: RegionSlotKind, many: boolean, list?: true }
 
 const one = (kind: RegionSlotKind): RegionSlotDef => ({ kind, many: false })
 const many = (kind: RegionSlotKind): RegionSlotDef => ({ kind, many: true })
+const oneOrList = (kind: RegionSlotKind): RegionSlotDef => ({ kind, many: false, list: true })
 
 /** The slot vocabulary as data: a prompt, a schema and the validator all read these, so they cannot drift apart. */
 export const REGION_SLOT_DEFS: Record<Exclude<keyof RegionSlots, 'items' | 'groups'>, RegionSlotDef> = {
@@ -226,7 +231,7 @@ export const REGION_ITEM_SLOT_DEFS: Record<keyof RegionItem, RegionSlotDef> = {
   media: one('image'),
   icon: one('icon'),
   title: one('text'),
-  text: one('text'),
+  text: oneOrList('text'),
   meta: one('text'),
   value: one('text'),
   link: one('link'),
@@ -422,7 +427,7 @@ function walkHolder(holder: Record<string, unknown>, defs: Record<string, Region
     const value = holder[name]
     if (value === undefined) continue
     const path = `${prefix}${name}`
-    if (!def.many) visitRef(value, def.kind, path)
+    if (!def.many && !(def.list && Array.isArray(value))) visitRef(value, def.kind, path)
     else if (!Array.isArray(value)) problem('bad_slot', path, 'This slot holds a list of refs.')
     else value.forEach((ref, i) => visitRef(ref, def.kind, `${path}.${i}`))
   }

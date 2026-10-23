@@ -25,13 +25,15 @@ They read its design tokens and pass its gates: `astro check` with the
 | `tabs` | Tabbed panels; readable as headed sections without JavaScript | Zag.js |
 | `testimonial` | Quotes with author and role | none |
 | `gallery` | Image grid with a popover lightbox | none |
-| `slider` | Carousel on a scroll-snap row | Embla |
+| `slider` | Carousel on a scroll-snap row: image, video (a file played only on request, or a YouTube/Vimeo link loaded only on click) or text-card slides | Embla |
 | `contact-form` | Contentrain Studio form in a section | Studio runtime |
 | `newsletter` | Sign-up posting straight to the list provider (Mailchimp, Kit, MailerLite, Brevo, Buttondown) | none |
 | `embed` | Video, map or player loaded on click; a provider link until then (YouTube via nocookie) | a few lines, no dependency |
 | `pagination` | WordPress-style `/page/N/` links | none |
 | `breadcrumb` | Ancestors, then the current page, optional JSON-LD | none |
 | `band` | The styled fallback section: heading, lead, image, a grid of items (figure, title, detail, text, points, link) and buttons, in the measured frame | none |
+| `dialog` | A popup the visitor opens: a button and a modal `<dialog>` with text, buttons and a `form` slot; never opens by itself | a few lines, no dependency |
+| `behavior` | A behavior island: a source widget no component carries (slider, tabs, accordion, counter, toggle, filter, in-page dialog, anchor links, image lightbox, a video player kept as a poster link that plays in place on click), kept as its own markup and wired by one vanilla module; static and readable without it | `_shared/behaviors.ts`, no dependency |
 
 Each component lives in `components/<id>/`:
 
@@ -78,6 +80,22 @@ Text in the accent (an eyebrow, a category link) reads `--color-accent-text`, ne
 The starter sets it to the accent; a site whose accent does not reach 4.5:1 on its
 surface sets a readable one. A dark section (`tone="inverse"`) reads
 `--color-accent-text-inverse` in its place.
+
+Quieter text (an intro, a caption, a role, a footer link) is a colour role, never
+opacity: dimmed text lays its colour over the band, and on a mid-tone band that falls
+under 4.5:1. It reads `--color-ink-muted` on a light band, `--color-ink-muted-inverse`
+on a dark one (the starter mixes the surface toward the ink; without it, the band's own
+text colour) and the fill's own ink on an accent or brand band. A light surface inside
+a band (a card, a form panel, a menu) is back on `--color-ink-muted`. The classes are
+in `_shared/muted.ts`.
+
+### Section hooks
+
+Every section component renders its root with an `id` and `data-kit-section="<component id>"`
+(`hero`, `card-grid`, `slider`, …), so a site's theme or a design layer can style one
+kind of section, or one section, without touching the component. The id is the one the
+page gives, or the component id counted per page (`hero`, then `hero-2`), the same on
+every build.
 
 A migrated site also carries its theme's type and shape, and components read
 these with a fallback to the kit's own values, so a site without them looks

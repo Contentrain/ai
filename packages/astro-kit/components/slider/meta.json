@@ -1,23 +1,25 @@
 {
   "id": "slider",
   "name": "Slider",
-  "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
+  "description": "A carousel of images, videos (a file, or a YouTube/Vimeo link loaded only on click) or text cards, with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
   "category": "section",
   "uses": [],
-  "shared": ["Button.astro", "KitImage.astro", "Section.astro", "SectionHeader.astro", "image.ts", "measured.ts", "safe-url.ts", "types.ts"],
+  "shared": ["Button.astro", "KitImage.astro", "Section.astro", "SectionHeader.astro", "embed-frame.ts", "embed-target.ts", "image-widths.ts", "image.ts", "instance-id.ts", "measured.ts", "muted.ts", "safe-url.ts", "types.ts"],
   "variants": {
     "perView": { "options": ["1", "2", "3"], "default": "1", "description": "Slides visible at once on wide screens." },
     "aspect": { "options": ["wide", "standard", "square"], "default": "wide", "description": "Image aspect ratio: 21:9, 3:2 or 1:1." },
     "caption": { "options": ["below", "overlay"], "default": "overlay", "description": "Caption under the image, or over its lower edge on a gradient." }
   },
   "props": {
-    "slides": { "type": "array", "label": "Slides", "required": true, "items": { "type": "object", "fields": { "image": { "type": "image", "label": "Image", "required": true, "description": "The slide image." }, "imageAlt": { "type": "string", "label": "Image description", "description": "What the image shows, for readers who cannot see it." }, "title": { "type": "string", "label": "Title", "description": "Heading over the slide." }, "text": { "type": "text", "label": "Text", "description": "A line or two under the heading." }, "ctaLabel": { "type": "string", "label": "Button label", "description": "Button text; the slide has no button without it." }, "ctaHref": { "type": "url", "label": "Button link", "description": "Where the button goes." } } }, "description": "Slides: the image's address and text, and an optional link (ctaLabel + ctaHref)." },
+    "slides": { "type": "array", "label": "Slides", "required": true, "items": { "type": "object", "fields": { "image": { "type": "image", "label": "Image", "description": "The slide image; a slide without one is a text card (a quote, a testimonial)." }, "imageAlt": { "type": "string", "label": "Image description", "description": "What the image shows, for readers who cannot see it." }, "video": { "type": "video", "label": "Video", "description": "A video file (mp4, webm) shown in place of the image, which is its poster. It plays only when the reader starts it." }, "embed": { "type": "url", "label": "Video link", "description": "A video on another site: its YouTube, Vimeo, Loom or Wistia page (or youtube:<id> / vimeo:<id>). Shown as the image with a play button; nothing from that site loads until the reader clicks it. Wins over Video." }, "title": { "type": "string", "label": "Title", "description": "Heading over the slide." }, "text": { "type": "text", "label": "Text", "description": "A line or two under the heading." }, "ctaLabel": { "type": "string", "label": "Button label", "description": "Button text; the slide has no button without it." }, "ctaHref": { "type": "url", "label": "Button link", "description": "Where the button goes." } } }, "description": "Slides: the image's address and text, an optional video file or video link (the image is its poster), and an optional link (ctaLabel + ctaHref). A slide with no image or video is a text card; one with none of them is not drawn." },
     "label": { "type": "string", "required": true, "content": false, "description": "Accessible name of the carousel." },
     "prevLabel": { "type": "string", "content": false, "description": "ui-strings slider.prev." },
     "nextLabel": { "type": "string", "content": false, "description": "ui-strings slider.next." },
     "slideLabel": { "type": "string", "content": false, "description": "ui-strings slider.slide." },
     "ofLabel": { "type": "string", "content": false, "description": "ui-strings slider.of." },
+    "playLabel": { "type": "string", "content": false, "description": "ui-strings embed.play." },
     "loop": { "type": "boolean", "default": false, "content": false, "description": "Wrap from the last slide to the first." },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": { "type": "string", "default": "slider", "content": false, "description": "Unique on the page: names the track that the previous/next buttons control (aria-controls)." },
     "heading": {"type": "string", "label": "Heading", "description": "The section heading."},
     "intro": {"type": "text", "label": "Introduction", "description": "A sentence under the heading."},
@@ -34,5 +36,5 @@
     "divi": ["divi/et_pb_slider", "divi/et_pb_fullwidth_slider", "divi/et_pb_post_slider"],
     "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider", "classic/swiper", "classic/slick", "classic/splide", "classic/owl"]
   },
-  "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. The track and the buttons are tied by aria-controls, the row takes focus (arrow keys page it, polite live announcement). There is no autoplay, so nothing moves unasked; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling."
+  "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. The track and the buttons are tied by aria-controls, the row takes focus (arrow keys page it, polite live announcement). There is no autoplay, so nothing moves unasked: a video slide loads nothing until the reader plays it, never starts by itself, keeps its native controls with its caption under them, and pauses when its slide is paged away; a video link is a labelled poster link ('Play: title') to the video's page that becomes the player only on a click (no request to the provider before it; YouTube from youtube-nocookie.com, Vimeo with dnt), keeps the poster's box so nothing moves, takes focus, and goes back to its poster when its slide is paged away; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling."
 }

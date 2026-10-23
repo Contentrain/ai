@@ -42,6 +42,16 @@ export const PLAN_TOKEN_ROLES = [
   // The brand colour a page builder declares and paints on a band of its own (Elementor's secondary on a call to action),
   // where it is not the accent the buttons paint; `color-brand-ink` is the text on it. Absent: the accent and its ink.
   'color-brand', 'color-brand-ink',
+  // Headings' own face and letter spacing (a design direction's display face and track). Absent: a heading inherits its
+  // face and draws its own track, as before. `tracking-heading` is a letter-spacing (`-0.02em`, `0`, `normal`).
+  'font-heading', 'tracking-heading',
+  // A design direction's own voice: the display size, leading and track of a page's opening heading (above
+  // `text-heading-1`), and the lead paragraph's size. Absent: the opening heading is an h1 like any other.
+  // `case-heading`: `uppercase` where the direction draws its headings in capitals (the content keeps its own case).
+  'text-display', 'text-lead', 'leading-display', 'tracking-display', 'case-heading',
+  // A design direction's coloured fields: up to four grounds a section can sit on, each with the text that reads on
+  // it (`color-field-1-ink`). A field is set only together with its ink. Absent: sections keep the kit's tones.
+  'color-field-1', 'color-field-1-ink', 'color-field-2', 'color-field-2-ink', 'color-field-3', 'color-field-3-ink', 'color-field-4', 'color-field-4-ink',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -98,7 +108,12 @@ export interface PlanSite {
   /** Default locale, short form (`en`, `tr`). */
   locale: string
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
-  home: { kind: 'posts' } | { kind: 'page', slug: string }
+  /**
+   * The front page: the posts, one page by `slug`, or (`view`, no slug) a front composed from sections with no page entry
+   * (a posts-front site whose theme draws one): the starter renders `composedViews[view]` at `/` with the site's title and
+   * home SEO. The posts are at `permalinks.blog`, or at `/` when that is `/`: page 1 in the view, `/page/2/` on.
+   */
+  home: { kind: 'posts' } | { kind: 'page', slug?: string, view?: number }
   postsPerPage: number
   /**
    * Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`.
@@ -135,11 +150,13 @@ export interface PlanSite {
    * fit), or `aspect` (`16 / 9`) where the source uses an aspect ratio; absent, 16 / 9. `gap`: the grid's column gap
    * (a CSS length). `headingWidth`: the archive title box's width (a CSS length). `tieOrder`: how posts of the same
    * moment are ordered as the source's database returned them (`asc`: the lower ID first); absent, `desc`.
+   * `moreLabel`: the source's own read-more words under each card ("READ ARTICLE"), plain text; absent, none.
+   * `dateStyle`: how the cards write their date, as the source does (`Intl` `dateStyle`); absent, `long`.
    */
-  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc' }
+  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc', moreLabel?: string, dateStyle?: 'full' | 'long' | 'medium' | 'short' }
   /**
    * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
-   * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
+   * previous and next labels), by the `site/ui-strings` key it answers (`posts.read_more`, `nav.skip`): written over the
    * site's bundled table, because the source's wording is what its visitors saw. Plain text, no markup; at most 100.
    */
   uiStrings?: Record<string, string>
@@ -166,7 +183,9 @@ export interface PlanSite {
    * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
    * `copyright`: the footer's line as the source prints it ("All rights reserved"; `{year}` for the
    * current year), instead of "© year Site". `titleLinks`: post titles in lists take the link colour, as the source's do.
-   * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
+   * `navLinks`: so does the header navigation. `brandColor`: the header site title's colour where it is not the text
+   * colour: `link` for the site's link colour (a theme whose title is a link styled like every other, Hello Elementor), or
+   * the title's own colour (`#hex`, `rgb()`, `hsl()`). Absent, the header's text colour. `footerAlign`: `center` when the source's footer is
    * one centred column; absent, brand and links to the sides. `frame`: the width the header's and footer's
    * content is held to where the theme boxes it, read from the source's renders: from `min` px of viewport
    * up it is `width` px wide and centred (Hello Elementor: 768 → 600, 1280 → 1140); below the first step,
@@ -181,7 +200,8 @@ export interface PlanSite {
    * `header`: what the source's header does differently from the starter's, each key only where it does (computed styles):
    * `border: false` draws no line under the bar; `brandWeight` and `brandTracking` set the site name's weight and
    * letter-spacing; `offsetTop` is the space above the bar and `padTop`/`padBottom` the space inside it above and below
-   * its content (CSS lengths, a fluid theme's as a `clamp()`). A key absent: the starter's own.
+   * its content (CSS lengths, a fluid theme's as a `clamp()`). `search: true`: the source's header holds a search form;
+   * the bar shows a search field that sends to the starter's `/search/` page. A key absent: the starter's own.
    * `parts: true`: the header and footer are a block theme's template parts (Twenty Twenty-Five), sized by the theme's
    * presets (the footer's site title at the h2 size) the way a classic theme's are read off its render. Absent, a plan
    * with `chrome` is read as a classic theme's and one without as a block theme's (plans before 1.50).
@@ -198,13 +218,14 @@ export interface PlanSite {
     copyright?: string
     titleLinks?: boolean
     navLinks?: boolean
+    brandColor?: string
     footerAlign?: 'start' | 'center'
     frame?: ChromeFrameStep[]
     listFrame?: ChromeFrameStep[]
     postFrame?: ChromeFrameStep[]
     listColumns?: ChromeColumnStep[]
     footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }
-    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }
+    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string, search?: true }
     breadcrumbs?: 'always'
     menu?: 'mega'
   }
@@ -381,6 +402,18 @@ export interface PlanPlacement {
    * The section's background spans the page either way. Absent: `wide`.
    */
   width?: 'content' | 'wide'
+  /**
+   * The fact behavior ids (`interactive:3fa9c21e`) whose source element this section holds: the writer marks the
+   * section's root with them, so a check on the built site finds each widget in the section that carries it. Each id
+   * once, and each one a planned behavior (`ProjectPlan.behaviors`). Absent: the writer places them by its own rule.
+   */
+  facts?: string[]
+  /**
+   * The source's in-page link targets this section holds (`ddl-bluetest` for `href="#ddl-bluetest"`) where its component
+   * takes no `id` prop (prose): the writer renders each as an element id in the section, so the carried link still lands.
+   * Each an HTML id (no whitespace), each once. A component with an `id` prop carries its target there instead.
+   */
+  anchors?: string[]
 }
 
 /**
@@ -497,6 +530,62 @@ export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
 const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 
 /** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
+/** A colour that goes into a style attribute: hex, `rgb()`/`rgba()` or `hsl()`/`hsla()` of numbers; never a `;` or `url()`. */
+const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
+/** A letter-spacing: `normal`, `0`, or a signed length in em, rem or px. */
+const CSS_TRACKING = /^(?:normal|0|-?(?:\d+(?:\.\d+)?|\.\d+)(?:em|rem|px))$/
+/** A line-height: a unitless number (`1.05`, `.95`) or `normal`. */
+const CSS_LEADING = /^(?:normal|\d+(?:\.\d+)?|\.\d+)$/
+/**
+ * The display heading's floors and ceiling, as a design layer's own rules are held: lines no tighter than 0.8, letters
+ * no tighter than -0.05em (or -2px), and a size no larger than 9rem, with a viewport-relative size held by `clamp()` or `min()`.
+ */
+const DISPLAY_LEADING_MIN = 0.8
+const DISPLAY_TRACKING_MIN_EM = -0.05
+const DISPLAY_TRACKING_MIN_PX = -2
+const DISPLAY_MAX_REM = 9
+function trackingTooTight(value: string): boolean {
+  const m = /^(-?(?:\d+(?:\.\d+)?|\.\d+))(em|rem|px)$/.exec(value)
+  if (!m) return false
+  return Number(m[1]) < (m[2] === 'px' ? DISPLAY_TRACKING_MIN_PX : DISPLAY_TRACKING_MIN_EM)
+}
+/** An absolute length (`9rem`, `144px`) in rem, else undefined. */
+function absoluteRem(value: string): number | undefined {
+  const m = /^(\d+(?:\.\d+)?|\.\d+)(px|rem|em)$/.exec(value.trim())
+  return m ? Number(m[1]) / (m[2] === 'px' ? 16 : 1) : undefined
+}
+/**
+ * The arguments of `value` when it is exactly one call of `fn` (`clamp(a, calc(b, c), d)` → three), its closing paren the
+ * last character and nothing outside it; else undefined (`min(8rem, 1rem) + calc(50vw)` is not one call).
+ */
+function wholeCall(value: string, fn: 'clamp' | 'min'): string[] | undefined {
+  if (!value.startsWith(`${fn}(`)) return undefined
+  const out: string[] = []
+  let depth = 0
+  let from = fn.length + 1
+  for (let i = fn.length; i < value.length; i++) {
+    const c = value[i]
+    if (c === '(') depth++
+    else if (c === ')') {
+      depth--
+      if (depth === 0) return i === value.length - 1 ? [...out, value.slice(from, i)] : undefined
+    }
+    else if (c === ',' && depth === 1) { out.push(value.slice(from, i)); from = i + 1 }
+  }
+  return undefined
+}
+function displayTooLarge(value: string): boolean {
+  const lengths = [...value.matchAll(/(\d+(?:\.\d+)?|\.\d+)(px|rem|em)\b/g)].map(m => Number(m[1]) / (m[2] === 'px' ? 16 : 1))
+  if (lengths.some(rem => rem > DISPLAY_MAX_REM)) return true
+  if (!/\d(?:vw|vh|vmin|vmax|%)/.test(value)) return false
+  // A size that grows with the screen is exactly one clamp() whose largest size is absolute, or one min() with an absolute
+  // argument; anything else that grows (a sum, a calc(), a trailing expression) is refused, not read case by case.
+  const clamp = wholeCall(value, 'clamp')
+  if (clamp) return clamp.length !== 3 || absoluteRem(clamp[2]!) === undefined
+  const min = wholeCall(value, 'min')
+  if (min) return !min.some(arg => absoluteRem(arg) !== undefined)
+  return true
+}
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
 /**
@@ -588,7 +677,11 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
   if (site?.lists?.image?.height !== undefined && !CSS_LENGTH.test(site.lists.image.height)) errors.push(`site.lists.image.height ${site.lists.image.height} is not a CSS size`)
   if (site?.lists?.image?.aspect !== undefined && !/^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(site.lists.image.aspect)) errors.push(`site.lists.image.aspect ${site.lists.image.aspect} is not a ratio like 16 / 9`)
+  if (site?.home?.kind === 'page' && (site.home.slug === undefined) === (site.home.view === undefined)) errors.push('site.home of kind page names neither or both of a slug and a view')
+  if (site?.home?.kind === 'page' && site.home.view !== undefined && !Number.isInteger(site.home.view)) errors.push(`site.home.view ${String(site.home.view)} is not a whole number`)
   if (site?.lists?.tieOrder !== undefined && site.lists.tieOrder !== 'asc' && site.lists.tieOrder !== 'desc') errors.push(`site.lists.tieOrder ${String(site.lists.tieOrder)} is not asc or desc`)
+  if (site?.lists?.moreLabel !== undefined && (typeof site.lists.moreLabel !== 'string' || !/^[^<>\n]{1,40}$/.test(site.lists.moreLabel) || !site.lists.moreLabel.trim())) errors.push('site.lists.moreLabel is not plain words of 1-40 characters')
+  if (site?.lists?.dateStyle !== undefined && !['full', 'long', 'medium', 'short'].includes(site.lists.dateStyle)) errors.push(`site.lists.dateStyle ${String(site.lists.dateStyle)} is not full, long, medium or short`)
   for (const [route, layout] of Object.entries(site?.entryLayouts ?? {})) {
     if (typeof layout?.adjacent !== 'boolean') errors.push(`site.entryLayouts.${route}.adjacent is not true or false`)
     if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)
@@ -607,6 +700,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
+  if (chrome?.brandColor !== undefined && (typeof chrome.brandColor !== 'string' || (chrome.brandColor !== 'link' && !CSS_COLOR.test(chrome.brandColor)))) errors.push(`site.chrome.brandColor ${String(chrome.brandColor)} is not link or a colour`)
   if (chrome?.parts !== undefined && chrome.parts !== true) errors.push('site.chrome.parts is not true')
   if (chrome?.breadcrumbs !== undefined && chrome.breadcrumbs !== 'always') errors.push(`site.chrome.breadcrumbs ${String(chrome.breadcrumbs)} is not always`)
   if (chrome?.menu !== undefined && chrome.menu !== 'mega') errors.push(`site.chrome.menu ${String(chrome.menu)} is not mega`)
@@ -615,6 +709,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (header === null || typeof header !== 'object' || Array.isArray(header)) errors.push('site.chrome.header is not an object')
     else {
       if (header.border !== undefined && header.border !== false) errors.push('site.chrome.header.border is not false')
+      if (header.search !== undefined && header.search !== true) errors.push('site.chrome.header.search is not true')
       if (header.brandWeight !== undefined && !/^[1-9]00$/.test(header.brandWeight)) errors.push(`site.chrome.header.brandWeight ${header.brandWeight} is not a font weight`)
       if (header.brandTracking !== undefined && !LETTER_SPACING.test(header.brandTracking)) errors.push(`site.chrome.header.brandTracking ${header.brandTracking} is not a letter spacing`)
       for (const key of ['offsetTop', 'padTop', 'padBottom'] as const) {
@@ -659,6 +754,31 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   for (const role of ['spacing-title', 'container-inset'] as const) {
     const value = site?.tokens?.roles?.[role]
     if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
+  }
+  for (const role of ['tracking-heading', 'tracking-display'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_TRACKING.test(value)) errors.push(`tokens.roles.${role} ${value} is not a letter-spacing`)
+  }
+  const displayTrack = site?.tokens?.roles?.['tracking-display']
+  if (displayTrack !== undefined && CSS_TRACKING.test(displayTrack) && trackingTooTight(displayTrack)) errors.push(`tokens.roles.tracking-display ${displayTrack} sets letters tighter than ${DISPLAY_TRACKING_MIN_EM}em`)
+  for (const role of ['text-display', 'text-lead'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
+  }
+  const headingCase = site?.tokens?.roles?.['case-heading']
+  if (headingCase !== undefined && headingCase !== 'uppercase' && headingCase !== 'none') errors.push(`tokens.roles.case-heading ${headingCase} is not uppercase or none`)
+  const leading = site?.tokens?.roles?.['leading-display']
+  if (leading !== undefined && !CSS_LEADING.test(leading)) errors.push(`tokens.roles.leading-display ${leading} is not a line-height`)
+  else if (leading !== undefined && leading !== 'normal' && Number(leading) < DISPLAY_LEADING_MIN) errors.push(`tokens.roles.leading-display ${leading} sets lines tighter than ${DISPLAY_LEADING_MIN}`)
+  const display = site?.tokens?.roles?.['text-display']
+  if (display !== undefined && CSS_LENGTH.test(display) && displayTooLarge(display)) errors.push(`tokens.roles.text-display ${display} is larger than ${DISPLAY_MAX_REM}rem or not held to a largest size`)
+  for (const n of [1, 2, 3, 4] as const) {
+    const field = site?.tokens?.roles?.[`color-field-${n}`]
+    const ink = site?.tokens?.roles?.[`color-field-${n}-ink`]
+    for (const [role, value] of [[`color-field-${n}`, field], [`color-field-${n}-ink`, ink]] as const) {
+      if (value !== undefined && !CSS_COLOR.test(value)) errors.push(`tokens.roles.${role} ${value} is not a colour`)
+    }
+    if ((field === undefined) !== (ink === undefined)) errors.push(`tokens.roles.color-field-${n} is set without its ink, or its ink without it`)
   }
 
   const models = new Map<string, PlanModel>()
@@ -713,8 +833,25 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (c.origin === 'site' && !c.brief) warnings.push(`site component ${c.id} has no brief for the writer`)
   }
 
+  /**
+   * Placements' `facts`, checked against the planned behaviors once those are read. `route`: the route the section is on;
+   * none for a layout part, which is drawn on every route.
+   */
+  const placedFacts: Array<{ at: string, facts: string[], route?: string }> = []
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
     if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
+    if (s.facts !== undefined) {
+      if (!Array.isArray(s.facts) || s.facts.some(f => typeof f !== 'string' || !f.trim())) errors.push(`${at}: facts is not a list of fact ids`)
+      else if (!s.facts.length) errors.push(`${at}: facts is empty (leave it out when the section holds no fact)`)
+      else {
+        if (new Set(s.facts).size !== s.facts.length) errors.push(`${at}: facts names a fact twice`)
+        placedFacts.push({ at, facts: s.facts, ...(route ? { route: route.id } : {}) })
+      }
+    }
+    if (s.anchors !== undefined) {
+      if (!Array.isArray(s.anchors) || !s.anchors.length || s.anchors.some(x => typeof x !== 'string' || !x || /\s/.test(x))) errors.push(`${at}: anchors is not a non-empty list of element ids`)
+      else if (new Set(s.anchors).size !== s.anchors.length) errors.push(`${at}: anchors names an id twice`)
+    }
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
     const b = s.bind
@@ -822,6 +959,23 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
       const m = models.get(b.model)
       if (!m) errors.push(`${at}: model ${b.model} is not declared`)
       else if (!m.form) errors.push(`${at}: model ${b.model} is not a form model`)
+    }
+  }
+  for (const { at, facts } of placedFacts) {
+    const unknown = facts.filter(f => !behaviorIds.has(f))
+    if (unknown.length) errors.push(`${at}: facts ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not a planned behavior`)
+  }
+  // A fact names one section per page: on a route, its sections and the layout drawn over it. A widget on several pages is
+  // in one section of each of their routes.
+  const layoutFacts = placedFacts.filter(p => p.route === undefined)
+  for (const r of plan.routes ?? []) {
+    const where = new Map<string, string>()
+    for (const { at, facts } of [...layoutFacts, ...placedFacts.filter(p => p.route === r.id)]) {
+      for (const f of facts) {
+        const first = where.get(f)
+        if (first) errors.push(`route ${r.id}: fact ${f} is named by ${first} and ${at}`)
+        else where.set(f, at)
+      }
     }
   }
   return { errors, warnings }

@@ -19,7 +19,7 @@
     },
     {
       "from": "  sourceHosts: [],",
-      "to": "  types: [{\n    collection: 'project',\n    model: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects', label: 'Archives' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:path/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    adjacentText: '1.0625rem',\n    more: 2,\n    meta: [[[{ part: 'terms', prefix: 'Filed under ' }], [{ text: 'Notes:' }]]],\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'blueprint', label: 'Blueprint', type: 'image' },\n      { name: 'brochure', label: 'Brochure', type: 'file' },\n      { name: 'legacy_plan', label: 'Legacy plan', type: 'image' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }, {\n    collection: 'teamMember',\n    single: '/team/:slug/',\n    card: { title: 'title' },\n    body: 'body',\n    fieldsFirst: true,\n    fields: [\n      { name: 'role', label: 'Role', type: 'string', hideLabel: true },\n      { name: 'social', label: 'Social', type: 'array', hideLabel: true, fields: [{ name: 'network', label: 'Network', type: 'string', hideLabel: true }, { name: 'url', label: 'Url', type: 'url', hideLabel: true }] },\n      { name: 'department', label: 'Department', type: 'string' },\n    ],\n  }],\n  sourceHosts: [],"
+      "to": "  types: [{\n    collection: 'project',\n    model: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects', label: 'Archives' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:path/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    adjacentText: '1.0625rem',\n    more: 2,\n    meta: [[[{ part: 'terms', prefix: 'Filed under ' }], [{ text: 'Notes:' }]]],\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'blueprint', label: 'Blueprint', type: 'image' },\n      { name: 'brochure', label: 'Brochure', type: 'file' },\n      { name: 'legacy_plan', label: 'Legacy plan', type: 'image' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }, {\n    collection: 'teamMember',\n    single: '/team/:slug/',\n    card: { title: 'title' },\n    body: 'body',\n    fieldsFirst: true,\n    fields: [\n      { name: 'role', label: 'Role', type: 'string', hideLabel: true },\n      { name: 'social', label: 'Social', type: 'array', hideLabel: true, fields: [{ name: 'network', label: 'Network', type: 'string', hideLabel: true }, { name: 'url', label: 'Url', type: 'url', hideLabel: true }] },\n      { name: 'department', label: 'Department', type: 'string' },\n    ],\n  }, {\n    collection: 'quote',\n    model: 'quote',\n    taxonomies: [{ collection: 'quoteCategory', pattern: '/quote-category/:slug/', field: 'quote-category', title: 'Quote category' }],\n    card: { title: 'title', excerpt: 'summary' },\n    fields: [],\n  }],\n  sourceHosts: [],"
     },
     {
       "from": "  lists: { display: 'cards', heading: false },",
@@ -50,25 +50,72 @@
     "unannounced-tunnel"
   ],
   "distFiles": {
-    "index.html": {
+    "quote-category/agencies/index.html": {
       "contains": [
-        "</footer> <aside class=\"container-prose py-8\" data-cr-part=\"overlay\" aria-labelledby=\"newsletter-popup-title\">",
-        ">Notes from the studio</h2>"
+        ">Quote category: Agencies</h1>",
+        "Fast support, every time</h2>",
+        "Calm launches</h2>",
+        "Moved forty sites without a single ticket left open."
       ],
       "excludes": [
-        "SliderTrack.astro_astro_type_script",
-        "Tabs.astro_astro_type_script"
+        "Fast support, every time</a>",
+        "Calm launches</a>",
+        "href=\"#\""
       ]
+    },
+    "index.html": {
+      "contains": [
+        "</footer><aside class=\"container-prose py-8\" data-cr-part=\"overlay\" aria-labelledby=\"newsletter-popup-title\">",
+        ">Notes from the studio</h2>",
+        "<p class=\"mb-3 font-semibold\">Studio</p>",
+        "Northwind Works. All rights reserved.",
+        "Email: <a href=\"mailto:hello@northwind.example\"",
+        "Phone: <a href=\"tel:+441170000000\"",
+        "column-gap:22px",
+        "max-width:1200px",
+        "aria-controls=\"site-nav-sub-",
+        ">Our team</a>",
+        ">Leadership</a>",
+        "href=\"/rss.xml\"",
+        "©",
+        "location.replace(to)",
+        "aria-label=\"Primary\"",
+        "aria-label=\"Studio\" data-cr-part=\"nav-footer\"",
+        "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
+        ">Imprint</a>",
+        "href=\"/projects/harbour-bridge/\"",
+        "href=\"/project-type/software/\"",
+        "href=\"/projects/\"",
+        "<address",
+        "tel:+441170000000",
+        "12 Harbour Road",
+        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
+        "bg-card",
+        "aria-hidden=\"true\">/</span>",
+        "/blog/shipping-the-first-version/",
+        "/blog/search-without-a-server/"
+      ],
+      "excludes": [
+        "{year}",
+        "SliderTrack.astro_astro_type_script",
+        "Tabs.astro_astro_type_script",
+        "Sidebar only link",
+        "<p class=\"mb-3 font-semibold\">Legal</p>",
+        "aria-label=\"Footer\" data-cr-part=\"nav-footer\""
+      ],
+      "counts": {
+        ">Leadership</a>": 2
+      }
     },
     "about/index.html": {
       "contains": [
-        ">One letter a month on calm, fast websites.</p>"
+        ">One letter a month on calm, fast websites.</p>",
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Northwind Journal\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"About\",\"item\":\"https://example.com/about/\"}]"
       ],
       "excludes": [
         "SliderTrack.astro_astro_type_script",
         "Tabs.astro_astro_type_script",
-        "data-cr-part=\"breadcrumb\"",
-        "BreadcrumbList"
+        "data-cr-part=\"breadcrumb\""
       ]
     },
     "services/index.html": {
@@ -93,7 +140,12 @@
         "Do we need a server?",
         "How do editors work?",
         "Are translations kept?",
-        "Yes, every language the source site had."
+        "Yes, every language the source site had.",
+        ">Plan your move</a>",
+        "<meta name=\"description\" content=\"Yoast: design, build and migration services from Northwind.\">"
+      ],
+      "excludes": [
+        "Composed: what Northwind does"
       ]
     },
     "_redirects": {
@@ -149,43 +201,6 @@
         "\"304\""
       ]
     },
-    "index.html": {
-      "counts": {
-        ">Leadership</a>": 2
-      },
-      "contains": [
-        "Northwind Works. All rights reserved.",
-        "Email: <a href=\"mailto:hello@northwind.example\"",
-        "Phone: <a href=\"tel:+441170000000\"",
-        "column-gap:22px",
-        "max-width:1200px",
-        "aria-controls=\"site-nav-sub-",
-        ">Our team</a>",
-        ">Leadership</a>",
-        "href=\"/rss.xml\"",
-        "©",
-        "location.replace(to)",
-        "aria-label=\"Primary\"",
-        "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",
-        "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
-        ">Imprint</a>",
-        "href=\"/projects/harbour-bridge/\"",
-        "href=\"/project-type/software/\"",
-        "href=\"/projects/\"",
-        "<address",
-        "tel:+441170000000",
-        "12 Harbour Road",
-        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
-        "bg-card",
-        "aria-hidden=\"true\">/</span>",
-        "/blog/shipping-the-first-version/",
-        "/blog/search-without-a-server/"
-      ],
-      "excludes": [
-        "{year}",
-        "Sidebar only link"
-      ]
-    },
     "_headers": {
       "contains": [
         "/media/*.svg",
@@ -208,20 +223,11 @@
         "Cover three from the library"
       ]
     },
-    "services/index.html": {
-      "contains": [
-        ">Plan your move</a>",
-        "<meta name=\"description\" content=\"Yoast: design, build and migration services from Northwind.\">"
-      ],
-      "excludes": [
-        "Composed: what Northwind does"
-      ]
-    },
     "company/careers/index.html": {
       "contains": [
         "<meta name=\"description\" content=\"Careers at Northwind: how we hire and who we look for.\">",
         "<li aria-current=\"page\" class=\"text-ink\">Careers</li>",
-        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Company\""
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Northwind Journal\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Company\",\"item\":\"https://example.com/company/\"},{\"@type\":\"ListItem\",\"position\":3,\"name\":\"Careers\",\"item\":\"https://example.com/company/careers/\"}]"
       ],
       "excludes": [
         "<meta name=\"description\" content=\"We hire slowly"
@@ -230,11 +236,11 @@
     "company/index.html": {
       "contains": [
         "<li><a href=\"/company/office/\"",
-        ">Office</a></li><li><a href=\"/company/careers/\""
+        ">Office</a></li><li><a href=\"/company/careers/\"",
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Northwind Journal\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Company\",\"item\":\"https://example.com/company/\"}]"
       ],
       "excludes": [
-        "data-cr-part=\"breadcrumb\"",
-        "BreadcrumbList"
+        "data-cr-part=\"breadcrumb\""
       ]
     },
     "projects/index.html": {

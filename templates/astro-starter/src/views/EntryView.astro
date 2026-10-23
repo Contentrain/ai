@@ -1,6 +1,7 @@
 ---
 // One entry of a custom post type: title, image, rich-text body, the terms it is filed under and its typed
 // fields (siteConfig.types), each labelled as the editor knows it; its comment thread when comments are open, as a post's.
+import { formatDay } from '../lib/dates'
 import FieldList from '../components/FieldList.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import PostMeta from '../components/PostMeta.astro'
@@ -41,13 +42,16 @@ const ordered = newestFirst(siblings, type.card.date)
 const at = ordered.findIndex(other => other.id === entry.id)
 const previous = at >= 0 ? ordered[at + 1] : undefined
 const next = at > 0 ? ordered[at - 1] : undefined
+// An entry page is built only for a type whose entries have one (a list-only type's have none), so its own and its
+// siblings' addresses are always there.
+const pageOf = (other: TypeEntry): string => entryHref(type, other) ?? Astro.url.pathname
 const more: Array<{ href: string, title: string, date: Date | undefined }> = !type.more
   ? []
   : type.moreOf === 'posts'
     ? latestPosts.slice(0, type.more).map(post => ({ href: postHref(post, categories), title: post.data.title, date: post.data.published_at }))
     : ordered.filter(other => type.moreIncludesCurrent || other.id !== entry.id).slice(0, type.more)
-        .map(other => ({ href: entryHref(type, other), title: entryTitle(type, other), date: dateOf(other.data[type.card.date ?? 'published_at']) }))
-const formatDate = (date: Date) => date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })
+        .map(other => ({ href: pageOf(other), title: entryTitle(type, other), date: dateOf(other.data[type.card.date ?? 'published_at']) }))
+const formatDate = (date: Date) => formatDay(date, site.language)
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]
@@ -67,7 +71,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
   ogDescription={seo?.og_description}
   description={description}
   image={cover ? imageOf(cover as Media).src : undefined}
-  canonical={seo?.canonical ?? new URL(entryHref(type, entry), Astro.site ?? Astro.url).href}
+  canonical={seo?.canonical ?? new URL(pageOf(entry), Astro.site ?? Astro.url).href}
   noindex={seo?.noindex}
   nofollow={seo?.nofollow}
 >
@@ -93,8 +97,8 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
     )}
     {(previous || next) && (
       <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={cssSize(type.adjacentText)}>
-        {previous ? <a href={safeHref(entryHref(type, previous))} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {entryTitle(type, previous)}</a> : <span />}
-        {next && <a href={safeHref(entryHref(type, next))} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
+        {previous ? <a href={safeHref(pageOf(previous))} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {entryTitle(type, previous)}</a> : <span />}
+        {next && <a href={safeHref(pageOf(next))} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
     {type.model && <StudioComments model={type.model} entry={entry.id} open={data.comments_open === true} />}

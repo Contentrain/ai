@@ -1,5 +1,84 @@
 # @contentrain/serve-ui
 
+## 0.0.80
+
+### Patch Changes
+
+- Updated dependencies [03391d9]
+- Updated dependencies [03391d9]
+  - @contentrain/types@1.73.0
+
+## 0.0.79
+
+### Patch Changes
+
+- Updated dependencies [1f33067]
+  - @contentrain/types@1.72.0
+
+## 0.0.78
+
+### Patch Changes
+
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
+## 0.0.77
+
+### Patch Changes
+
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+  - @contentrain/types@1.70.0
+
+## 0.0.76
+
+### Patch Changes
+
+- Updated dependencies [c17f75c]
+  - @contentrain/types@1.69.0
+
+## 0.0.75
+
+### Patch Changes
+
+- Updated dependencies [a1b715f]
+  - @contentrain/types@1.68.0
+
+## 0.0.74
+
+### Patch Changes
+
+- Updated dependencies [d57a8bb]
+  - @contentrain/types@1.67.0
+
+## 0.0.73
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+
+## 0.0.72
+
+### Patch Changes
+
+- Updated dependencies [861bdd2]
+  - @contentrain/types@1.65.0
+
+## 0.0.71
+
+### Patch Changes
+
+- Updated dependencies [ad803f7]
+  - @contentrain/types@1.64.0
+
+## 0.0.70
+
+### Patch Changes
+
+- Updated dependencies [04ce5eb]
+  - @contentrain/types@1.63.1
+
 ## 0.0.69
 
 ### Patch Changes

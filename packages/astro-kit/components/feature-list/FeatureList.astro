@@ -2,9 +2,12 @@
 // A list of short features — a title and a line of text each — marked with
 // the feature's icon or a shared check, under an optional heading and intro.
 import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { muted } from '../_shared/muted'
 
 const list = tv({
   slots: {
@@ -12,7 +15,7 @@ const list = tv({
     item: 'flex gap-4',
     mark: 'flex size-6 shrink-0 items-center justify-center text-accent-text',
     title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
-    text: 'mt-1 opacity-80',
+    text: `mt-1 ${muted}`,
   },
   variants: {
     columns: {
@@ -27,7 +30,7 @@ const list = tv({
       list: { grid: 'flex flex-col gap-3', item: 'items-center gap-3', mark: 'size-5', title: 'text-[length:var(--text-body,1rem)] leading-normal [font-weight:inherit] text-pretty', text: 'mt-0' },
     },
     // On accent the mark takes the ink colour, and text is never dimmed.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { mark: 'text-current', text: 'opacity-100' } },
+    tone: { default: {}, muted: {}, inverse: {}, accent: { mark: 'text-current' } },
     // A list inside another section's column: one column, tighter, no section around it.
     bare: { true: { grid: 'sm:grid-cols-1 gap-y-5' }, false: {} },
   },
@@ -51,6 +54,8 @@ interface Item {
   text?: string | undefined
   /** A kit icon name (check, star, bolt, shield, heart, globe, clock, chat). */
   icon?: string | undefined
+  /** The feature's own icon as an image file (a site's svg): drawn instead of the named icon, except by `check`. */
+  iconImage?: string | undefined
 }
 
 interface Props {
@@ -68,12 +73,18 @@ interface Props {
   id?: string | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, intro, items, columns, style = 'icon', tone, bare = false, titleLevel = 3, id, measured } = Astro.props
+const { heading, intro, items, columns, style = 'icon', tone, bare = false, titleLevel = 3, id: givenId, measured } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `feature-list`, `feature-list-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'feature-list')
 const s = list({ columns, style, tone, bare })
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 const pathOf = (item: Item) => (style !== 'check' && item.icon && icons[item.icon]) || icons.check
+// The feature's own image icon, where the style shows each feature's own mark.
+const imageOf = (item: Item) => (style !== 'check' && item.iconImage) || undefined
 // A plain list's items are not headings; otherwise one level under the section heading, or the section's when there is none.
 const Title = style === 'list' ? 'span' : bare ? `h${titleLevel}` as 'h3' : heading ? 'h3' : 'h2'
 ---
@@ -83,7 +94,9 @@ const Title = style === 'list' ? 'span' : bare ? `h${titleLevel}` as 'h3' : head
       {items.map(item => (
         <li class={s.item()}>
           <span class={s.mark()} aria-hidden="true">
-            <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>
+            {imageOf(item)
+              ? <KitImage image={{ src: imageOf(item)!, alt: '' }} class="size-5 object-contain" />
+              : <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>}
           </span>
           <div>
             <Title class={s.title()}>{item.title}</Title>
@@ -94,18 +107,20 @@ const Title = style === 'list' ? 'span' : bare ? `h${titleLevel}` as 'h3' : head
     </ul>
   )
   : (
-<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+<Section kit="feature-list" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
   {(heading || intro) && (
     <header class="mb-10 flex max-w-2xl flex-col gap-3">
       {heading && <h2 id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</h2>}
-      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']} data-kit-text>{intro}</p>}
+      {intro && <p class:list={['text-lg', muted]} data-kit-text>{intro}</p>}
     </header>
   )}
   <ul class={s.grid({ class: measuredGrid(measured) })}>
     {items.map(item => (
       <li class={s.item()}>
         <span class={s.mark()} aria-hidden="true">
-          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>
+          {imageOf(item)
+            ? <KitImage image={{ src: imageOf(item)!, alt: '' }} class="size-5 object-contain" />
+            : <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>}
         </span>
         <div>
           <Title class={s.title()}>{item.title}</Title>

@@ -4,7 +4,7 @@
   "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
   "category": "chrome",
   "uses": ["nav", "search-box"],
-  "shared": ["Button.astro", "KitImage.astro", "safe-url.ts", "types.ts"],
+  "shared": ["Button.astro", "KitImage.astro", "image-widths.ts", "instance-id.ts", "muted.ts", "safe-url.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["split", "centered", "brand-left"], "default": "split", "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand." },
     "tone": { "options": ["default", "inverse", "transparent"], "default": "default", "description": "Surface with a bottom border, dark (ink) background, or transparent over the hero that follows." },
@@ -22,6 +22,7 @@
     "padTop": { "type": "string", "description": "Space inside the bar above its content where the source's header has its own (a CSS length)." },
     "padBottom": { "type": "string", "description": "Space inside the bar below its content where the source's header has its own (a CSS length)." },
     "linkNav": { "type": "boolean", "default": false, "description": "The navigation in the site's link colour, as themes that colour every link do." },
+    "brandColor": { "type": "string", "description": "The site name's colour where the source theme's is not the header's text colour: link for the site's link colour, or a colour (#hex, rgb(), hsl())." },
     "logo": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Logo image (site.logo)." },
     "showName": { "type": "boolean", "default": true, "description": "Show the site name next to the logo." },
     "homeHref": { "type": "url", "default": "/", "description": "Where the brand links." },

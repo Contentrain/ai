@@ -5,8 +5,9 @@
   "category": "chrome",
   "uses": [],
   "shared": [
-    "social.ts",
-    "safe-url.ts"
+    "muted.ts",
+    "safe-url.ts",
+    "social.ts"
   ],
   "variants": {
     "display": {

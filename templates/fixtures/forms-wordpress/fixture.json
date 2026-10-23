@@ -2,7 +2,7 @@
   "siteConfig": [
     {
       "from": "  sourceHosts: [],",
-      "to": "  features: { wordpress: 'https://old.example', forms: { home: 'wordpress' } },\n  sourceHosts: [],"
+      "to": "  features: { wordpress: 'https://old.example', forms: { home: 'wordpress' }, chromeForms: [{ role: 'newsletter', path: '/' }, { role: 'contact', path: '/support/', on: ['/write-to-us/'] }] },\n  sourceHosts: [],"
     }
   ],
   "distFiles": {
@@ -10,7 +10,9 @@
       "contains": [
         "data-cr-part=\"form\" data-state=\"wordpress\"",
         "This form is sent on old.example.",
-        "<a href=\"https://old.example/write-to-us/\" class=\"cr-form-link\""
+        "<a href=\"https://old.example/write-to-us/\" class=\"cr-form-link\"",
+        "Subscribe on old.example",
+        "<a href=\"https://old.example/support/\" class=\"cr-form-link\""
       ],
       "excludes": [
         "<fieldset",
@@ -18,6 +20,15 @@
         "<cr-form",
         "method=\"post\"",
         "needs_endpoint"
+      ]
+    },
+    "index.html": {
+      "contains": [
+        "href=\"https://old.example/\"",
+        "Subscribe on old.example"
+      ],
+      "excludes": [
+        "old.example/support/"
       ]
     }
   }

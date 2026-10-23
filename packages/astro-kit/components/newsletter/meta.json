@@ -6,7 +6,9 @@
   "uses": [],
   "shared": [
     "Section.astro",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -98,6 +100,7 @@
       "content": false,
       "description": "Open the provider's confirmation page in a new tab (the reader keeps the site)."
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,

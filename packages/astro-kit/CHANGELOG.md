@@ -1,5 +1,282 @@
 # @contentrain/astro-kit
 
+## 0.49.0
+
+### Minor Changes
+
+- 679d048: The classic mapping (version 9) maps `classic/embed` to the Embed: a classic theme's iframe that is no YouTube, Vimeo, map or known provider widget, and a `[video]` shortcode whose source is a YouTube or Vimeo address. `url` reads the iframe's address or the video's source (`dom:iframe, video source@src`), `title` the iframe's title. A known provider shows as a poster loaded on click; any other address stays a plain link, never framed. Embed now lists `classic/embed` in its classic sources.
+
+## 0.48.1
+
+### Patch Changes
+
+- Updated dependencies [03391d9]
+- Updated dependencies [03391d9]
+  - @contentrain/types@1.73.0
+
+## 0.48.0
+
+### Minor Changes
+
+- 94a9f91: PostList passes the source's read-more words and date style through to its cards: `readMoreLabel` (shown under each card's excerpt; the list's own `moreLabel` stays the archive link's text) and `dateStyle` (`full` / `long` / `medium` / `short`; absent, long). PostCard's excerpt line is capped at 62ch instead of 75ch: 75ch ran about 95 real characters a line, over the 90 the readability check allows.
+
+## 0.47.1
+
+### Patch Changes
+
+- Updated dependencies [1f33067]
+  - @contentrain/types@1.72.0
+
+## 0.47.0
+
+### Minor Changes
+
+- e53670f: Structured data by default. The Embed takes `schema` (on by default) to print a VideoObject (JSON-LD) for a named video: the title as name, a differing caption as description, the provider's page and player address, the local poster or else the YouTube still as thumbnail, and `uploaded` as uploadDate only when it is given; a map, a player or a video with no name prints none. The Faq's `schema` is now on by default too: the first FAQ on a page with an answered question prints the page's FAQPage, a later one on that page none; `schema={false}` turns either off.
+
+## 0.46.3
+
+### Patch Changes
+
+- 96c35aa: Band, CardGrid, Team and PostCard: in a card whose title link covers the card, an image whose text only repeats the title is drawn with an empty alt, so a screen reader says the title once. The content keeps its alt; an image outside such a card, or with words of its own, is drawn as written.
+
+## 0.46.2
+
+### Patch Changes
+
+- 9ddea34: KitImage takes its srcset width ladder from a new shared `_shared/image-widths.ts`, the same one the starter's rich-text image pass uses, so section and body images resize alike.
+- 6d585fa: A slider's dots wrap instead of widening the row. With one 24px target per slide, 14 dots (336px) between a text-card row's two 44px arrows outgrew a 390px phone: Previous sat at -29px, Next at 375–419px, and the page scrolled sideways (x07's G-interaction `slider_stuck` at 390). The kit visual now checks on a 390 phone that the page is no wider than the screen and that every control of a 14-slide text-card slider lies on it.
+
+## 0.46.1
+
+### Patch Changes
+
+- a5bfce7: A carousel island takes every slide: past 50 (x10's 59-slide metaslider) it was cut at the item cap, so its track held slides it did not count and it stayed static with no controls. The cap stays for islands that wire each item one by one (tabs, counters, filters).
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
+## 0.46.0
+
+### Minor Changes
+
+- 707351b: A footer column's heading can be a link, as the site printed it (a Beaver footer's `<h2><a href="/services/">OUR SERVICES</a></h2>`): `RawMenu.titleHref`, beside `title`. The importer writes it to the menu entry as `title_href` and adds a `title_href` ("Heading link", url) field to the menus model only when a source printed a linked heading; an address with no heading is dropped. The kit Footer's `columns[].titleHref` draws the heading as a link to it, in the heading's own colour; the starter reads it from the menu entry. A plain heading renders as before.
+- 707351b: PostCard: `moreLabel` prints the source's own read-more words under the excerpt ("READ ARTICLE"), only on a card with a link and as words (`aria-hidden`), so the title link stays the card's one link and a click on them reaches it. `dateStyle` (`full` | `long` | `medium` | `short`, default `long`) writes the date as the source does. The excerpt is capped at 75ch, so a one-column list at 1280 keeps lines readable. Nothing else changes for a card that sets neither. The plan's `site.lists.moreLabel` (plain words, 1-40 characters) and `site.lists.dateStyle` carry them; the starter's lists pass both to every card, and absent, the cards are as before.
+
+### Patch Changes
+
+- 707351b: A carousel island no longer has a dead button: it does not loop (owl's own default), so Previous is disabled (with `aria-disabled`) on the first slide and Next on the last, updated as the track scrolls (buttons, swipe or keys) and whenever the track or a slide resizes or the page finishes loading. Only a row measured wider than its frame has ends: one that does not overflow yet (inside a closed tab, or a frame still as wide as its slides) keeps both on, so the buttons are never left off on a carousel that can move. Before, both were always on and Previous on the first slide did nothing. A disabled control is drawn faded.
+- ce625c8: Split's body follows its band: on an inverse, accent or brand band (or a measured dark fill) the markdown body is drawn in the band's own text colour and muted role, as its heading is. Before, it kept the page's ink, so on an inverse band it was invisible (1:1) and on a fill it was under 4.5:1. A link in the body on a fill is drawn in the fill's ink. On the page's own surface nothing changes. The kit visual now fails a body text under 4.5:1 (3:1 large) on its band.
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+  - @contentrain/types@1.70.0
+
+## 0.45.8
+
+### Patch Changes
+
+- 9151d78: Button: a label with no break in it (a raw URL) wraps inside the button instead of widening the page on a phone.
+
+## 0.45.7
+
+### Patch Changes
+
+- Updated dependencies [c17f75c]
+  - @contentrain/types@1.69.0
+
+## 0.45.6
+
+### Patch Changes
+
+- Updated dependencies [a1b715f]
+  - @contentrain/types@1.68.0
+
+## 0.45.5
+
+### Patch Changes
+
+- Updated dependencies [d57a8bb]
+  - @contentrain/types@1.67.0
+
+## 0.45.4
+
+### Patch Changes
+
+- afea25e: Every section component takes an optional `entry`, the page entry it is built from (without its locale), and prints it on its section root as `data-kit-entry` next to `data-kit-section`. A design layer can then style one section, not only one kind. Absent, nothing is printed, so a site that passes none renders as before.
+
+## 0.45.3
+
+### Patch Changes
+
+- 0e7b027: PostCard: `href` is optional. Without one (an entry with no page of its own, such as a list-only custom type's), the title is printed unlinked rather than as a dead or `#` link.
+
+## 0.45.2
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+
+## 0.45.1
+
+### Patch Changes
+
+- a2ccfdc: Faq: a question whose answer is empty (no text and nothing to see once the markup is stripped) is drawn alone, in the item's style, with no `<details>`, summary or marker, so the page has no control that opens onto nothing. It is also left out of the FAQPage JSON-LD, which needs an accepted answer. `openFirst` opens the first question that has an answer.
+
+## 0.45.0
+
+### Minor Changes
+
+- 04ddd78: Hero gains `height` and `contentAt`. `height: 'screen'`: from sm (640px) up, the hero is at least the window's height (`100svh`, `100vh` where that is unknown) less `--header-h`, which a site that measures its header sets (0 without it). Below sm it is as tall as its content, as before. A boxed cover (`width: 'content'`) ignores it. `contentAt: 'end'`: in a hero taller than its content (screen-high, or a cover with its own height), the content sits on the bottom edge, the section's bottom padding under it. The defaults (`auto`, `start`) draw the hero as before.
+- c5dda36: A new `inset` axis on Prose, Hero and Band: `none` (the default, drawn as before) or `15`, `27`, `34`, `42`. From md (768px) up, the content column's start edge sits at that share of its container's width (a logical `margin-inline-start`, so in RTL the axis is measured from the right) and runs to the container's end. Below md nothing changes. Hero takes it on layout `centered` only, its text then set at the axis instead of centred (split and cover ignore it). Band takes it on layout `stack` only, moving its copy, image and items, a centred band's text to the axis too. Prose's share is of the container it sits in.
+
+## 0.44.2
+
+### Patch Changes
+
+- cd1aece: The header's brand fits a phone: a wide logo or a long site name is cut to the space left beside the menu button instead of being drawn over it (the name gives way first, truncated down to three characters, then the logo narrows, keeping its shape). The starter's BaseLayout shows the site name only where the site has no logo, as a WordPress custom logo replaces the title. A header fixture with a wide logo and a long name is added, and the visual check fails a header that overflows at 390 px or whose menu button a tap cannot reach.
+
+## 0.44.1
+
+### Patch Changes
+
+- 441eb9e: Pricing names an interface string for every label it prints. `featuredLabel`, `includedLabel`, `notIncludedLabel`, `billingMainLabel`, `billingAltLabel`, `billingLegend` and `wasLabel` each name their key (`pricing.featured`, `pricing.included`, `pricing.not_included`, `pricing.billing_main`, `pricing.billing_alt`, `pricing.billing_legend`, `pricing.was`) in the catalog. A tool that wires labels from the catalog can now pass them in the site's language; before, a Turkish site showed "Most popular" and "Monthly / Yearly" in English. The starter's dictionary gains `pricing.was` in every language it ships.
+
+## 0.44.0
+
+### Minor Changes
+
+- 6906f61: Gallery `open: 'lightbox'`: each tile links to its large file (`full`, else the image), and with script a click opens one modal viewer for the whole set, with previous / next buttons, ←/→ (mirrored right to left), Home and End, a counter ("2 of 5") and the caption, announced as they change. Escape or a click outside the image closes it and focus returns to the tile. Labels come from props (`prevLabel`, `nextLabel`, `ofLabel`, with the existing `closeLabel`, `enlargeLabel`, `regionLabel`). Nothing animates. The viewer and its script are printed only for this option: the other modes render as before.
+- 4bf3850: Pricing gains period notes for its billing toggle. Each plan can have `priceWas` / `priceWasAlt` (a struck original price before the price, read as "Was …"), `priceNote` / `priceNoteAlt` (one line under the price) and `priceFoot` / `priceFootAlt` (one line above the button). The section can have `billingAltNote` (a line by the toggle shown only with its second option). The Alt values swap with `priceAlt` the same way, with no script. Each line is printed only where it is given, so a pricing section without them renders as before. A new `wasLabel` ('Was') names the struck price for screen readers.
+
+### Patch Changes
+
+- 89eeb8f: Gallery lightbox: when only one image is left to show, because the kit refused the other tiles' addresses, the viewer hides its previous / next buttons and its counter instead of cycling one image as "1 of 1". The buttons keep their place, so the image does not move.
+- 61c0753: Pricing: in a section with the billing toggle, a plan with no `priceAlt` (a free plan, "Contact us", or one price for both periods) now shows its price line, struck price included, under both options instead of no price under the second. Its notes still show with the first option only.
+
+## 0.43.0
+
+### Minor Changes
+
+- 8be2af4: Footer gains `wordmark` and `wordmarkOrder`. `fit` draws the site name once more as a row exactly as wide as the footer, in the heading font and the footer's ink; `crop` lets the footer's bottom edge cut it, so only the letters' top shows. It is an SVG text stretched to the row by letter spacing, so any name fills it at every width (its size is guessed letter by letter on the wide side, so the stretch only adds spacing; a name in a script letter spacing breaks, such as Arabic, Hebrew or an Indic one, gets no wordmark), and it is hidden from screen readers (the name is already the footer's brand). `wordmarkOrder: 'first'` puts the row before the rest. The default, `none`, draws the footer exactly as before.
+- 8be2af4: Band gains `headingLines` and `leadLines`, Testimonial gains `quoteLines`, by Hero's `headingLines` rule: with `lines`, each line the author broke the text into (`\n`) is a block of its own, `data-kit-line="1"`, `"2"`, …, for a theme or a design layer to set its ink, indent or size. A heading stays one heading and a lead or a quote one paragraph; a quote's marks go before its first line and after its last. The default, `flow`, prints the text exactly as before.
+
+### Patch Changes
+
+- Updated dependencies [861bdd2]
+  - @contentrain/types@1.65.0
+
+## 0.42.0
+
+### Minor Changes
+
+- 1f41fc9: CardGrid gains `layout: 'rows'`: one item per row, its title, text and link (or image) on one axis, a hairline between rows and no card box, every field of an item kept. With `index` the rows are a numbered list, each led by its number (01, 02, …) in the muted role; the list carries the order for screen readers, so the drawn number is hidden from them. The default, `grid`, draws the cards exactly as before.
+- 8cc6f83: Hero gains `imageBleed`. `edge` runs the image on to the window's edge on its side (both sides when the hero is centered), by Split's rule, now shared as `_shared/bleed.ts`. `overlap` also lets it cross the section's bottom edge by `--hero-overlap` (3rem), drawn over the next section's top padding without moving that section. A cover ignores it. The default, `none`, draws the hero exactly as before.
+- 1f41fc9: Hero gains `headingLines`. With `lines`, each line the author broke the heading into (a `\n`) is a block of its own, marked `data-kit-line="1"`, `"2"`, …, so a theme or a design layer can give a line its own ink, indent or size. It stays one heading, read as one sentence. The default, `flow`, prints the heading exactly as before. The new shared `Lines.astro` does the splitting, and other components can use it.
+- 8cc6f83: Hero gains `stackOrder` (Split's name and values). With `media-first` the image comes before the text: on phones and on the start side in a split hero, above the heading in a centered one. A cover ignores it. The default, `text-first`, draws the hero exactly as before.
+- 8cc6f83: Split's edge bleed (`imageBleed: 'edge'`) now reaches the window's edge on screens wider than 1216 px. It used to stop 32 px short there: the rule assumed the page frame's gutter sat outside its 76rem width, but it sits inside. The rule now lives in `_shared/bleed.ts`, shared with Hero's `imageBleed`.
+- 8cc6f83: Split's `imageShape` gains `arch` (a rounded top), `chamfer` (a cut corner) and `blob` (a soft outline), each a fixed class, never a value from content. The existing shapes and the default, `rounded`, are unchanged.
+
+## 0.41.0
+
+### Minor Changes
+
+- 0616c00: Every section can be addressed, and quieter text keeps its contrast on every band.
+
+  - Section hooks: each section component's root carries `data-kit-section="<component id>"` (`hero`, `card-grid`, `slider`, …) and an id: the page's, or the component id counted per page (`hero`, `hero-2`). CardGrid and Behavior gain an `id` prop; CardGrid's title is now `<id>-title`. A framed Slider is its own section with the same hooks (its padding stays its own). `[data-kit-section]` still matches every section.
+  - Quieter text (intros, eyebrows, captions, roles, notes, footer and menu links) is a colour role instead of `opacity-75/80/85`: `--color-ink-muted` on a light band, the new `--color-ink-muted-inverse` on a dark band (the starter mixes the surface 80% toward the ink), and the fill's own ink on an accent or brand band. A card, form panel, dialog or menu inside a band goes back to `--color-ink-muted`. Opacity stays only on images, icons, disabled buttons and decorative marks. On a light band the text looks as before; on a dark or filled band it no longer falls under 4.5:1.
+
+### Patch Changes
+
+- 0616c00: Two instances of a component on one page no longer share ids. Gallery, Faq, Tabs, Slider, Dialog, Newsletter, Contact form, Contact details, Post list, Nav, Search box, and Band's heading took a fixed default id, so a second instance pointed into the first: clicking an image in the second gallery opened the first one's, a tab or label controlled the other instance, and a dialog opener opened the wrong dialog. Each default is now taken once per page (`gallery`, `gallery-2`, … in render order, the same on every build, and two galleries of the same images included). An id the page gives is kept, and a default steps around it. The kit's visual run now fails a component page with any id twice, or a lightbox button that opens another instance's image.
+
+## 0.40.0
+
+### Minor Changes
+
+- 2928cf8: Slider: a slide can be a video from another site (`slides[].embed`: a YouTube, Vimeo, Loom or Wistia page, or `youtube:<id>` / `vimeo:<id>`). It is drawn as its poster with a play button and loads nothing from the provider until the reader clicks it. The player then takes the poster's box (YouTube from youtube-nocookie.com, Vimeo with dnt) and goes back to its poster when its slide is paged away. A poster on the provider's own hosts (its thumbnail) is never drawn. New `playLabel` (ui-strings `embed.play`).
+
+  Behavior islands: a link the engine writes as `<a href=watch-url data-cr-video="youtube:<id>">` (a source video player kept as a poster link) plays in place on a plain click, in an island of any kind. The player's address is built from the checked provider and id, never from the link's `href` or the attribute's text. Without JavaScript it stays a link to the video's page.
+
+  The embed address parser moves to `_shared/embed-target.ts`, and the player's iframe recipe to `_shared/embed-frame.ts`; Embed, Slider and the behaviour module share both.
+
+  Embed: the player address is built from provider + id at click time (the page's `data-embed-src` goes through the same parser again), so the kit Embed, a Slider slide and an island link share one builder. A behaviour island's video link with no poster is drawn as a 16:9 panel and plays at 16:9.
+
+## 0.39.0
+
+### Minor Changes
+
+- 9fb4d2c: A popup opened from the page's content opens the migrated `Dialog`, with no button of its own.
+  - `Dialog` takes `triggerStyle: "none"`: no button and no section band. A link to `#<id>` anywhere on the page opens it (marked `aria-haspopup="dialog"`, with no jump). So do a `commandfor` button where the browser has no Invoker Commands, and an address that arrives with `#<id>`. With scripting off, its content is laid out in place and the `#<id>` link jumps to it.
+  - A behaviour island's own closed `<dialog>` is opened by its `aria-controls` opener as a modal. A close button is added where it has none. This works in an island of any kind, even where that island's own wiring failed. Before, it stayed hidden.
+  - With scripting off, a closed `<dialog>` in an island is shown in place.
+- ad803f7: The header site name takes the source theme's colour where it is not the header's text colour. `Header` gains `brandColor`: `link` paints the name in the site's link colour (a title that is a link styled like every other, as Hello Elementor's is), or a colour (`#hex`, `rgb()`, `hsl()`) is used as it is; anything else is ignored. `site.chrome.brandColor` carries it in the plan, validated (`link` or a colour; never a `;` or `url()`), and the starter's BaseLayout passes it through the same guard. Without it the header is exactly as before.
+- b2fc508: Slider: a slide's image is optional. A slide with no image is drawn as a text card (title, text, link) the height of the row, so a carousel of quotes or testimonials is a slider too, and stays manageable in Studio as a slides list. The catalog's slide model has `image` not required. A slide with neither an image nor any text is still dropped. A carousel of text cards alone has its arrows under the row, either side of the dots, so they never cover a card's words. New fixture: `text-cards`.
+
+  Slider: a slide can hold a video (`video`, a file address, mp4/webm), drawn in place of the image, which becomes its poster. It loads nothing until the reader plays it (`preload="none"`), never plays by itself, keeps the browser's own controls with the caption under them (never over them), and pauses when its slide is paged away. A carousel of product clips moves as a slider. New fixture: `video-slides`.
+
+- c638f5e: `Stats` counts up where the source's counter did: `motion: "count"` (opt-in; default `static`). The Elementor and Divi counter mapping rules set it.
+  - The figure list becomes a `countup` behaviour island, wired by the existing `_shared/behaviors.ts`. Each figure's digits are their own span; its prefix, suffix and icon stay as printed.
+  - The final number is in the HTML: crawlers, screen readers, search and a page without JavaScript read it.
+  - Nothing moves under `prefers-reduced-motion: reduce` or without IntersectionObserver. The count starts only when the figure scrolls into view, once.
+  - The module loads only on a page with a counting Stats (`_shared/BehaviorScript.astro`); a static Stats ships no script.
+
+### Patch Changes
+
+- fe3f6a2: Slider: a carousel with any text card (mixed with image or video slides) has its arrows under the row, either side of the dots, so they never sit over a card's words. A video slide with a title has no label of its own: the caption under it names it, said once. New fixture: `mixed-cards`.
+- Updated dependencies [ad803f7]
+  - @contentrain/types@1.64.0
+
+## 0.38.0
+
+### Minor Changes
+
+- c889788: `ContactForm` details take an `iconImage`: the detail's own icon as an image file (an Elementor icon list's map marker or phone, moved as an svg), drawn before it as decoration (`alt=""`). A contact block whose address line carries a map marker keeps the marker when it moves. Before, details had no icon field, so the marker was left out (said on the receipt). A detail without an image is unchanged.
+
+## 0.37.0
+
+### Minor Changes
+
+- b278458: Behavior islands: a source widget no component carries keeps working.
+
+  - `Behavior` takes the source's own markup (a rich-text field the migration has already cleaned) and makes it work with one small vanilla module, `_shared/behaviors.ts`. The kinds: disclosure, tablist, carousel, in-page dialog, count-up, toggle, filter, anchor links and an image lightbox.
+  - The module writes text only through `textContent`. It never uses `innerHTML`, `eval` or the network, and it reads only ARIA, `details` and the `data-cr-*` attributes the component prints from its props. It is loaded only on pages that have an island. Without it, or with a selector the browser refuses, the island stays as printed, every item in reading order.
+
+  `Dialog`:
+
+  - takes a `form` slot, for the popup's form (the starter's form, or its link to the form on WordPress);
+  - takes a `trigger` (`click`, `load`, `exit`, `scroll`). It still opens only by its button; the value stays on the root, so the gates and the receipt can say a popup that opened by itself now opens on click;
+  - takes a `fact` (`data-cr-fact`), which the gates find it by.
+
+  The starter's header stays at the top while scrolling where the source's did (`siteConfig.chrome.header.sticky`, Header `position="sticky"`). The kit's Header had the option, but the starter never passed it, so a sticky source header scrolled away.
+
+- 0638b3e: `FeatureList` items take an `iconImage`: the feature's own icon as an image file, drawn as decoration (`alt=""`) in place of the named `icon`. An icon list whose icons have no kit name (Elementor's icon list with Font Awesome's pencil-ruler, credit-card, camera) keeps its icons when it moves as a feature list. Before, the only icon field was the kit's eight names, so other icons showed as a check. The `check` style still draws one check before every feature, and an item without an image is unchanged.
+
+## 0.36.0
+
+### Minor Changes
+
+- c36f2fa: `CardGrid` items take an `icon`: a small image above the title, drawn as decoration (`alt=""`), the same as `Band`'s item icon. An icon box row (Elementor's icon box, a feature with its mark) keeps its icons when it moves as a card grid. Before, the card grid had no field for them, so they were not shown. A card without an icon is unchanged.
+
+## 0.35.0
+
+### Minor Changes
+
+- fe84ccd: PostCard and PostList take a `timeZone` (an IANA name or a `±hh:mm` offset; absent, UTC): the date a card prints is read on the site's calendar, as WordPress prints it. The starter passes `siteConfig.timeZone`, which also places a post's `:year`/`:month`/`:day` address on the site's calendar: a post written in the evening of a UTC−n site keeps the address WordPress gave it.
+
+## 0.34.3
+
+### Patch Changes
+
+- 4802bc5: Slider: the dots are redrawn when the carousel re-measures. A carousel that started in a background tab (or before its layout settled) re-measures once when its slides overflow but it cannot scroll. The viewport is a plain block, as in Embla's markup.
+- 04ce5eb: A WordPress installed in a directory (`https://example.com/blog`) moves to a site served from that directory.
+
+  - `@contentrain/types`: `validateProjectPlan` accepts a sub-directory install as `source.origin` (`https://example.com/blog`): its paths keep the prefix. An origin with a trailing slash, a query or a fragment is still refused.
+  - `@contentrain/astro-kit`: `KitImage` serves a root image address (`/media/a.svg`) that it does not optimize from the site's directory under Astro's `base`, where `public/` is served. Without `base` nothing changes.
+
+  The astro starter serves every address under astro.config `base` (`base: '/blog/'`, which a migration writes for such an install): the route table, links in menus and bodies, redirect pages and `_redirects` (old and new addresses), WordPress's query addresses, the sitemap, the feed (its channel link too), `llms.txt`, canonical and Open Graph URLs, JSON-LD, the favicon, search (Pagefind), body images and the file and link fields of a custom type's page. Plan and store paths stay the install's (`/about/`). `scripts/check-dist.mjs` fails a site served from a directory when a page or a host rule points outside it. Its `wp-query-map.json` check accepts an absolute target (an attachment whose file stays at the old site's address). Without `base` the built site is unchanged, except that an absolute link to the site's own feed (`https://example.com/rss.xml`) is written as `/rss.xml`, like every other link to the site.
+
+- Updated dependencies [04ce5eb]
+  - @contentrain/types@1.63.1
+
 ## 0.34.2
 
 ### Patch Changes

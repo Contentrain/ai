@@ -1,5 +1,90 @@
 # @contentrain/mcp
 
+## 3.11.12
+
+### Patch Changes
+
+- 139dc72: Server instructions name only tools the session registers: a session without a `projectRoot` (Studio's `/api/mcp/remote`) is no longer told to preview `contentrain_apply`, which it never lists. `defaultInstructions(available)` is exported, and the HTTP entries (`startHttpMcpServer`, `startHttpMcpServerWith`) accept `instructions`. `server.json` lists Studio's OAuth remote (`https://studio.contentrain.io/api/mcp/remote`) ahead of the API-key MCP Cloud endpoint.
+
+## 3.11.11
+
+### Patch Changes
+
+- Updated dependencies [03391d9]
+- Updated dependencies [03391d9]
+  - @contentrain/types@1.73.0
+
+## 3.11.10
+
+### Patch Changes
+
+- Updated dependencies [1f33067]
+  - @contentrain/types@1.72.0
+
+## 3.11.9
+
+### Patch Changes
+
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
+## 3.11.8
+
+### Patch Changes
+
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+  - @contentrain/types@1.70.0
+
+## 3.11.7
+
+### Patch Changes
+
+- Updated dependencies [c17f75c]
+  - @contentrain/types@1.69.0
+
+## 3.11.6
+
+### Patch Changes
+
+- Updated dependencies [a1b715f]
+  - @contentrain/types@1.68.0
+
+## 3.11.5
+
+### Patch Changes
+
+- Updated dependencies [d57a8bb]
+  - @contentrain/types@1.67.0
+
+## 3.11.4
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+
+## 3.11.3
+
+### Patch Changes
+
+- Updated dependencies [861bdd2]
+  - @contentrain/types@1.65.0
+
+## 3.11.2
+
+### Patch Changes
+
+- Updated dependencies [ad803f7]
+  - @contentrain/types@1.64.0
+
+## 3.11.1
+
+### Patch Changes
+
+- Updated dependencies [04ce5eb]
+  - @contentrain/types@1.63.1
+
 ## 3.11.0
 
 ### Minor Changes

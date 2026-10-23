@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
@@ -72,6 +73,17 @@ for (const packageJsonFile of PRIVATE_PACKAGE_JSONS) {
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'))
   if (packageJson.private !== true) {
     console.error(`internal package must stay private: ${packageJsonFile}`)
+    failed = true
+  }
+}
+
+// A changeset may only name a workspace package: `changeset version` in the release workflow stops at any other
+// ("Found changeset … for package … which is not in the workspace"), and nothing is published until it is fixed.
+// The starter is private and outside the workspace (pnpm-workspace.yaml), so its changes ride on a kit changeset.
+const workspace = new Set(JSON.parse(execFileSync('pnpm', ['-r', 'list', '--depth', '-1', '--json'], { encoding: 'utf-8' })).map(pkg => pkg.name))
+for (const name of pendingBump) {
+  if (!workspace.has(name)) {
+    console.error(`a changeset names ${name}, which is not a workspace package (changeset version would fail)`)
     failed = true
   }
 }

@@ -219,7 +219,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": "figure.wp-block-image",

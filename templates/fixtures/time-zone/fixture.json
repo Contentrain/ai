@@ -1,0 +1,49 @@
+{
+  "siteConfig": [
+    {
+      "from": "    post: '/blog/:slug/',",
+      "to": "    post: '/:year/:month/:day/:slug/',"
+    },
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  timeZone: 'America/Los_Angeles',\n  sourceHosts: [],"
+    }
+  ],
+  "absentFromDist": [
+    "/2016/10/18/evening-post/",
+    "/blog/evening-post/"
+  ],
+  "distFiles": {
+    "2016/10/17/evening-post/index.html": {
+      "contains": [
+        "An evening post",
+        "<link rel=\"canonical\" href=\"https://example.com/2016/10/17/evening-post/\">",
+        "October 17, 2016"
+      ],
+      "excludes": [
+        "October 18, 2016"
+      ]
+    },
+    "2016/10/10/midday-post/index.html": {
+      "contains": [
+        "A midday post",
+        "October 10, 2016"
+      ]
+    },
+    "index.html": {
+      "contains": [
+        "/2016/10/17/evening-post/",
+        "October 17, 2016"
+      ],
+      "excludes": [
+        "/2016/10/18/evening-post/",
+        "October 18, 2016"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/2016/10/17/evening-post/"
+      ]
+    }
+  }
+}

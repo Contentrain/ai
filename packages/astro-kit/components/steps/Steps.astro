@@ -6,15 +6,17 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { muted } from '../_shared/muted'
 
 const steps = tv({
   slots: {
     header: 'mb-10 flex max-w-2xl flex-col gap-3',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    intro: 'text-lg opacity-80',
+    intro: `text-lg ${muted}`,
     list: 'grid gap-8 [counter-reset:kit-step]',
     step: 'flex gap-4 [counter-increment:kit-step]',
     date: 'text-sm font-semibold tabular-nums text-accent-text',
@@ -22,7 +24,7 @@ const steps = tv({
     badge: 'shrink-0',
     media: 'mb-2 overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
-    text: 'text-pretty opacity-80',
+    text: `text-pretty ${muted}`,
   },
   variants: {
     layout: {
@@ -77,20 +79,24 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, intro, items, kind = 'steps', layout: givenLayout, marker, connector, currentLabel = 'Current', style, measured, id } = Astro.props
+const { heading, intro, items, kind = 'steps', layout: givenLayout, marker, connector, currentLabel = 'Current', style, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `steps`, `steps-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'steps')
 // A timeline defaults to the rail layout and, without numbers, to the plain dot marker.
 const layout = givenLayout ?? (kind === 'timeline' ? 'rail' : 'list')
 const s = steps({ layout, marker: marker ?? (kind === 'timeline' ? 'dot' : 'number'), connector, style })
 // A bare year or an ISO date is machine-readable; anything else ("Spring 2021") stays text.
 const isoDate = (date: string) => /^\d{4}(-\d{2}(-\d{2})?)?$/.test(date.trim()) ? date.trim() : undefined
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
 const StepHeading = heading ? 'h3' : 'h2'
 ---
 {items.length > 0 && (
-  <Section measured={measured} id={id} aria-labelledby={headingId}>
+  <Section kit="steps" measured={measured} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}

@@ -1,14 +1,21 @@
 {
   "id": "stats",
   "name": "Stats",
-  "description": "A row of figures with a short label each (years in business, clients, uptime), with an optional heading and intro. The counter/number section of a landing page; numbers are static text, not animated.",
+  "description": "A row of figures with a short label each (years in business, clients, uptime), with an optional heading and intro. The counter/number section of a landing page; numbers are text (the final value in the HTML); motion \"count\" counts them up once in view, as a source counter did.",
   "category": "section",
   "uses": [],
   "shared": [
+    "BehaviorScript.astro",
     "KitImage.astro",
     "Section.astro",
+    "behaviors.ts",
+    "embed-frame.ts",
+    "embed-target.ts",
+    "image-widths.ts",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -85,6 +92,14 @@
       ],
       "default": "label-first",
       "description": "Which the page's text reads first, as the source does: label-first (an Elementor counter) or value-first (a Gutenberg figure heading over its label). The figure is drawn on top either way."
+    },
+    "motion": {
+      "options": [
+        "static",
+        "count"
+      ],
+      "default": "static",
+      "description": "static: the figures as printed. count: each counts up from 0 to its value once in view (a source counter that animated); the final number is in the HTML, nothing moves under reduced motion or without IntersectionObserver."
     }
   },
   "props": {
@@ -246,14 +261,15 @@
         }
       }
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `stats`, `stats-2`, … in render order, so every section on a page has its own."
     }
   },
   "slots": {},
-  "js": "none",
+  "js": "vanilla",
   "dependencies": {},
   "sources": {
     "gutenberg": [

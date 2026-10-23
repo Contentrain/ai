@@ -7,13 +7,16 @@ import KitImage from '../_shared/KitImage.astro'
 import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
 import Nav from '../nav/Nav.astro'
 import SearchBox from '../search-box/SearchBox.astro'
+import { instanceId } from '../_shared/instance-id'
 import { safeHref } from '../_shared/safe-url'
+import { brandColorValue } from './header'
+import { muted, mutedInverse } from '../_shared/muted'
 
 const header = tv({
   slots: {
     root: 'z-40 w-full',
     inner: 'container-page flex items-center gap-6 py-4',
-    brand: 'flex shrink-0 items-center gap-3 text-lg font-semibold tracking-tight text-current no-underline',
+    brand: 'flex min-w-0 items-center gap-3 text-lg font-semibold tracking-tight text-current no-underline',
   },
   variants: {
     layout: {
@@ -23,8 +26,8 @@ const header = tv({
     },
     tone: {
       default: { root: 'bg-surface text-ink' },
-      inverse: { root: 'bg-ink text-surface' },
-      transparent: { root: 'absolute inset-x-0 top-0 bg-transparent text-surface' },
+      inverse: { root: `bg-ink text-surface ${mutedInverse}` },
+      transparent: { root: `absolute inset-x-0 top-0 bg-transparent text-surface ${mutedInverse}` },
     },
     position: { static: {}, sticky: { root: 'sticky top-0' } },
     bordered: { true: {}, false: {} },
@@ -50,6 +53,11 @@ interface Props {
   padBottom?: string | undefined
   /** The navigation in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkNav?: boolean | undefined
+  /**
+   * The site name's colour where the source theme's is not the header's text colour: `link` for the site's link colour
+   * (a title that is a link styled like every other), or a colour (`#hex`, `rgb()`, `hsl()`; anything else is ignored).
+   */
+  brandColor?: string | undefined
   logo?: ImageInput | undefined
   /** Show the site name next to the logo. */
   showName?: boolean | undefined
@@ -68,11 +76,14 @@ interface Props {
   menu?: 'flyout' | 'mega' | undefined
 }
 
-const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
+const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, brandColor, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position, bordered })
+// The header's search field: `header-search` on a page, a second header's its own (its label points at its own input).
+const searchId = search ? instanceId(Astro.locals, undefined, 'header-search') : undefined
 const rootStyle = offsetTop ? `margin-top: ${offsetTop}` : undefined
 const innerStyle = [padTop && `padding-top: ${padTop}`, padBottom && `padding-bottom: ${padBottom}`].filter(Boolean).join('; ') || undefined
-const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`].filter(Boolean).join('; ') || undefined
+const brandColour = brandColorValue(brandColor)
+const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`, brandColour && `color: ${brandColour}`].filter(Boolean).join('; ') || undefined
 // A tagline under the name keeps its line on a phone, as themes print it: the navigation wraps below.
 // The search field sits in the bar from lg; at md the bar already holds the navigation, so the field keeps its own row.
 const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-nowrap' : undefined
@@ -83,21 +94,21 @@ const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-
       ? (
         <div class="flex min-w-0 basis-full flex-col gap-1 md:basis-auto">
           <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
-            {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
-            {showName && <span>{siteName}</span>}
+            {logo && <KitImage image={logo} priority class="h-8 w-auto min-w-0 max-w-full object-contain" sizes="160px" />}
+            {showName && <span class="min-w-[3ch] shrink-[8] truncate">{siteName}</span>}
           </a>
-          <p class="opacity-75" data-kit-tagline>{tagline}</p>
+          <p class={muted} data-kit-tagline>{tagline}</p>
         </div>
       )
       : (
         <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
-          {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
-          {showName && <span>{siteName}</span>}
+          {logo && <KitImage image={logo} priority class="h-8 w-auto min-w-0 max-w-full object-contain" sizes="160px" />}
+          {showName && <span class="min-w-[3ch] shrink-[8] truncate">{siteName}</span>}
         </a>
       )}
     {search && (
       <div class="order-last basis-full lg:order-none lg:ms-auto lg:basis-auto">
-        <SearchBox action={search.action} label={search.label} placeholder={search.placeholder} submitLabel={search.submitLabel} size="sm" id="header-search" />
+        <SearchBox action={search.action} label={search.label} placeholder={search.placeholder} submitLabel={search.submitLabel} size="sm" id={searchId} />
       </div>
     )}
     <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ms-auto']}>

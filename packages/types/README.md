@@ -596,6 +596,8 @@ colour, size or layout value either: those are measured.
 The slot vocabulary is closed and exported as data (`REGION_SLOT_DEFS`,
 `REGION_ITEM_SLOT_DEFS`, `REGION_GROUP_SLOT_DEFS`: slot name → kind and
 one-or-list), so a prompt, a schema and the validator read the same table.
+An item's `text` is asked as one ref but also takes a list of the item's
+blocks in order (`list: true`): the engine folds a card's further paragraphs in.
 
 ```ts
 import { needsFallback, validateBands, validateRegionSpecs, type Band, type RegionSpec } from '@contentrain/types'

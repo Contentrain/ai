@@ -26,19 +26,29 @@ import { registerMediaTools } from './tools/media.js'
 import packageJson from '../package.json' with { type: 'json' }
 
 /**
- * Default MCP `instructions` surfaced to clients at initialize time.
- * Deliberately kept under 512 characters — directory listings and client
- * UIs truncate longer strings. Override via `CreateServerOptions.instructions`.
+ * Default MCP `instructions` for a server whose tools are `available`.
+ * A hint names only a tool the session registers: `contentrain_apply` is
+ * `projectRoot`-gated, so a remote session (Studio's `/api/mcp/remote`)
+ * is never told to preview it. Deliberately kept under 512 characters —
+ * directory listings and client UIs truncate longer strings.
  */
-export const DEFAULT_INSTRUCTIONS
-  = 'Contentrain is git-native content governance: models define structure; '
+export function defaultInstructions(available: (tool: string) => boolean): string {
+  return 'Contentrain is git-native content governance: models define structure; '
     + 'content is canonical JSON/Markdown on a dedicated branch. Start with '
     + 'contentrain_status; call contentrain_describe_format before creating '
     + 'models or content, and contentrain_describe before editing a model\'s '
     + 'entries. Every write lands on an isolated cr/* branch and content_save '
-    + 'validates before committing. Destructive tools require confirm:true; '
-    + 'preview contentrain_apply with dry_run:true first. Content decisions '
-    + 'stay with the agent.'
+    + 'validates before committing. Destructive tools require confirm:true'
+    + (available('contentrain_apply') ? '; preview contentrain_apply with dry_run:true first. ' : '. ')
+    + 'Content decisions stay with the agent.'
+}
+
+/**
+ * The instructions of a server with every tool registered (local stdio and
+ * CLI flows). Override via `CreateServerOptions.instructions`; when omitted,
+ * `createServer` sends `defaultInstructions` for its own tool surface.
+ */
+export const DEFAULT_INSTRUCTIONS = defaultInstructions(() => true)
 
 export interface CreateServerOptions {
   /**
@@ -57,7 +67,8 @@ export interface CreateServerOptions {
   projectRoot?: string
   /**
    * MCP `instructions` string sent to clients in the `initialize` response.
-   * Defaults to `DEFAULT_INSTRUCTIONS`; pass an empty string to omit
+   * Defaults to `defaultInstructions` for the registered tools (with every
+   * tool available: `DEFAULT_INSTRUCTIONS`); pass an empty string to omit
    * instructions entirely.
    */
   instructions?: string
@@ -126,13 +137,14 @@ export function createServer(input: string | CreateServerOptions): McpServer {
   const skipTools = new Set(
     Object.keys(TOOL_REQUIREMENTS).filter(name => !isToolAvailable(name, provider, projectRoot)),
   )
+  const sent = instructions ?? defaultInstructions(name => !skipTools.has(name))
 
   const server = new CapabilityFilteredMcpServer(
     {
       name: 'contentrain-mcp',
       version: packageJson.version,
     },
-    { instructions: instructions || undefined },
+    { instructions: sent || undefined },
     skipTools,
   )
 
@@ -154,12 +166,12 @@ export function createServer(input: string | CreateServerOptions): McpServer {
 function resolveServerContext(input: string | CreateServerOptions): {
   provider: ToolProvider
   projectRoot: string | undefined
-  instructions: string
+  instructions: string | undefined
 } {
   if (typeof input === 'string') {
-    return { provider: new LocalProvider(input), projectRoot: input, instructions: DEFAULT_INSTRUCTIONS }
+    return { provider: new LocalProvider(input), projectRoot: input, instructions: undefined }
   }
-  const instructions = input.instructions ?? DEFAULT_INSTRUCTIONS
+  const instructions = input.instructions
   if (input.provider) {
     let projectRoot = input.projectRoot
     // Structural, not nominal: any worktree-backed provider exposes a

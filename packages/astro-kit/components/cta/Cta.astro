@@ -5,21 +5,23 @@ import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
+import { muted, mutedAccent, mutedBrand, mutedInverse } from '../_shared/muted'
 
 const cta = tv({
   slots: {
     box: 'flex flex-col gap-6',
     copy: 'flex flex-col gap-3',
-    eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
+    eyebrow: `text-sm font-semibold tracking-wide uppercase ${muted}`,
     // The text and buttons when a picture stands beside them.
     text: 'flex min-w-0 flex-1 flex-col gap-6',
     // The buttons with the small print under them.
     cta: 'flex flex-col gap-2 md:shrink-0',
-    note: 'text-sm opacity-75',
+    note: `text-sm ${muted}`,
     media: 'w-full max-w-sm shrink-0 overflow-hidden rounded-[var(--radius-image,var(--radius-card))] md:w-2/5',
     heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
-    body: 'max-w-2xl text-pretty opacity-85',
+    body: `max-w-2xl text-pretty ${muted}`,
     actions: 'flex flex-wrap gap-3',
   },
   variants: {
@@ -41,7 +43,7 @@ const cta = tv({
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
     // none: no fill of its own — the page background and text colour show through.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100', eyebrow: 'opacity-100', note: 'opacity-100' }, brand: { body: 'opacity-100', eyebrow: 'opacity-100', note: 'opacity-100' }, none: {} },
+    tone: { default: {}, muted: {}, inverse: {}, accent: {}, brand: {}, none: {} },
     // The buttons' own alignment: `start` keeps them at the start edge under centred text (a WordPress buttons block
     // with no justification sits left in a group whose heading and paragraph are centred). The row is the text's
     // column, as WordPress's content width is, not the whole section. Only centred needs it: inline and stacked
@@ -52,9 +54,9 @@ const cta = tv({
     // A card carries the tone itself, on a plain section; a plain card still needs a surface to read as one.
     { frame: 'card', tone: 'default', class: { box: 'bg-surface-muted text-ink' } },
     { frame: 'card', tone: 'muted', class: { box: 'border-transparent bg-surface-muted text-ink' } },
-    { frame: 'card', tone: 'inverse', class: { box: 'border-transparent bg-ink text-surface' } },
-    { frame: 'card', tone: 'accent', class: { box: 'border-transparent bg-accent text-accent-ink' } },
-    { frame: 'card', tone: 'brand', class: { box: 'border-transparent bg-brand text-brand-ink' } },
+    { frame: 'card', tone: 'inverse', class: { box: `border-transparent bg-ink text-surface ${mutedInverse}` } },
+    { frame: 'card', tone: 'accent', class: { box: `border-transparent bg-accent text-accent-ink ${mutedAccent}` } },
+    { frame: 'card', tone: 'brand', class: { box: `border-transparent bg-brand text-brand-ink ${mutedBrand}` } },
     { layout: 'centered', actionsAlign: 'start', class: { actions: 'w-full max-w-2xl justify-start' } },
     { layout: 'centered', class: { cta: 'items-center' } },
   ],
@@ -85,21 +87,25 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
-const { heading, eyebrow, body, note, image, actions, layout, frame, size, align, mediaSide, tone = 'accent', actionsAlign, bgImage, bgOverlay, measured: given, id } = Astro.props
+const { heading, eyebrow, body, note, image, actions, layout, frame, size, align, mediaSide, tone = 'accent', actionsAlign, bgImage, bgOverlay, measured: given, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `cta`, `cta-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'cta')
 const s = cta({ layout, frame, size, align, mediaSide, tone, actionsAlign })
 // A background picture is the section's measured background: Section draws the image and its overlay, and the text
 // turns light so it reads on either.
 const measured: MeasuredStyle | undefined = bgImage
   ? { ...given, tone: 'dark', bg: { ...given?.bg, image: bgImage, overlay: bgOverlay ?? given?.bg?.overlay ?? 'rgba(0, 0, 0, 0.55)' } }
   : given
-const headingId = id ? `${id}-title` : undefined
+const headingId = `${id}-title`
 // On the accent background the primary button (accent) would vanish: it is drawn as the secondary style there.
 const onAccent = (action: ActionInput): ActionInput => ({ label: action.label, href: action.href, newTab: action.newTab, style: 'secondary' })
 const shown = actions.map(action => (tone === 'accent' && !bgImage && (action.style ?? 'primary') === 'primary' ? onAccent(action) : action))
 ---
-<Section measured={measured} tone={frame === 'card' ? 'default' : tone} spacing={size === 'lg' ? 'lg' : 'md'} id={id} aria-labelledby={headingId}>
+<Section kit="cta" measured={measured} tone={frame === 'card' ? 'default' : tone} spacing={size === 'lg' ? 'lg' : 'md'} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
   <div class:list={[s.box(), image && 'md:flex-row md:items-center md:justify-between md:gap-12']}>
     <div class={image ? s.text() : 'contents'}>
       <div class={s.copy()}>

@@ -121,3 +121,57 @@ describe('posts keep their Unicode address through the import', () => {
     expect(Object.values(entries(files)).map((e) => e.slug)).toContain(move.slug)
   })
 })
+
+// x07: WordPress keeps a page's slug unique among its siblings only. `/interior-redesign/faq/` and `/faq/`, or
+// `/referenzen/home-staging/` and `/home-staging/`, are different pages at their own addresses; neither is renamed.
+describe('pages under different parents sharing a slug', () => {
+  const tree = async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const page = (id: number, slug: string, parent: number, link: string) => ({ ...raw.posts[1]!, id, slug, parent, link: `https://old.example${link}` })
+    raw.posts.push(
+      page(10, 'interior-redesign', 0, '/interior-redesign/'),
+      page(11, 'home-staging', 0, '/home-staging/'),
+      page(12, 'faq', 0, '/faq/'),
+      page(13, 'referenzen', 0, '/referenzen/'),
+      page(25, 'faq', 10, '/interior-redesign/faq/'),
+      page(1553, 'home-staging', 13, '/referenzen/home-staging/'),
+      page(1555, 'interior-redesign', 13, '/referenzen/interior-redesign/'),
+    )
+    return rawToContentrain(raw, { updatedBy: 'test' })
+  }
+
+  it('keep their own slug and parent, with no move and no 301', async () => {
+    const result = await tree()
+    const pages = JSON.parse(result.files['.contentrain/content/site/pages/data.json']!) as Record<string, { slug: string, parent?: string }>
+    const entry = (id: number) => pages[result.entry_source_map[String(id)]!.entry_id]!
+    for (const [id, slug, parent] of [[25, 'faq', 10], [1553, 'home-staging', 13], [1555, 'interior-redesign', 13]] as const) {
+      expect(entry(id).slug).toBe(slug)
+      expect(entry(id).parent).toBe(result.entry_source_map[String(parent)]!.entry_id)
+    }
+    expect(entry(12).slug).toBe('faq')
+    expect(new Set([25, 12].map((id) => result.entry_source_map[String(id)]!.entry_id)).size).toBe(2)
+    expect(result.report.slug_moves).toEqual([])
+  })
+
+  it('make the pages slug unique per parent only; the WP post ID stays unique, and a flat type keeps a unique slug', async () => {
+    const result = await tree()
+    const pages = JSON.parse(result.files['.contentrain/models/pages.json']!)
+    expect(pages.fields.slug.unique).toBeUndefined()
+    expect(pages.fields.wp_id.unique).toBe(true)
+    expect(JSON.parse(result.files['.contentrain/models/posts.json']!).fields.slug.unique).toBe(true)
+    // A site whose page slugs are all distinct keeps the field unique.
+    expect(JSON.parse(rawToContentrain(await baseRaw(), { updatedBy: 'test' }).files['.contentrain/models/pages.json']!).fields.slug.unique).toBe(true)
+  })
+
+  it('still renames two siblings sharing a slug, as before', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    raw.posts.push(
+      { ...raw.posts[1]!, id: 30, slug: 'parent', parent: 0 },
+      { ...raw.posts[1]!, id: 31, slug: 'twin', parent: 30, link: 'https://old.example/parent/twin/' },
+      { ...raw.posts[1]!, id: 32, slug: 'twin', parent: 30, link: 'https://old.example/parent/twin-2/' },
+    )
+    expect(rawToContentrain(raw, { updatedBy: 'test' }).report.slug_moves).toEqual([
+      { wp_id: 32, type: 'page', from: '/parent/twin-2/', slug: 'twin-32', reason: 'collision' },
+    ])
+  })
+})

@@ -13,6 +13,17 @@
       ],
       "default": "lg",
       "description": "Type scale of the body."
+    },
+    "inset": {
+      "options": [
+        "none",
+        "15",
+        "27",
+        "34",
+        "42"
+      ],
+      "default": "none",
+      "description": "From md (768px) up, the body's start edge sits at this share of its container's width and the body runs to the container's end: the axis an editorial page sets its text on (an intro in a narrow column, a column set off the page's start). Below md it is the full column. none: as before. The share is of the container the body sits in (in the starter's pages, the reading column)."
     }
   },
   "props": {

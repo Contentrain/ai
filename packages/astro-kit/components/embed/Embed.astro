@@ -8,7 +8,7 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import type { ImageInput } from '../_shared/types'
-import { embedTarget, mapTarget } from './embed'
+import { embedTarget, mapTarget } from '../_shared/embed-target'
 
 const embed = tv({
   slots: {
@@ -49,10 +49,14 @@ interface Props {
   showLabel?: string | undefined
   aspect?: 'auto' | 'video' | 'portrait' | 'square' | 'map' | undefined
   width?: 'prose' | 'page' | undefined
+  /** VideoObject structured data (JSON-LD) for a video with a name (`title` or `caption`); on by default, `false`: none. */
+  schema?: boolean | undefined
+  /** When the video was published (ISO date), for the VideoObject's uploadDate; left out when unknown. */
+  uploaded?: string | undefined
   id?: string | undefined
 }
 
-const { url, address, title, caption, poster, playLabel = 'Play', showLabel = 'Show', aspect = 'auto', width, id } = Astro.props
+const { url, address, title, caption, poster, playLabel = 'Play', showLabel = 'Show', aspect = 'auto', width, schema = true, uploaded, id } = Astro.props
 const target = (url ? embedTarget(url) : null) ?? (address && !url ? mapTarget(address) : null)
 const shape = aspect !== 'auto' ? aspect : target?.portrait ? 'portrait' : target?.kind === 'map' ? 'map' : 'video'
 // A player strip (Spotify, SoundCloud) has a fixed height, not a ratio.
@@ -61,6 +65,22 @@ const s = embed({ aspect: strip ? 'auto' : shape, width })
 const action = target && (target.kind === 'video' || target.kind === 'audio') ? playLabel : showLabel
 const name = title ?? caption ?? ''
 const linkUrl = url && /^https?:\/\//i.test(url) ? url : undefined
+// VideoObject states only what the embed knows: its name, its page and player, a poster (the site's own, else the
+// provider's still for a YouTube video: a URL in data, never fetched by the visitor) and an upload date when given.
+const youtubeId = target?.provider === 'youtube' ? /(?:[?&]v=|\/shorts\/)([\w-]{11})/.exec(target.href)?.[1] : undefined
+const thumbnail = poster?.src ? new URL(poster.src, Astro.site ?? Astro.url).href : youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : undefined
+const structured = schema && target?.kind === 'video' && name
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      name,
+      ...(caption && caption !== name ? { description: caption } : {}),
+      url: target.href,
+      embedUrl: target.src.split('?')[0],
+      ...(thumbnail ? { thumbnailUrl: thumbnail } : {}),
+      ...(uploaded ? { uploadDate: uploaded } : {}),
+    }).replace(/</g, '\\u003c')
+  : null
 ---
 {target
   ? (
@@ -77,6 +97,7 @@ const linkUrl = url && /^https?:\/\//i.test(url) ? url : undefined
         </a>
       </div>
       {caption && <figcaption class={s.caption()}>{caption}</figcaption>}
+      {structured && <script type="application/ld+json" set:html={structured}></script>}
     </figure>
   )
   : linkUrl && (
@@ -84,20 +105,17 @@ const linkUrl = url && /^https?:\/\//i.test(url) ? url : undefined
   )}
 
 <script>
+  import { playerFrame, plainClick } from '../_shared/embed-frame'
+
   // Click (or Enter) on the poster: the player replaces it, focused, so keyboard and screen-reader users land in it.
   // A modified click (new tab, new window) keeps the link's own behaviour.
   document.addEventListener('click', (event) => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (!plainClick(event)) return
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('[data-kit-embed] a[data-embed-src]')
-    if (!link?.dataset.embedSrc) return
+    // An address that is no known player stays what it is: a link.
+    const frame = link && playerFrame(link.dataset.embedSrc, link.dataset.embedTitle ?? '')
+    if (!link || !frame) return
     event.preventDefault()
-    const frame = document.createElement('iframe')
-    frame.src = link.dataset.embedSrc
-    frame.title = link.dataset.embedTitle ?? ''
-    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write'
-    frame.allowFullscreen = true
-    frame.referrerPolicy = 'strict-origin-when-cross-origin'
-    frame.className = 'absolute inset-0 h-full w-full border-0'
     link.replaceWith(frame)
     frame.focus()
   })

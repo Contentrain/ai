@@ -7,8 +7,9 @@
 //     object, returned, logged or put in an error message.
 //   - Requests go to one fixed endpoint. There is no base-URL option.
 //   - The request carries only what the kind's shaper and renderer produced:
-//     the state and questions Jev gets, as a prompt, answered through one
-//     forced tool call so the answer is structured, not parsed from prose.
+//     the state and questions Jev gets, as a prompt. The answer is structured,
+//     not parsed from prose: one forced tool call at temperature 0 on models
+//     that take them, structured outputs (a JSON schema) on the rest.
 //
 // A model reports no confidence of its own. Its answers carry confidence 0,
 // meaning "not measured": a kind with a confidence floor (eligibility_band)
@@ -33,7 +34,7 @@ export interface AnthropicProviderOptions {
   fetch?: typeof globalThis.fetch
   /** Per request. Default 60s. */
   timeoutMs?: number
-  /** Default `claude-haiku-4-5-20251001`, asked at temperature 0. */
+  /** Default `claude-haiku-4-5-20251001`, asked at temperature 0. A Claude 4.7 or later model is asked through structured outputs. */
   model?: string
 }
 
@@ -68,27 +69,46 @@ export function genericLlmPrompt({ state, questions, count }: { state: string, q
   return lines.join('\n')
 }
 
-/** The forced tool the model answers through: one record per item, one field per question. */
-function answerTool(questions: Questions) {
+/**
+ * Whether a model takes the original request: `temperature: 0` and a forced tool call. Claude 4.7 and later models
+ * answer a non-default `temperature` with HTTP 400, and Opus and Sonnet 5.5 a forced tool call, so they are asked
+ * through structured outputs instead. An id this does not recognise is asked the current way.
+ */
+export function takesForcedTool(model: string): boolean {
+  if (/^claude-\d-\d-/.test(model)) return true
+  const version = /^claude-(?:opus|sonnet|haiku)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?$/.exec(model)
+  if (!version) return false
+  const [major, minor] = [Number(version[1]), Number(version[2] ?? 0)]
+  return major < 4 || (major === 4 && minor < 7)
+}
+
+/**
+ * One record per item, one field per question. `bounds: false` leaves out the numeric bounds, which a structured-output
+ * schema does not take; `readField` checks every value either way.
+ */
+function answerSchema(questions: Questions, bounds = true) {
   const properties: Record<string, unknown> = { item: { type: 'integer' } }
   for (const [suffix, question] of Object.entries(questions)) {
     properties[suffix] = question.type === 'choice'
       ? { type: 'string', enum: Object.keys(question.criteria) }
       : question.type === 'score'
-        ? { type: 'integer', minimum: 0, maximum: question.criteria.length - 1 }
-        : { type: 'number', minimum: 0, maximum: 1 }
+        ? { type: 'integer', ...(bounds ? { minimum: 0, maximum: question.criteria.length - 1 } : {}) }
+        : { type: 'number', ...(bounds ? { minimum: 0, maximum: 1 } : {}) }
   }
+  const strict = bounds ? {} : { additionalProperties: false }
   return {
-    name: TOOL_NAME,
-    description: 'Record the answers for every item.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        items: { type: 'array', items: { type: 'object', properties, required: Object.keys(properties) } },
-      },
-      required: ['items'],
+    type: 'object',
+    properties: {
+      items: { type: 'array', items: { type: 'object', properties, required: Object.keys(properties), ...strict } },
     },
+    required: ['items'],
+    ...strict,
   }
+}
+
+/** The forced tool the model answers through. */
+function answerTool(questions: Questions) {
+  return { name: TOOL_NAME, description: 'Record the answers for every item.', input_schema: answerSchema(questions) }
 }
 
 /** The Messages API body one batch sends. */
@@ -98,13 +118,16 @@ export function buildAnthropicRequest(spec: KindSpec<any, any>, shaped: readonly
   const { state } = buildJevRequest(spec, shaped)
   const questions = jev.questions('item1')
   const prompt = (jev.llmPrompt ?? genericLlmPrompt)({ state, questions, count: shaped.length })
+  const messages = [{ role: 'user' as const, content: prompt }]
+  if (!takesForcedTool(model))
+    return { model, max_tokens: MAX_TOKENS, output_config: { format: { type: 'json_schema' as const, schema: answerSchema(questions, false) } }, messages }
   return {
     model,
     max_tokens: MAX_TOKENS,
     temperature: 0,
     tools: [answerTool(questions)],
-    tool_choice: { type: 'tool', name: TOOL_NAME },
-    messages: [{ role: 'user', content: prompt }],
+    tool_choice: { type: 'tool' as const, name: TOOL_NAME },
+    messages,
   }
 }
 
@@ -164,7 +187,8 @@ export function readAnthropicResponse(spec: KindSpec<any, any>, count: number, b
   const root = (body && typeof body === 'object' ? body : {}) as { content?: unknown, usage?: unknown, model?: unknown }
   const content = Array.isArray(root.content) ? root.content as Array<Record<string, unknown>> : []
   const call = content.find(block => block?.type === 'tool_use' && block.name === TOOL_NAME)
-  const input = (call?.input && typeof call.input === 'object' ? call.input : {}) as { items?: unknown }
+  const given = call ? call.input : structuredAnswer(content)
+  const input = (given && typeof given === 'object' ? given : {}) as { items?: unknown }
   const records = Array.isArray(input.items) ? input.items as Array<Record<string, unknown>> : []
 
   const outcomes: Array<Outcome | undefined> = []
@@ -186,6 +210,19 @@ export function readAnthropicResponse(spec: KindSpec<any, any>, count: number, b
       ? { usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens } }
       : {}),
     ...(typeof root.model === 'string' ? { model: root.model } : {}),
+  }
+}
+
+/** A structured-output answer: the JSON of the text block. Not JSON, or not an object: no answer. */
+function structuredAnswer(content: ReadonlyArray<Record<string, unknown>>): object | undefined {
+  const text = content.find(block => block?.type === 'text' && typeof block.text === 'string')?.text as string | undefined
+  if (!text) return undefined
+  try {
+    const value: unknown = JSON.parse(text)
+    return value && typeof value === 'object' ? value : undefined
+  }
+  catch {
+    return undefined
   }
 }
 

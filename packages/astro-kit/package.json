@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/astro-kit",
-  "version": "0.34.2",
+  "version": "0.49.0",
   "license": "MIT",
   "description": "Copy-in Astro components for Contentrain sites (shadcn model): typed props, tailwind-variants, zero JavaScript by default — with a machine-readable catalog",
   "type": "module",
@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "happy-dom": "^20.14.5",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.63.0",
     "pngjs": "^7.0.0",

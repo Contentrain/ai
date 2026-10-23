@@ -5,11 +5,12 @@
 import { tv } from 'tailwind-variants'
 import { addressLabel, NETWORK_MARKS, networkOf } from '../_shared/social'
 import { safeHref } from '../_shared/safe-url'
+import { muted } from '../_shared/muted'
 
 const social = tv({
   slots: {
     list: 'flex flex-wrap items-center',
-    link: 'inline-flex items-center justify-center gap-2 text-current no-underline opacity-85 hover:opacity-100 focus-visible:opacity-100',
+    link: `inline-flex items-center justify-center gap-2 no-underline ${muted} hover:text-current focus-visible:text-current`,
     mark: 'shrink-0',
   },
   variants: {

@@ -9,19 +9,23 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "3.11.0",
+  "version": "3.11.12",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@contentrain/mcp",
-      "version": "3.11.0",
+      "version": "3.11.12",
       "transport": {
         "type": "stdio"
       }
     }
   ],
   "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://studio.contentrain.io/api/mcp/remote"
+    },
     {
       "type": "streamable-http",
       "url": "https://studio.contentrain.io/api/mcp/v1/{project_id}/mcp",

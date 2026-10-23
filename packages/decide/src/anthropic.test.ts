@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ANTHROPIC_ENDPOINT, ANTHROPIC_KEY_ENV, AnthropicError, anthropicRequestShapeHash, buildAnthropicRequest, createAnthropicProvider, readAnthropicResponse } from './anthropic.js'
+import { ANTHROPIC_ENDPOINT, ANTHROPIC_KEY_ENV, AnthropicError, anthropicRequestShapeHash, buildAnthropicRequest, createAnthropicProvider, readAnthropicResponse, takesForcedTool } from './anthropic.js'
 import { CircuitBreaker, MemoryDailyBudget } from './budget.js'
 import { MemoryDecisionCache } from './cache.js'
 import { createDecider } from './decide.js'
@@ -158,9 +158,38 @@ describe('Anthropic provider', () => {
     expect(readAnthropicResponse(punchItem, 1, { content: 'nope' }).outcomes).toEqual([undefined])
   })
 
+  it('asks a model by what it takes: temperature 0 and a forced tool before Claude 4.7, structured outputs from 4.7 on', () => {
+    for (const model of ['claude-haiku-4-5-20251001', 'claude-haiku-4-5', 'claude-sonnet-4-5', 'claude-opus-4-1', 'claude-3-5-haiku-20241022']) expect(takesForcedTool(model), model).toBe(true)
+    for (const model of ['claude-opus-4-7', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-sonnet-5', 'something-else']) expect(takesForcedTool(model), model).toBe(false)
+    const shaped = [punchItem.shape(item)]
+    const legacy = buildAnthropicRequest(punchItem, shaped, 'claude-haiku-4-5-20251001')
+    expect(legacy).toMatchObject({ temperature: 0, tool_choice: { type: 'tool', name: 'record_answers' } })
+    const current = buildAnthropicRequest(punchItem, shaped, 'claude-opus-5-5')
+    for (const key of ['temperature', 'top_p', 'top_k', 'tools', 'tool_choice']) expect(current, key).not.toHaveProperty(key)
+    expect(current.messages).toEqual(legacy.messages)
+    expect(current).toMatchObject({ model: 'claude-opus-5-5', max_tokens: 4096, output_config: { format: { type: 'json_schema' } } })
+    const schema = (current as { output_config: { format: { schema: any } } }).output_config.format.schema
+    expect(schema.additionalProperties).toBe(false)
+    expect(schema.properties.items.items).toMatchObject({ additionalProperties: false, required: ['item', 'class', 'severity', 'needs_human'] })
+    expect(JSON.stringify(schema)).not.toMatch(/minimum|maximum/)
+  })
+
+  it('reads a structured-output answer from the text block, and a bad one as no answer; a 5.5 model is sent no temperature', async () => {
+    const items = [{ item: 1, class: 'measurement', severity: 1, needs_human: 0.3 }, { item: 2, class: 'measurement', severity: 9, needs_human: 0.3 }]
+    const body = { content: [{ type: 'text', text: JSON.stringify({ items }) }], usage: { input_tokens: 10, output_tokens: 5 }, model: 'claude-opus-5-5' }
+    expect(readAnthropicResponse(punchItem, 2, body)).toEqual({ outcomes: [{ choice: 'measurement', score: 1, confidence: 0 }, undefined], usage: { input_tokens: 10, output_tokens: 5 }, model: 'claude-opus-5-5' })
+    expect(readAnthropicResponse(punchItem, 1, { content: [{ type: 'text', text: 'not json' }] }).outcomes).toEqual([undefined])
+    const { fetch, calls } = scriptedAnthropic(() => undefined)
+    await createAnthropicProvider({ env: AENV, fetch, model: 'claude-sonnet-5-5' }).ask(punchItem, [punchItem.shape(item)])
+    expect(calls[0]!.body).not.toHaveProperty('temperature')
+    expect(calls[0]!.body).toHaveProperty('output_config')
+  })
+
   it('has its own request-shape hash, and leaves the Jev shape (the cache key) alone', () => {
     const base = anthropicRequestShapeHash(punchItem)
     expect(base).toMatch(/^[0-9a-f]{16}$/)
+    // The Haiku 4.5 default's request is the one calibration/haiku/2026-09-19.json measured, byte for byte.
+    expect(base).toBe('96aa1feb04caef9a')
     expect(anthropicRequestShapeHash(punchItem, 'claude-sonnet-5')).not.toBe(base)
     expect(anthropicRequestShapeHash({ ...punchItem, jev: { ...punchItem.jev!, llmPrompt: undefined } })).not.toBe(base)
     expect(requestShapeHash({ ...punchItem, jev: { ...punchItem.jev!, llmPrompt: undefined } })).toBe(requestShapeHash(punchItem))

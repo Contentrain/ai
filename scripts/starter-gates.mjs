@@ -99,11 +99,14 @@ for (const [locale, entries] of Object.entries(fixture.uiStrings ?? {})) {
   writeFileSync(file, `${JSON.stringify(Object.fromEntries(Object.entries(table).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))), null, 2)}\n`)
 }
 // `siteConfig`: lines of src/site.config.ts the fixture replaces ({ from, to }) — the settings a migration writes there.
-for (const { from, to } of fixture.siteConfig ?? []) {
-  const file = join(project, 'src', 'site.config.ts')
-  const source = readFileSync(file, 'utf8')
-  if (!source.includes(from)) throw new Error(`fixture.siteConfig: ${from} is not in src/site.config.ts`)
-  writeFileSync(file, source.replace(from, to))
+// `contentConfig`: the same for src/content.config.ts — the fields a migrated site's models add (a page's `comments_open`).
+for (const [key, name] of [['siteConfig', 'site.config.ts'], ['contentConfig', 'content.config.ts']]) {
+  for (const { from, to } of fixture[key] ?? []) {
+    const file = join(project, 'src', name)
+    const source = readFileSync(file, 'utf8')
+    if (!source.includes(from)) throw new Error(`fixture.${key}: ${from} is not in src/${name}`)
+    writeFileSync(file, source.replace(from, to))
+  }
 }
 // `--menu mega` sets what a migration writes for a mega menu (`chrome.menu`); the default leaves site.config.ts as it is.
 if (values.menu === 'mega') {

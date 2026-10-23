@@ -114,6 +114,79 @@ describe('validateProjectPlan', () => {
     ]))
   })
 
+  it('accepts a heading face and a heading track as roles, so a design direction can carry them', () => {
+    const p = plan()
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'font-heading': "'Fraunces', ui-serif, Georgia, serif", 'tracking-heading': '-0.02em' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const track of ['0', 'normal', '0.05em', '-1px', '.5rem']) {
+      p.site.tokens.roles = { ...p.site.tokens.roles, 'tracking-heading': track }
+      expect(validateProjectPlan(p).errors, track).toEqual([])
+    }
+  })
+
+  it('refuses a heading track that is not a letter-spacing', () => {
+    const p = plan()
+    for (const track of ['tight', '1em; } h1 { display: none', 'url(//evil.test/x)', '5%', '-em']) {
+      p.site.tokens.roles = { ...p.site.tokens.roles, 'tracking-heading': track }
+      expect(validateProjectPlan(p).errors, track).toContain(`tokens.roles.tracking-heading ${track} is not a letter-spacing`)
+    }
+  })
+
+  it('accepts a direction\'s display voice and its fields as roles', () => {
+    const p = plan()
+    p.site.tokens.roles = {
+      ...p.site.tokens.roles,
+      'text-display': 'clamp(3rem, 1.5rem + 5vw, 6.5rem)', 'text-lead': '1.25rem', 'leading-display': '0.95', 'tracking-display': '-0.03em', 'case-heading': 'uppercase',
+      'color-field-1': '#1d3b2a', 'color-field-1-ink': '#f4efe6', 'color-field-4': 'rgb(240 230 210)', 'color-field-4-ink': '#222',
+    }
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('refuses a display voice or a field that is not the CSS it names, and a field without its ink', () => {
+    const p = plan()
+    p.site.tokens.roles = {
+      ...p.site.tokens.roles,
+      'text-display': 'huge', 'text-lead': '1rem; } h1 { display: none', 'leading-display': '1.1rem', 'tracking-display': 'tight', 'case-heading': 'small-caps',
+      'color-field-1': 'url(//evil.test/x)', 'color-field-1-ink': '#fff', 'color-field-2': '#123456',
+    }
+    expect(validateProjectPlan(p).errors).toEqual(expect.arrayContaining([
+      'tokens.roles.text-display huge is not a CSS size',
+      'tokens.roles.text-lead 1rem; } h1 { display: none is not a CSS size',
+      'tokens.roles.leading-display 1.1rem is not a line-height',
+      'tokens.roles.tracking-display tight is not a letter-spacing',
+      'tokens.roles.case-heading small-caps is not uppercase or none',
+      'tokens.roles.color-field-1 url(//evil.test/x) is not a colour',
+      'tokens.roles.color-field-2 is set without its ink, or its ink without it',
+    ]))
+  })
+
+  it('holds the display voice to the design layer\'s floors and ceiling', () => {
+    const p = plan()
+    const errorsFor = (roles: Record<string, string>) => {
+      p.site.tokens.roles = { ...plan().site.tokens.roles, ...roles }
+      return validateProjectPlan(p).errors
+    }
+    for (const ok of [{ 'leading-display': '0.8' }, { 'leading-display': 'normal' }, { 'tracking-display': '-0.05em' }, { 'tracking-display': '-2px' }, { 'text-display': 'clamp(3rem, 1.5rem + 6vw, 9rem)' }, { 'text-display': '144px' }] as Array<Record<string, string>>) {
+      expect(errorsFor(ok), JSON.stringify(ok)).toEqual([])
+    }
+    expect(errorsFor({ 'leading-display': '0.5' })).toEqual(['tokens.roles.leading-display 0.5 sets lines tighter than 0.8'])
+    expect(errorsFor({ 'tracking-display': '-0.08em' })).toEqual(['tokens.roles.tracking-display -0.08em sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'tracking-display': '-1rem' })).toEqual(['tokens.roles.tracking-display -1rem sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'tracking-display': '-3px' })).toEqual(['tokens.roles.tracking-display -3px sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'text-display': '40rem' })).toEqual(['tokens.roles.text-display 40rem is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'clamp(3rem, 2rem + 8vw, 12rem)' })).toEqual(['tokens.roles.text-display clamp(3rem, 2rem + 8vw, 12rem) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'clamp(3rem, 6vw, 20vw)' })).toEqual(['tokens.roles.text-display clamp(3rem, 6vw, 20vw) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'min(12vw, 30vw)' })).toEqual(['tokens.roles.text-display min(12vw, 30vw) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'min(12vw, 8rem)' })).toEqual([])
+    // One call, closed at the end, nothing outside it: a trailing expression after a bounded call grows unbounded.
+    expect(errorsFor({ 'text-display': 'min(8rem, 1rem) + calc(50vw)' })).toEqual(['tokens.roles.text-display min(8rem, 1rem) + calc(50vw) is larger than 9rem or not held to a largest size'])
+    for (const trailing of ['min(8rem, 1rem) + calc(50vw)', 'clamp(3rem, 6vw, 8rem) + 10vw', 'clamp(3rem, 6vw, 8rem) clamp(1rem, 50vw, 99vw)', 'min(8rem, 10vw)*3']) {
+      // Refused either as no CSS size or as unheld; never accepted.
+      expect(errorsFor({ 'text-display': trailing }), trailing).toEqual([expect.stringMatching(new RegExp(`^tokens\\.roles\\.text-display ${trailing.replace(/[()*+.]/g, '\\$&')} is (?:not a CSS size|larger than 9rem or not held to a largest size)$`))])
+    }
+    expect(errorsFor({ 'text-display': 'calc(2rem + 10vw)' })).toEqual(['tokens.roles.text-display calc(2rem + 10vw) is larger than 9rem or not held to a largest size'])
+  })
+
   it(':category is a post address token only', () => {
     const p = plan()
     p.site.permalinks.post = '/:category/:slug/'
@@ -245,12 +318,12 @@ describe('validateProjectPlan', () => {
 
   it('accepts and checks the interface text the source theme printed', () => {
     const p = plan()
-    p.site.uiStrings = { 'blog.read_more': 'Devamını oku', 'nav.skip': 'İçeriğe geç' }
+    p.site.uiStrings = { 'posts.read_more': 'Devamını oku', 'nav.skip': 'İçeriğe geç' }
     expect(validateProjectPlan(p).errors).toEqual([])
-    p.site.uiStrings = { 'Read More': 'x', 'blog.read_more': '<b>x</b>', 'nav.skip': '  ' }
+    p.site.uiStrings = { 'Read More': 'x', 'posts.read_more': '<b>x</b>', 'nav.skip': '  ' }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.uiStrings key Read More is not a ui-strings key',
-      'site.uiStrings.blog.read_more is not a plain text of 1 to 200 characters',
+      'site.uiStrings.posts.read_more is not a plain text of 1 to 200 characters',
       'site.uiStrings.nav.skip is not a plain text of 1 to 200 characters',
     ])
     p.site.uiStrings = Object.fromEntries(Array.from({ length: 101 }, (_, i) => [`k.k${i}`, 'x']))
@@ -387,9 +460,13 @@ describe('validateProjectPlan', () => {
   it('checks the list text size and the header and footer the source theme prints', () => {
     const p = plan()
     p.site.lists = { display: 'full', heading: true, text: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)' }
-    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true, footerAlign: 'center' }
+    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true, brandColor: 'link', footerAlign: 'center' }
     p.site.tokens.roles['color-link'] = '#c36'
     expect(validateProjectPlan(p).errors).toEqual([])
+    for (const brandColor of ['rgb(204, 51, 102)', 'rgba(0 0 0 / 50%)', '#C36', 'hsl(330deg 60% 50%)']) {
+      p.site.chrome = { ...p.site.chrome, brandColor }
+      expect(validateProjectPlan(p).errors).toEqual([])
+    }
     p.site.lists = { ...p.site.lists, image: { height: 'clamp(15vw,30vh,400px)' }, gap: '22px', headingWidth: '1200px', tieOrder: 'asc' }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.lists = { ...p.site.lists, image: { aspect: '1.95 / 1' } }
@@ -401,13 +478,20 @@ describe('validateProjectPlan', () => {
       'site.lists.image.aspect wide is not a ratio like 16 / 9',
       'site.lists.tieOrder up is not asc or desc',
     ])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading, moreLabel: 'READ ARTICLE', dateStyle: 'medium' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading, moreLabel: '<b>More</b>', dateStyle: 'tiny' as 'short' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.lists.moreLabel is not plain words of 1-40 characters', 'site.lists.dateStyle tiny is not full, long, medium or short'])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading, moreLabel: '  ' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.lists.moreLabel is not plain words of 1-40 characters'])
     p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading }
     p.site.lists.text = 'red; color: blue'
-    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, footerAlign: 'middle' as 'center' }
+    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, brandColor: 'red; background: url(x)', footerAlign: 'middle' as 'center' }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.lists.text red; color: blue is not a CSS size',
       'site.chrome.brand clamp(url(x)) is not a CSS size',
       'site.chrome.navLinks is not a boolean',
+      'site.chrome.brandColor red; background: url(x) is not link or a colour',
       'site.chrome.footerAlign middle is not start or center',
       'site.chrome.copyright is not a line of plain text (1–200 characters, no markup)',
     ])
@@ -441,6 +525,20 @@ describe('validateProjectPlan', () => {
       p.site.chrome = { breadcrumbs: breadcrumbs as 'always' }
       expect(validateProjectPlan(p).errors, JSON.stringify(breadcrumbs)).toEqual([`site.chrome.breadcrumbs ${String(breadcrumbs)} is not always`])
     }
+  })
+
+  it('a page front names one page by slug, or a composed view with no page entry, never both or neither', () => {
+    const p = plan()
+    p.site.home = { kind: 'page', slug: 'welcome' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.home = { kind: 'page', view: -2 }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.home = { kind: 'page', slug: 'welcome', view: -2 }
+    expect(validateProjectPlan(p).errors).toEqual(['site.home of kind page names neither or both of a slug and a view'])
+    p.site.home = { kind: 'page' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.home of kind page names neither or both of a slug and a view'])
+    p.site.home = { kind: 'page', view: 1.5 }
+    expect(validateProjectPlan(p).errors).toEqual(['site.home.view 1.5 is not a whole number'])
   })
 
   it('checks the footer columns packed at the end edge', () => {
@@ -480,6 +578,40 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual([])
     p.routes[1]!.sections[0]!.width = 'full' as 'wide'
     expect(validateProjectPlan(p).errors.some(e => e.endsWith('width full is not content or wide'))).toBe(true)
+  })
+
+  it('takes a section\'s facts: each a planned behavior, each once', () => {
+    const p = plan()
+    p.behaviors = [{ fact: 'interactive:aa11', outcome: 'prose' }, { fact: 'interactive:bb22', outcome: 'prose' }]
+    p.routes[1]!.sections[0]!.facts = ['interactive:aa11', 'interactive:bb22']
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.routes[1]!.sections[0]!.facts = ['interactive:aa11', 'interactive:aa11']
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts names a fact twice'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = ['interactive:cc33']
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts interactive:cc33 is not a planned behavior'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = [''] as string[]
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is not a list of fact ids'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = 'interactive:aa11' as unknown as string[]
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is not a list of fact ids'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = []
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is empty (leave it out when the section holds no fact)'))).toBe(true)
+  })
+
+  it('names a fact once per route: its sections and the layout drawn over it; a widget on two pages is in one section of each', () => {
+    const p = plan()
+    p.behaviors = [{ fact: 'interactive:aa11', outcome: 'prose' }]
+    // One section on each of two routes: the widget on two pages.
+    p.routes[0]!.sections[0]!.facts = ['interactive:aa11']
+    p.routes[2]!.sections[0]!.facts = ['interactive:aa11']
+    expect(validateProjectPlan(p).errors).toEqual([])
+    // Two sections of one route.
+    p.routes[2]!.sections.push({ ...p.routes[2]!.sections[0]!, facts: ['interactive:aa11'] })
+    expect(validateProjectPlan(p).errors).toContain('route about: fact interactive:aa11 is named by route about section 0 and route about section 1')
+    p.routes[2]!.sections.pop()
+    // The header is drawn on every route: with a route section it is two roots there.
+    p.layout.header!.facts = ['interactive:aa11']
+    expect(validateProjectPlan(p).errors).toContain('route home: fact interactive:aa11 is named by layout header and route home section 0')
+    expect(validateProjectPlan(p).errors.some(e => e.startsWith('route post:'))).toBe(false)
   })
 
   it('requires a home route', () => {

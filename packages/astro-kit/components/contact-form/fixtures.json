@@ -177,5 +177,30 @@
         "title": "Our studio"
       }
     }
+  },
+  {
+    "name": "detail-icon-images",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Contact",
+      "intro": "Tell us what you make and when you want to launch.",
+      "layout": "stacked",
+      "align": "start",
+      "details": [
+        {
+          "value": "Studio 4, Harbour Lane",
+          "iconImage": "/kit-fixtures/icon-1.svg"
+        },
+        {
+          "value": "hello@northwind.example",
+          "href": "mailto:hello@northwind.example",
+          "iconImage": "/kit-fixtures/icon-1.svg"
+        },
+        {
+          "value": "+351 21 000 0000",
+          "href": "tel:+351210000000"
+        }
+      ]
+    }
   }
 ]

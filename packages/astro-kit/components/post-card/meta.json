@@ -4,7 +4,7 @@
   "description": "One post in a list (index, archive, related posts): image, category, date, title, excerpt, author. The whole card links to the post.",
   "category": "content",
   "uses": [],
-  "shared": ["KitImage.astro", "safe-url.ts", "types.ts"],
+  "shared": ["KitImage.astro", "card-image.ts", "image-widths.ts", "safe-url.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["vertical", "horizontal", "minimal"], "default": "vertical", "description": "Image on top, image beside the text, or text only with a divider." },
     "surface": { "options": ["plain", "card"], "default": "plain", "description": "plain: no surface. card: its own background (--color-card), radius and shadow (--shadow-card), the text padded (--spacing-card) and the image flush at the edge, as theme cards are drawn on a tinted page." },
@@ -12,10 +12,11 @@
   },
   "props": {
     "title": { "type": "string", "required": true, "description": "Post title (posts.title)." },
-    "href": { "type": "url", "required": true, "description": "Post address (from the permalink pattern)." },
+    "href": { "type": "url", "description": "Post address (from the permalink pattern). Absent for an entry with no page of its own (a list-only custom type's): the title is printed unlinked, never as a dead or `#` link." },
     "excerpt": { "type": "text", "description": "Summary (posts.excerpt)." },
     "date": { "type": "datetime", "description": "Publication date (posts.published_at)." },
     "locale": { "type": "string", "description": "Locale the date is written in (site.language)." },
+    "timeZone": { "type": "string", "description": "Time zone the date is read in (the site's: an IANA name or a ±hh:mm offset); absent, UTC." },
     "image": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Cover (posts.cover → media)." },
     "category": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true } }, "description": "Primary category and its archive." },
     "author": { "type": "string", "description": "Author name (posts.author → authors.name)." },
@@ -24,7 +25,9 @@
     "sizes": { "type": "string", "description": "The image's `sizes` hint; absent, the card's own guess. A list passes the slot its columns give." },
     "imageHeight": { "type": "string", "description": "The image block's height as the source sets it (a CSS length or clamp()), cropped to fit; wins over imageAspect." },
     "imageAspect": { "type": "string", "description": "The image block's aspect ratio (16 / 9) where the source sets an aspect ratio; absent, 16 / 9." },
-    "excerptLines": { "type": "integer", "min": 2, "max": 4, "content": false, "description": "Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise)." }
+    "excerptLines": { "type": "integer", "min": 2, "max": 4, "content": false, "description": "Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise)." },
+    "moreLabel": { "type": "string", "description": "The source's own read-more words under the excerpt (READ ARTICLE); absent, none. Shown only on a card with a link; the title link stays the one link." },
+    "dateStyle": { "type": "select", "options": ["full", "long", "medium", "short"], "default": "long", "content": false, "description": "How the date is written (Intl dateStyle), as the source writes it; absent, long." }
   },
   "slots": {},
   "js": "none",

@@ -174,7 +174,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
@@ -192,7 +193,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
@@ -209,7 +211,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
@@ -287,7 +290,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
@@ -306,7 +310,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".slider-wrapper[data-slider-options] > *",
@@ -326,7 +331,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "item": {
@@ -897,7 +903,8 @@
       "id": "stats.counter",
       "component": "stats",
       "variant": {
-        "labelSize": "lg"
+        "labelSize": "lg",
+        "motion": "count"
       },
       "slots": {
         "title": {
@@ -1171,7 +1178,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": "@slides .swiper-slide:not(.swiper-slide-duplicate)",
