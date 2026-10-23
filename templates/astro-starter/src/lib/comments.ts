@@ -30,9 +30,14 @@ export interface CommentNode extends StaticComment {
 
 const FILE = import.meta.glob<{ default: Record<string, StaticThread> }>('/src/data/comments.json', { eager: true })
 
-/** The thread of an entry (`posts`, its id), or undefined when the migration carried none for it. */
-export function staticThreadOf(model: string, entry: string): StaticThread | undefined {
-  const thread = Object.values(FILE)[0]?.default?.[`${model}/${entry}`]
+/**
+ * The thread of an entry (`posts`, its id), or undefined when the migration carried none for it. A translation's own
+ * thread (`posts/<locale>/<id>`: on the old site each translation was its own post, with its own comments) comes first;
+ * the entry's (`posts/<id>`) is the thread of a model that is not translated, or one written without a locale.
+ */
+export function staticThreadOf(model: string, entry: string, locale?: string): StaticThread | undefined {
+  const threads = Object.values(FILE)[0]?.default
+  const thread = (locale ? threads?.[`${model}/${locale}/${entry}`] : undefined) ?? threads?.[`${model}/${entry}`]
   return thread && Array.isArray(thread.comments) && thread.comments.length ? thread : undefined
 }
 

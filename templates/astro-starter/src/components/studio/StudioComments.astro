@@ -32,7 +32,7 @@ interface Props {
 const { model, entry, locale, open } = Astro.props
 const studio = siteConfig.studio
 const wordpress = open && commentsHome() === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
-const carried = wordpress ? undefined : staticThreadOf(model, entry)
+const carried = wordpress ? undefined : staticThreadOf(model, entry, locale)
 const thread = carried && (open ? carried : { ...carried, closed: true })
 const text = studio || wordpress || thread ? await getStringTable(['common.', 'comments.', 'form.'], localeOf(Astro.url.pathname)) : {}
 ---

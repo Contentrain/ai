@@ -1,5 +1,5 @@
 {
-  "posts/e5a4c6f7b8d9": {
+  "posts/tr/e5a4c6f7b8d9": {
     "closed": false,
     "comments": [
       {
@@ -8,6 +8,37 @@
         "author": "Deniz Kaya",
         "date": "2026-09-02T09:00:00Z",
         "text": "Cuma günü görüşmek üzere."
+      }
+    ]
+  },
+  "posts/en/e5a4c6f7b8d9": {
+    "closed": false,
+    "comments": [
+      {
+        "id": "41",
+        "parent": null,
+        "author": "Sam Carter",
+        "date": "2026-09-02T11:00:00Z",
+        "text": "See you on Friday."
+      },
+      {
+        "id": "42",
+        "parent": "41",
+        "author": "Alex Moore",
+        "date": "2026-09-02T12:00:00Z",
+        "text": "Me too."
+      }
+    ]
+  },
+  "posts/f6b5d7a8c9e0": {
+    "closed": false,
+    "comments": [
+      {
+        "id": "51",
+        "parent": null,
+        "author": "Ece Demir",
+        "date": "2026-08-02T09:00:00Z",
+        "text": "Kimliği olmayan bir kayıt."
       }
     ]
   }
