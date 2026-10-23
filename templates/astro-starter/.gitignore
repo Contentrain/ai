@@ -6,3 +6,5 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+.contentrain/.cache/
+.contentrain/client/

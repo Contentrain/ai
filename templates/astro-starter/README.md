@@ -4,6 +4,8 @@ A static Astro site whose content lives in [Contentrain](https://contentrain.io)
 models and entries in `.contentrain/`, edited in Contentrain Studio, read by the
 site only through `@contentrain/query`. It is the base every WordPress migration
 starts from, and it passes all of its own gates with no content at all.
+Coding agents start from `AGENTS.md` (`CLAUDE.md` imports it); `.mcp.json` registers
+the Contentrain MCP server.
 
 ```bash
 pnpm install
