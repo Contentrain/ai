@@ -185,6 +185,7 @@ export const collections = {
       telephone: z.string().optional(),
       type: z.enum(['LocalBusiness', 'Restaurant', 'Store', 'ProfessionalService', 'LodgingBusiness']).optional(),
     }).optional(),
+      copyright: z.string().optional(),
       language: z.string().optional(),
       logo: z.string().optional(),
       organization: z.string().optional(),

@@ -105,6 +105,12 @@
       "order": 75,
       "type": "object"
     },
+    "copyright": {
+      "description": "The line at the foot of every page, e.g. \"© {year} Northwind Studio. All rights reserved.\" {year} becomes the current year. Leave it empty for no line. Not set: the line the theme printed is kept.",
+      "label": "Copyright line",
+      "order": 76,
+      "type": "string"
+    },
     "language": {
       "label": "Language",
       "order": 40,
