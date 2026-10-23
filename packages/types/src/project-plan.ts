@@ -689,8 +689,9 @@ function planLocalesErrors(site: PlanSite): string[] {
   }
   const prefixes = Object.entries(locales.prefixes ?? {})
   for (const [code, prefix] of prefixes) if (typeof prefix !== 'string' || (prefix !== '' && !LOCALE_PREFIX.test(prefix))) errors.push(`site.locales.prefixes.${code} is not '' or one address segment`)
-  if (prefixes.filter(([, prefix]) => prefix === '').length > 1) errors.push('site.locales.prefixes serves more than one locale at the root')
-  else if (new Set(prefixes.map(([, prefix]) => prefix)).size !== prefixes.length) errors.push('site.locales.prefixes gives two locales the same prefix')
+  // Only the default is served at the root: another locale there would share its home, feed and sitemap.
+  for (const [code, prefix] of prefixes) if (prefix === '' && code !== locales.default) errors.push(`site.locales.prefixes.${code} is '' but only the default locale is served at the root`)
+  if (new Set(prefixes.map(([, prefix]) => prefix)).size !== prefixes.length) errors.push('site.locales.prefixes gives two locales the same prefix')
   for (const [code, tag] of Object.entries(locales.tags ?? {})) if (typeof tag !== 'string' || !LANGUAGE_TAG.test(tag)) errors.push(`site.locales.tags.${code} is not a BCP 47 tag`)
   return errors
 }
