@@ -67,7 +67,9 @@
     },
     "blog/yalniz-turkce/index.html": {
       "contains": [
-        "href=\"/en/\" hreflang=\"en\""
+        "href=\"/en/\" hreflang=\"en\"",
+        "data-count=\"1\"",
+        "Ece Demir"
       ],
       "excludes": [
         "rel=\"alternate\" hreflang"
@@ -77,7 +79,11 @@
       "contains": [
         "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/blog/yeni-sezon/\">",
         "href=\"/en/category/news/\"",
-        "data-count=\"1\"",
+        "data-count=\"2\"",
+        "Sam Carter",
+        "Alex Moore"
+      ],
+      "excludes": [
         "Deniz Kaya"
       ]
     },
@@ -85,6 +91,10 @@
       "contains": [
         "data-count=\"1\"",
         "Deniz Kaya"
+      ],
+      "excludes": [
+        "Sam Carter",
+        "Alex Moore"
       ]
     },
     "category/haberler/index.html": {
