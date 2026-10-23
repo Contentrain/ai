@@ -1,5 +1,11 @@
 # @contentrain/astro-kit
 
+## 0.49.3
+
+### Patch Changes
+
+- adc9858: Footer: the site name is a link to the site's home (`homeHref`, default `/`), the way a source footer's site title links there. The starter passes the locale's home.
+
 ## 0.49.2
 
 ### Patch Changes
