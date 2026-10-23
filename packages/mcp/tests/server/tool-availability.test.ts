@@ -142,11 +142,20 @@ describe('capability-aware tool registration', () => {
 })
 
 describe('server instructions', () => {
-  it('sends DEFAULT_INSTRUCTIONS when none are provided', async () => {
+  it('the default instructions name only tools the session lists, local and remote (DEFAULT_INSTRUCTIONS locally)', async () => {
     expect(DEFAULT_INSTRUCTIONS.length).toBeLessThanOrEqual(512)
-    const client = await connectedClient({ provider: makeProvider() })
-    expect(client.getInstructions()).toBe(DEFAULT_INSTRUCTIONS)
-    await client.close()
+    const local = await connectedClient(tmpdir())
+    expect(local.getInstructions()).toBe(DEFAULT_INSTRUCTIONS)
+    await local.close()
+    // A projectRoot-less session (Studio's /api/mcp/remote) never registers contentrain_apply.
+    for (const input of [tmpdir(), { provider: makeProvider() }, { provider: makeProvider({ sourceRead: true, localWorktree: true }) }]) {
+      const client = await connectedClient(input)
+      const listed = await listedNames(client)
+      const named = [...(client.getInstructions() ?? '').matchAll(/contentrain_\w+/g)].map(m => m[0])
+      expect(named.length).toBeGreaterThan(0)
+      expect(named.filter(name => !listed.includes(name))).toEqual([])
+      await client.close()
+    }
   })
 
   it('passes custom instructions through', async () => {

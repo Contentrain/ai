@@ -170,7 +170,7 @@ const transport = new StdioServerTransport()
 await server.connect(transport)
 ```
 
-`createServer` also accepts an options object: `{ provider, projectRoot?, instructions? }`. `instructions` sets the MCP `instructions` string clients receive at `initialize` (defaults to a built-in `DEFAULT_INSTRUCTIONS`, kept under 512 characters; pass `''` to omit).
+`createServer` also accepts an options object: `{ provider, projectRoot?, instructions? }`. `instructions` sets the MCP `instructions` string clients receive at `initialize` (defaults to `defaultInstructions` for the tools the server registers — with every tool available, `DEFAULT_INSTRUCTIONS` — kept under 512 characters; pass `''` to omit). The HTTP entries (`startHttpMcpServer`, `startHttpMcpServerWith`) take the same `instructions` option.
 
 ## Example MCP Flow
 

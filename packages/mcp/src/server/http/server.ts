@@ -12,6 +12,8 @@ export interface HttpMcpServerOptions {
   authToken?: string
   /** Mount path for the MCP JSON-RPC endpoint. Defaults to `/mcp`. */
   path?: string
+  /** MCP `instructions` sent at `initialize` (`CreateServerOptions.instructions`); omitted: the server's default for its tools. */
+  instructions?: string
 }
 
 export interface HttpMcpServerProviderOptions {
@@ -23,6 +25,8 @@ export interface HttpMcpServerProviderOptions {
   authToken?: string
   /** Mount path for the MCP JSON-RPC endpoint. Defaults to `/mcp`. */
   path?: string
+  /** MCP `instructions` sent at `initialize` (`CreateServerOptions.instructions`); omitted: the server's default for its tools. */
+  instructions?: string
 }
 
 /**
@@ -51,6 +55,8 @@ export interface HttpMcpServerResolverOptions {
   authToken?: string
   /** Mount path for the MCP JSON-RPC endpoint. Defaults to `/mcp`. */
   path?: string
+  /** MCP `instructions` sent at `initialize` (`CreateServerOptions.instructions`); omitted: the server's default for its tools. */
+  instructions?: string
   /**
    * Idle-session TTL in ms. Sessions that haven't received a request
    * within this window are closed and their providers discarded.
@@ -101,7 +107,7 @@ const MCP_SESSION_HEADER = 'mcp-session-id'
 export async function startHttpMcpServer(
   opts: HttpMcpServerOptions & { port: number, host?: string },
 ): Promise<HttpMcpServerHandle> {
-  const mcp = createMcpServer(opts.projectRoot)
+  const mcp = createMcpServer({ projectRoot: opts.projectRoot, ...(opts.instructions === undefined ? {} : { instructions: opts.instructions }) })
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   })
@@ -138,7 +144,7 @@ export async function startHttpMcpServerWith(
   if ('resolveProvider' in opts) {
     return startMultiTenantHttpMcpServer(opts)
   }
-  const mcp = createMcpServer({ provider: opts.provider, projectRoot: opts.projectRoot })
+  const mcp = createMcpServer({ provider: opts.provider, projectRoot: opts.projectRoot, ...(opts.instructions === undefined ? {} : { instructions: opts.instructions }) })
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   })
@@ -191,6 +197,7 @@ async function startMultiTenantHttpMcpServer(
       authToken: opts.authToken,
       resolveProvider: opts.resolveProvider,
       projectRoot: opts.projectRoot,
+      instructions: opts.instructions,
       sessionFingerprint: opts.sessionFingerprint,
       sessions,
     })
@@ -230,6 +237,7 @@ async function handleMultiTenantRequest(
     authToken?: string
     resolveProvider: (req: http.IncomingMessage) => ToolProvider | Promise<ToolProvider>
     projectRoot?: string
+    instructions?: string
     sessionFingerprint?: (req: http.IncomingMessage) => string | undefined
     sessions: Map<string, MultiTenantSession>
   },
@@ -258,7 +266,7 @@ async function handleMultiTenantRequest(
   try {
     const provider = await ctx.resolveProvider(req)
     const fingerprint = ctx.sessionFingerprint?.(req)
-    const mcp = createMcpServer({ provider, projectRoot: ctx.projectRoot })
+    const mcp = createMcpServer({ provider, projectRoot: ctx.projectRoot, ...(ctx.instructions === undefined ? {} : { instructions: ctx.instructions }) })
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sessionId: string) => {

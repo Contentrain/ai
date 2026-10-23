@@ -24,6 +24,10 @@
   "remotes": [
     {
       "type": "streamable-http",
+      "url": "https://studio.contentrain.io/api/mcp/remote"
+    },
+    {
+      "type": "streamable-http",
       "url": "https://studio.contentrain.io/api/mcp/v1/{project_id}/mcp",
       "variables": {
         "project_id": {
