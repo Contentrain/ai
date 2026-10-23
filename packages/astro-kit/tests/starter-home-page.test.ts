@@ -6,14 +6,15 @@ const CONTENT = join(import.meta.dirname, '..', '..', '..', 'templates', 'astro-
 
 interface P { id: string, data: { slug: string, parent?: { id: string } } }
 
-/** The starter's own `isHomePage`, run as written with a given `siteConfig`. */
+/** The starter's own `isHomePage`, run as written with a given `siteConfig`, on a site in one language. */
 async function homeOf(home: { kind: 'page', slug: string } | { kind: 'posts' }) {
   const source = await readFile(CONTENT, 'utf8')
   const body = /^function isHomePage\(page: Page, pages: ReadonlyMap<string, Page>\): boolean \{\n([\s\S]+?)\n\}$/m.exec(source)?.[1]
   expect(body).toBeTruthy()
   // eslint-disable-next-line no-new-func
-  const run = new Function('siteConfig', 'page', 'pages', body!) as (config: unknown, page: P, pages: Map<string, P>) => boolean
-  return (page: P, pages: P[]) => run({ home: home }, page, new Map(pages.map(p => [p.id, p])))
+  const run = new Function('siteConfig', 'multilingual', 'defaultLocale', 'entryLocale', 'isHomePage', 'page', 'pages', body!) as (config: unknown, multilingual: boolean, defaultLocale: string, entryLocale: () => string, self: unknown, page: P, pages: Map<string, P>) => boolean
+  const isHomePage = (page: P, pages: Map<string, P>): boolean => run({ home }, false, 'en', () => 'en', isHomePage, page, pages)
+  return (page: P, pages: P[]) => isHomePage(page, new Map(pages.map(p => [p.id, p])))
 }
 
 describe('the front page among pages sharing its slug', () => {
@@ -34,6 +35,6 @@ describe('the front page among pages sharing its slug', () => {
   })
 
   it('decides pageHref\'s root', async () => {
-    expect(await readFile(CONTENT, 'utf8')).toContain("  if (isHomePage(page, pages)) return withBase('/')\n")
+    expect(await readFile(CONTENT, 'utf8')).toContain("  if (isHomePage(page, pages)) return localizedPath(withBase('/'), locale)\n")
   })
 })

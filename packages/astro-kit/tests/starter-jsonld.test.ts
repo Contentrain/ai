@@ -34,7 +34,7 @@ describe('a page\'s breadcrumb for search', () => {
   it('is on every page but the home, in the plain and the composed page view', async () => {
     for (const view of ['PageView.astro', 'ComposedPage.astro']) {
       const source = await read('src', 'views', view)
-      expect(source, view).toContain('jsonLd={isHome ? [] : [breadcrumbLd(pageTrail({ name: site.title, url: new URL(withBase(\'/\'), origin).href }, ')
+      expect(source, view).toContain('jsonLd={isHome ? [] : [breadcrumbLd(pageTrail({ name: site.title, url: new URL(localizedPath(withBase(\'/\'), pageLocale), origin).href }, ')
     }
   })
 })

@@ -54,7 +54,7 @@ describe('a table in rich text with no table block around it scrolls in a named 
 
   it('every page body and rich custom field takes it, with the site\'s table.label, which every locale names', async () => {
     const links = await readFile(join(STARTER, 'src', 'lib', 'links.ts'), 'utf8')
-    expect(links).toContain("if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings()))")
+    expect(links).toContain("if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings(locale)))")
     const fields = await readFile(join(STARTER, 'src', 'lib', 'fields.ts'), 'utf8')
     expect(fields).toContain("html: html.includes('<table') ? scrollingTables(html, tableLabel(await getStrings())) : html")
     const dir = join(STARTER, '.contentrain', 'content', 'site', 'ui-strings')

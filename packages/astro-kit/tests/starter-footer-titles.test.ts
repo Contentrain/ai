@@ -17,7 +17,7 @@ describe('the starter\'s footer menus are named by the heading the site prints, 
 
   it('the heading comes from the menu entry\'s own title, absent when empty; its link only beside a heading', async () => {
     const links = await readFile(join(STARTER, 'lib', 'links.ts'), 'utf8')
-    expect(links).toContain('({ name: menu.data.name, title: menu.data.title || undefined, titleHref: (menu.data.title && menu.data.title_href) || undefined, items: await menuItems(menu) })')
+    expect(links).toContain('({ name: menu.data.name, title: menu.data.title || undefined, titleHref: (menu.data.title && menu.data.title_href) || undefined, items: await menuItems(menu, locale) })')
   })
 
   it('a column heading with a link is drawn as a link to it, in the kit and in the starter\'s copy alike', async () => {
