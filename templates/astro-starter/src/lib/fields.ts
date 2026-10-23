@@ -120,6 +120,18 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
   return LINKED.has(type) ? linked(type, str) : { kind: 'text', text: str }
 }
 
+/**
+ * The fields with the editor's labels: `ui-strings` `types.<collection>.fields.<field>` (a nested field
+ * `fields.<group>.<field>`), else the label `site.config.ts` carries.
+ */
+export function labelled(fields: readonly CustomField[], prefix: string, textOr: (key: string, fallback: string) => string): CustomField[] {
+  return fields.map(field => ({
+    ...field,
+    label: textOr(`${prefix}.${field.name}`, field.label),
+    ...(field.fields ? { fields: labelled(field.fields, `${prefix}.${field.name}`, textOr) } : {}),
+  }))
+}
+
 export async function shownFields(fields: readonly CustomField[], data: Record<string, unknown>, targets: Targets, depth = 0): Promise<ShownField[]> {
   const shown = await Promise.all(fields.map(async field => ({ field, value: await show(field, data[field.name], targets, depth) })))
   return shown.flatMap(({ field, value }) => (value ? [{ label: field.label, value, ...(field.hideLabel ? { hideLabel: true as const } : {}) }] : []))

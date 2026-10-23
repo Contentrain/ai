@@ -64,6 +64,47 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(plan())).toEqual({ errors: [], warnings: [] })
   })
 
+  it('accepts a multilingual site: the default at the root, the other locales under their source prefix', () => {
+    const p = plan()
+    p.site.locales = { default: 'en', supported: ['en', 'de', 'pt-BR'], prefixes: { 'en': '', 'de': 'de', 'pt-BR': 'pt-br' }, tags: { 'en': 'en', 'de': 'de', 'pt-BR': 'pt-BR' } }
+    p.routes[1]!.locale = 'de'
+    expect(validateProjectPlan(p)).toEqual({ errors: [], warnings: [] })
+  })
+
+  it('holds a route\'s locale to the site\'s: one language, or the supported list', () => {
+    const p = plan()
+    p.routes[0]!.locale = 'en'
+    p.routes[1]!.locale = 'de'
+    expect(validateProjectPlan(p).errors).toEqual(['route post: locale de is not a site locale'])
+  })
+
+  it('refuses locales whose default, codes, prefixes or tags do not line up', () => {
+    const p = plan()
+    p.site.locales = { default: 'tr', supported: ['en', 'de', 'de', 'pt-br'], prefixes: { en: '', de: 'de/at', fr: 'fr' }, tags: { 'en': 'en', 'de': 'de_DE', 'pt-br': 'pt-BR' } }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.locales.supported pt-br is not a locale code (en, pt-BR)',
+      'site.locales.supported lists a locale twice',
+      'site.locales.default tr is not in site.locales.supported',
+      'site.locales.default tr is not site.locale en',
+      'site.locales.prefixes has no entry for pt-br',
+      'site.locales.prefixes.fr is not a supported locale',
+      'site.locales.prefixes.de is not \'\' or one address segment',
+      'site.locales.tags.de is not a BCP 47 tag',
+    ])
+  })
+
+  it('serves one locale at the root and gives no two locales one prefix', () => {
+    const p = plan()
+    p.site.locales = { default: 'en', supported: ['en', 'de'], prefixes: { en: '', de: '' }, tags: { en: 'en', de: 'de' } }
+    expect(validateProjectPlan(p).errors).toEqual(['site.locales.prefixes serves more than one locale at the root'])
+    p.site.locales.prefixes = { en: 'x', de: 'x' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.locales.prefixes gives two locales the same prefix'])
+    p.site.locales.supported = []
+    p.site.locales.prefixes = {}
+    p.site.locales.tags = {}
+    expect(validateProjectPlan(p).errors).toEqual(['site.locales.supported lists no locale', 'site.locales.default en is not in site.locales.supported'])
+  })
+
   it('accepts a sub-directory install as the origin, and still refuses what cannot be joined with a path', () => {
     for (const origin of ['https://example.com', 'http://localhost:8080', 'https://example.com/blog', 'https://websitedemos.net/outdoor-adventure-02', 'https://example.com/a/b']) {
       const p = plan()
