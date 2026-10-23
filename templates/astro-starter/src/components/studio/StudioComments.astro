@@ -13,6 +13,7 @@
 // closed, or one closed here, shows read-only with a "comments are closed" line.
 import { staticThreadOf } from '../../lib/comments'
 import { getStringTable } from '../../lib/content'
+import { localeOf } from '../../lib/locales'
 import { commentsHome, onWordPress } from '../../lib/features'
 import { siteConfig } from '../../site.config'
 import CommentsMount from './CommentsMount.astro'
@@ -33,7 +34,7 @@ const studio = siteConfig.studio
 const wordpress = open && commentsHome() === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
 const carried = wordpress ? undefined : staticThreadOf(model, entry)
 const thread = carried && (open ? carried : { ...carried, closed: true })
-const text = studio || wordpress || thread ? await getStringTable(['common.', 'comments.', 'form.']) : {}
+const text = studio || wordpress || thread ? await getStringTable(['common.', 'comments.', 'form.'], localeOf(Astro.url.pathname)) : {}
 ---
 {wordpress
   ? <p class="cr-comments mt-16 border-t border-line pt-10" data-cr-part="comments" data-state="wordpress"><a href={safeHref(`${wordpress}#comments`)} class="underline underline-offset-4">{text['comments.wordpress'] ?? 'Read and join the comments'}</a></p>

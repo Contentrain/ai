@@ -8,6 +8,7 @@ import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig } from '../site.config'
 import { withBase } from './base'
 import { siteLanguage, localeRank } from './language'
+import { defaultLocale, entryLocale, inLocale, localeTag, localizedPath, multilingual, siteLocales } from './locales'
 import { dateParams, fillPattern, permalinks } from './routes'
 
 export type Post = CollectionEntry<'posts'>
@@ -19,20 +20,24 @@ export type Media = CollectionEntry<'media'>
 
 type Site = Omit<CollectionEntry<'site'>['data'], 'language'> & { language: string }
 
-/** The site singleton with its language settled (`siteLanguage`): never empty. */
-export async function getSite(): Promise<Site> {
-  const site = await getEntry('site', 'site')
+/**
+ * The site singleton of a locale with its language settled (`siteLanguage`): never empty. A translated singleton (one
+ * content file per locale) is read in the locale's; one that is not is every locale's. A site in several languages
+ * prints each locale's tag from site.config.ts `locales`.
+ */
+export async function getSite(locale = defaultLocale): Promise<Site> {
+  const site = await getEntry('site', 'site') ?? await getEntry('site', locale)
   if (!site) throw new Error('The site singleton (.contentrain/content/site/site/data.json) is missing.')
-  return { ...site.data, language: siteLanguage(site.data.language) }
+  return { ...site.data, language: siteLanguage(localeTag(locale) ?? site.data.language) }
 }
 
 /**
- * Newest first — WordPress's own order, which previous and next post, the feed and "more" lists follow. Posts published
+ * A locale's posts, newest first — WordPress's own order, which previous and next post, the feed and "more" lists follow. Posts published
  * at the same moment keep WordPress's order, the higher ID first (`lists.tieOrder` where the source's database returned the lower first), so they match the source. Sticky posts are not moved
  * here: they lead the posts page's first page only (`leading` in site-routes).
  */
-export async function getPosts(): Promise<Post[]> {
-  const posts = await getCollection('posts')
+export async function getPosts(locale = defaultLocale): Promise<Post[]> {
+  const posts = inLocale(await getCollection('posts'), locale)
   const tie = siteConfig.lists.tieOrder === 'asc' ? -1 : 1
   return posts.toSorted((a, b) =>
     (b.data.published_at?.getTime() ?? 0) - (a.data.published_at?.getTime() ?? 0)
@@ -107,16 +112,17 @@ const pathOf = (entry: { data: object }): unknown => (entry.data as { path?: unk
  * entry is now (a 301 rule). A custom type's are `staleTypePaths` (custom.ts).
  */
 export async function stalePaths(): Promise<Array<{ from: string, to: string }>> {
-  const [posts, pages, categories, tags] = await Promise.all([getPosts(), byId('pages'), byId('categories'), byId('tags')])
-  const moved = (raw: unknown, slug: string, to: () => string) => {
-    const from = stalePath(raw, slug)
-    return from ? [{ from, to: to() }] : []
+  const [posts, pages, categories, tags] = await Promise.all([Promise.all(siteLocales.map(locale => getPosts(locale.code))).then(lists => lists.flat()), byId('pages'), byId('categories'), byId('tags')])
+  // A kept address is the entry's within its locale: the old one is under the locale's prefix too.
+  const moved = (entry: { data: object }, slug: string, to: () => string) => {
+    const from = stalePath(pathOf(entry), slug)
+    return from ? [{ from: localizedPath(from, entryLocale(entry)), to: to() }] : []
   }
   return [
-    ...posts.flatMap(post => moved(pathOf(post), post.data.slug, () => postHref(post, categories))),
-    ...[...pages.values()].flatMap(page => moved(pathOf(page), page.data.slug, () => pageHref(page, pages))),
-    ...[...categories.values()].flatMap(term => moved(pathOf(term), term.data.slug, () => termHref('category', term, categories))),
-    ...[...tags.values()].flatMap(term => moved(pathOf(term), term.data.slug, () => termHref('tag', term, tags))),
+    ...posts.flatMap(post => moved(post, post.data.slug, () => postHref(post, categories))),
+    ...[...pages.values()].flatMap(page => moved(page, page.data.slug, () => pageHref(page, pages))),
+    ...[...categories.values()].flatMap(term => moved(term, term.data.slug, () => termHref('category', term, categories))),
+    ...[...tags.values()].flatMap(term => moved(term, term.data.slug, () => termHref('tag', term, tags))),
   ]
 }
 
@@ -126,23 +132,28 @@ export async function stalePaths(): Promise<Array<{ from: string, to: string }>>
  */
 export function postHref(post: Post, categories: ReadonlyMap<string, Category>): string {
   const kept = keptPath(pathOf(post), post.data.slug)
-  if (kept) return withBase(kept)
-  return withBase(fillPattern(permalinks.post, {
+  if (kept) return localizedPath(withBase(kept), entryLocale(post))
+  return localizedPath(withBase(fillPattern(permalinks.post, {
     slug: post.data.slug,
-    id: String(post.data.wp_id ?? post.id),
+    id: String(post.data.wp_id ?? post.data.id),
     ...dateParams(post.data.published_at),
     ...(permalinks.post.includes(':category') ? { category: categoryPath(post, categories) } : {}),
-  }))
+  })), entryLocale(post))
 }
 
 /**
  * The front page `siteConfig.home` names by slug. Pages under different parents may share a slug (`/faq/` and
  * `/services/faq/`): the front page is the top-level one, and a child page with that slug keeps its own address. A
- * child page is the front page only when no other page has its slug.
+ * child page is the front page only when no other page of its locale has its slug. In another locale the front page is
+ * the default's front page translated (the same entry id), whatever its slug there.
  */
 function isHomePage(page: Page, pages: ReadonlyMap<string, Page>): boolean {
-  if (siteConfig.home.kind !== 'page' || siteConfig.home.slug !== page.data.slug) return false
-  return !page.data.parent || [...pages.values()].every(other => other === page || other.data.slug !== page.data.slug)
+  if (siteConfig.home.kind !== 'page') return false
+  const locale = entryLocale(page)
+  const original = multilingual && locale !== defaultLocale ? [...pages.values()].find(other => entryLocale(other) === defaultLocale && other.data.id === page.data.id) : undefined
+  if (original) return isHomePage(original, pages)
+  if (siteConfig.home.slug !== page.data.slug) return false
+  return !page.data.parent || [...pages.values()].every(other => other === page || other.data.slug !== page.data.slug || entryLocale(other) !== locale)
 }
 
 /**
@@ -153,9 +164,10 @@ function isHomePage(page: Page, pages: ReadonlyMap<string, Page>): boolean {
  * A kept `path` (`keptPath`) is the page's whole address and wins over both; the front page is always the root.
  */
 export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
-  if (isHomePage(page, pages)) return withBase('/')
+  const locale = entryLocale(page)
+  if (isHomePage(page, pages)) return localizedPath(withBase('/'), locale)
   const kept = keptPath(pathOf(page), page.data.slug)
-  if (kept) return withBase(kept)
+  if (kept) return localizedPath(withBase(kept), locale)
   const trail: string[] = []
   const seen = new Set<string>()
   let top: Page = page
@@ -168,7 +180,7 @@ export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
   // Read whatever the pages model is: a project whose model has no `path_prefix` (an older store) builds as before.
   const raw = (top.data as { path_prefix?: unknown }).path_prefix
   const prefix = (typeof raw === 'string' ? raw : '').split('/').map((segment: string) => segment.trim()).filter((segment: string) => segment && segment !== '.' && segment !== '..')
-  return withBase(fillPattern(permalinks.page, { slug: page.data.slug, path: [...prefix, ...trail].join('/') }))
+  return localizedPath(withBase(fillPattern(permalinks.page, { slug: page.data.slug, path: [...prefix, ...trail].join('/') })), locale)
 }
 
 /** Categories nest; tags have no parent field. */
@@ -188,12 +200,13 @@ function termTrail<T extends Term>(term: T, terms: ReadonlyMap<string, T>): stri
 /** A category's or tag's address: its kept `path` (`keptPath`), else the pattern with its parents. */
 export function termHref(kind: 'category' | 'tag', term: Term, terms: ReadonlyMap<string, Term>): string {
   const kept = keptPath(pathOf(term), term.data.slug)
-  if (kept) return withBase(kept)
-  return withBase(fillPattern(permalinks[kind], { slug: term.data.slug, path: termTrail(term, terms).join('/') }))
+  if (kept) return localizedPath(withBase(kept), entryLocale(term))
+  return localizedPath(withBase(fillPattern(permalinks[kind], { slug: term.data.slug, path: termTrail(term, terms).join('/') })), entryLocale(term))
 }
 
-export function authorHref(author: Author): string {
-  return withBase(fillPattern(permalinks.author, { slug: author.data.slug }))
+/** An author's archive in a locale: an author is no translated entry, so each locale lists their posts in it. */
+export function authorHref(author: Author, locale = defaultLocale): string {
+  return localizedPath(withBase(fillPattern(permalinks.author, { slug: author.data.slug })), locale)
 }
 
 export async function byId<C extends 'pages' | 'categories' | 'tags' | 'authors' | 'media'>(collection: C): Promise<Map<string, CollectionEntry<C>>> {
@@ -218,8 +231,8 @@ export function imageOf(media: Media): ImageInput {
  * the same language (`tr`), then English, then any other locale's entry fills what is missing.
  * A key no locale has shows the key itself.
  */
-async function stringMap(): Promise<Map<string, string>> {
-  const [entries, site] = await Promise.all([getCollection('uiStrings'), getSite()])
+async function stringMap(locale: string): Promise<Map<string, string>> {
+  const [entries, site] = await Promise.all([getCollection('uiStrings'), getSite(locale)])
   const { language } = site
   const text = new Map<string, string>()
   for (const entry of entries.toSorted((a, b) => localeRank(a.data.locale, language) - localeRank(b.data.locale, language))) {
@@ -228,8 +241,8 @@ async function stringMap(): Promise<Map<string, string>> {
   return text
 }
 
-export async function getStrings(): Promise<(key: string) => string> {
-  const text = await stringMap()
+export async function getStrings(locale = defaultLocale): Promise<(key: string) => string> {
+  const text = await stringMap(locale)
   return key => text.get(key) ?? key
 }
 
@@ -239,8 +252,8 @@ export async function getStrings(): Promise<(key: string) => string> {
  * Keys: `types.<collection>.archive_title`, `types.<collection>.archive_label`, `types.<collection>.<taxonomy>.title`,
  * `types.<collection>.fields.<field>` (a nested field: `fields.<group>.<field>`).
  */
-export async function getTextOr(): Promise<(key: string, fallback: string) => string> {
-  const text = await stringMap()
+export async function getTextOr(locale = defaultLocale): Promise<(key: string, fallback: string) => string> {
+  const text = await stringMap(locale)
   return (key, fallback) => text.get(key)?.trim() || fallback
 }
 
@@ -254,8 +267,8 @@ export function copyrightOf(own: string | undefined): string | false | undefined
 }
 
 /** Every interface string, for a client-side component that renders its own text. */
-export async function getStringTable(prefixes: readonly string[]): Promise<Record<string, string>> {
-  const t = await getStrings()
+export async function getStringTable(prefixes: readonly string[], locale = defaultLocale): Promise<Record<string, string>> {
+  const t = await getStrings(locale)
   const entries = await getCollection('uiStrings')
   const keys = new Set(entries.map(entry => entry.data.key).filter(key => prefixes.some(prefix => key.startsWith(prefix))))
   return Object.fromEntries([...keys].toSorted().map(key => [key, t(key)]))

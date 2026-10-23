@@ -1,0 +1,13 @@
+{
+  "0a1b2c3d4e5f": {
+    "items": [
+      "1b2c3d4e5f60",
+      "2c3d4e5f6071"
+    ],
+    "locations": [
+      "header"
+    ],
+    "name": "Primary",
+    "slug": "primary"
+  }
+}

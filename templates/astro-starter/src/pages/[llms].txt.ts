@@ -9,7 +9,8 @@ import type { APIRoute, GetStaticPaths } from 'astro'
 import { getSite, getTextOr } from '../lib/content'
 import { leftEmpty } from '../lib/empty-page'
 import { LLMS_LINKS, llmsTxt, type LlmsLink } from '../lib/llms'
-import { routeTable } from '../lib/site-routes'
+import { defaultLocale } from '../lib/locales'
+import { localeRoutes } from '../lib/site-routes'
 
 export const getStaticPaths = (() => (import.meta.env.SITE ? [{ params: { llms: 'llms' } }] : [])) satisfies GetStaticPaths
 
@@ -17,7 +18,8 @@ export const GET: APIRoute = async ({ site: origin }) => {
   const [site, textOr] = await Promise.all([getSite(), getTextOr()])
   const sections = new Map<string, LlmsLink[]>([['Posts', []], ['Pages', []]])
   const add = (name: string, link: LlmsLink) => sections.set(name, [...(sections.get(name) ?? []), link])
-  for (const [path, route] of await routeTable()) {
+  // The default language's pages: a reader follows its links, not each translation of them.
+  for (const [path, route] of await localeRoutes(defaultLocale)) {
     // An inner page with nothing to build answers with a redirect: not a page of its own.
     if (route.view === 'page' && !route.isHome && leftEmpty(route)) continue
     const data = route.view === 'post' ? route.post.data : route.view === 'page' ? route.page.data : route.view === 'entry' ? route.entry.data : undefined

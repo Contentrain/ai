@@ -1,0 +1,220 @@
+// Generated from .contentrain/models by Contentrain Migrate — regenerate, do not edit.
+//
+// One collection per Contentrain model, read through @contentrain/query's
+// loader; each schema mirrors its model. Public builds show published
+// entries only: drafts and entries in review stay in Studio until approved.
+
+import { contentrainLoader } from '@contentrain/query/astro'
+import { defineCollection, reference } from 'astro:content'
+import { z } from 'astro/zod'
+
+const loader = (model: string) => contentrainLoader({ model, publishedOnly: true })
+
+// A translated model's entries are keyed `<locale>/<id>` by the loader, and an entry names another of a translated
+// model by its bare id: the entry's own locale says which translation it means.
+const localized = <T extends z.ZodType>(fields: readonly string[], schema: T) => z.preprocess((raw) => {
+  const entry = raw as Record<string, unknown>
+  const locale = entry.locale
+  if (typeof locale !== 'string') return raw
+  const own = (id: unknown) => (typeof id === 'string' ? `${locale}/${id}` : id)
+  return Object.fromEntries(Object.entries(entry).map(([key, value]) => [key, fields.includes(key) ? (Array.isArray(value) ? value.map(own) : own(value)) : value]))
+}, schema)
+
+export const collections = {
+  authors: defineCollection({
+    loader: loader('authors'),
+    schema: z.object({
+      id: z.string(),
+      avatar: z.string().optional(),
+      bio: z.string().optional(),
+      email: z.string().optional(),
+      name: z.string(),
+      slug: z.string(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  categories: defineCollection({
+    loader: loader('categories'),
+    schema: localized(['parent'], z.object({
+      locale: z.string().optional(),
+      id: z.string(),
+      description: z.string().optional(),
+      name: z.string(),
+      parent: reference('categories').optional(),
+      path: z.string().optional(),
+      slug: z.string(),
+      wp_id: z.number().int().optional(),
+    })),
+  }),
+  media: defineCollection({
+    loader: loader('media'),
+    schema: z.object({
+      id: z.string(),
+      alt: z.string().optional(),
+      caption: z.string().optional(),
+      height: z.number().int().optional(),
+      mime: z.string().optional(),
+      slug: z.string(),
+      title: z.string(),
+      url: z.string(),
+      width: z.number().int().optional(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  menuItems: defineCollection({
+    loader: loader('menu-items'),
+    schema: z.object({
+      id: z.string(),
+      classes: z.array(z.string()).optional(),
+      description: z.string().optional(),
+      menu: reference('menus'),
+      open_in_new_tab: z.boolean().default(false),
+      order: z.number().int().optional(),
+      parent: reference('menuItems').optional(),
+      target: z.object({ model: z.string(), ref: z.string() }).optional(),
+      title: z.string(),
+      type: z.enum(['custom', 'post_type', 'taxonomy', 'post_type_archive']).optional(),
+      url: z.string().optional(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  menus: defineCollection({
+    loader: loader('menus'),
+    schema: z.object({
+      id: z.string(),
+      items: z.array(reference('menuItems')).default([]),
+      locations: z.array(z.string()).optional(),
+      name: z.string(),
+      slug: z.string(),
+      title: z.string().optional(),
+      title_href: z.string().optional(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  pages: defineCollection({
+    loader: loader('pages'),
+    schema: localized(['parent'], z.object({
+      locale: z.string().optional(),
+      id: z.string(),
+      body: z.string().optional(),
+      cover: reference('media').optional(),
+      excerpt: z.string().optional(),
+      form: z.string().optional(),
+      link: z.string().optional(),
+      menu_order: z.number().int().optional(),
+      modified_at: z.coerce.date().optional(),
+      parent: reference('pages').optional(),
+      path: z.string().optional(),
+      path_prefix: z.string().optional(),
+      published_at: z.coerce.date().optional(),
+      seo: z.object({
+      canonical: z.string().optional(),
+      description: z.string().optional(),
+      image: z.string().optional(),
+      nofollow: z.boolean().default(false),
+      noindex: z.boolean().default(false),
+      og_description: z.string().optional(),
+      og_title: z.string().optional(),
+      title: z.string().optional(),
+    }).optional(),
+      slug: z.string(),
+      title: z.string(),
+      wp_id: z.number().int().optional(),
+    })),
+  }),
+  posts: defineCollection({
+    loader: loader('posts'),
+    schema: localized(['categories', 'primary_category'], z.object({
+      locale: z.string().optional(),
+      id: z.string(),
+      author: reference('authors').optional(),
+      body: z.string().optional(),
+      categories: z.array(reference('categories')).default([]),
+      comments_open: z.boolean().default(false),
+      cover: reference('media').optional(),
+      excerpt: z.string().optional(),
+      link: z.string().optional(),
+      modified_at: z.coerce.date().optional(),
+      path: z.string().optional(),
+      primary_category: reference('categories').optional(),
+      published_at: z.coerce.date().optional(),
+      seo: z.object({
+      canonical: z.string().optional(),
+      description: z.string().optional(),
+      image: z.string().optional(),
+      nofollow: z.boolean().default(false),
+      noindex: z.boolean().default(false),
+      og_description: z.string().optional(),
+      og_title: z.string().optional(),
+      title: z.string().optional(),
+    }).optional(),
+      slug: z.string(),
+      sticky: z.boolean().default(false),
+      tags: z.array(reference('tags')).default([]),
+      title: z.string(),
+      wp_id: z.number().int().optional(),
+    })),
+  }),
+  redirects: defineCollection({
+    loader: loader('redirects'),
+    schema: z.object({
+      id: z.string(),
+      from: z.string(),
+      status: z.number().int().default(301),
+      to: z.string().optional(),
+    }),
+  }),
+  site: defineCollection({
+    loader: loader('site'),
+    schema: z.object({
+      locale: z.string().optional(),
+      analytics_host: z.string().optional(),
+      analytics_id: z.string().optional(),
+      analytics_provider: z.enum(['ga4', 'gtm', 'plausible', 'fathom', 'matomo']).optional(),
+      business: z.object({
+      city: z.string().optional(),
+      country: z.string().optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+      opening_hours: z.array(z.string()).optional(),
+      postal_code: z.string().optional(),
+      price_range: z.string().optional(),
+      region: z.string().optional(),
+      serves_cuisine: z.array(z.string()).optional(),
+      street: z.string().optional(),
+      telephone: z.string().optional(),
+      type: z.enum(['LocalBusiness', 'Restaurant', 'Store', 'ProfessionalService', 'LodgingBusiness']).optional(),
+    }).optional(),
+      copyright: z.string().optional(),
+      language: z.string().optional(),
+      logo: z.string().optional(),
+      organization: z.string().optional(),
+      same_as: z.array(z.string()).optional(),
+      seo: z.object({
+      description: z.string().optional(),
+      og_description: z.string().optional(),
+      og_title: z.string().optional(),
+      title: z.string().optional(),
+    }).optional(),
+      social_image: z.string().optional(),
+      tagline: z.string().optional(),
+      title: z.string(),
+      url: z.string().optional(),
+    }),
+  }),
+  tags: defineCollection({
+    loader: loader('tags'),
+    schema: z.object({
+      id: z.string(),
+      description: z.string().optional(),
+      name: z.string(),
+      path: z.string().optional(),
+      slug: z.string(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  uiStrings: defineCollection({
+    loader: loader('ui-strings'),
+    schema: z.object({ key: z.string(), value: z.string(), locale: z.string().optional() }),
+  }),
+}

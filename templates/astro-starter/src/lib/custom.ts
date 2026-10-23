@@ -7,6 +7,7 @@ import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig, type CustomType } from '../site.config'
 import { withBase } from './base'
 import { imageOf, keptPath, stalePath, type Media } from './content'
+import { entryLocale, localizedPath } from './locales'
 import { dateParams, fillPattern } from './routes'
 
 export type TypeEntry = { id: string, data: Record<string, unknown> }
@@ -46,9 +47,9 @@ export function entryHref(type: CustomType, entry: TypeEntry): string | undefine
   if (type.single === undefined) return undefined
   const slug = text(entry.data.slug) ?? entry.id
   const kept = keptPath(entry.data.path, slug)
-  if (kept) return withBase(kept)
+  if (kept) return localizedPath(withBase(kept), entryLocale(entry))
   const wpId = entry.data.wp_id
-  return withBase(fillPattern(type.single, { slug, id: typeof wpId === 'number' ? String(wpId) : entry.id, ...dateParams(dateOf(entry.data.published_at)) }))
+  return localizedPath(withBase(fillPattern(type.single, { slug, id: typeof wpId === 'number' ? String(wpId) : entry.id, ...dateParams(dateOf(entry.data.published_at)) })), entryLocale(entry))
 }
 
 /** A taxonomy's terms by `collection:id`, the key `termHref` reads a term's parents under. */
@@ -60,6 +61,10 @@ export const termsById = (collection: string, terms: readonly TypeEntry[]): Map<
  * category's is. Without `:path` the slug alone. A kept `path` (`keptPath` in content.ts) wins over the pattern.
  */
 export function termHref(taxonomy: Taxonomy, term: TypeEntry, terms?: ReadonlyMap<string, TypeEntry>): string {
+  return localizedPath(patternHref(taxonomy, term, terms), entryLocale(term))
+}
+
+function patternHref(taxonomy: Taxonomy, term: TypeEntry, terms?: ReadonlyMap<string, TypeEntry>): string {
   const slug = text(term.data.slug) ?? term.id
   const kept = keptPath(term.data.path, slug)
   if (kept) return withBase(kept)
@@ -82,14 +87,14 @@ export async function staleTypePaths(): Promise<Array<{ from: string, to: string
     for (const entry of own ?? []) {
       const from = stalePath(entry.data.path, text(entry.data.slug) ?? entry.id)
       const to = entryHref(type, entry)
-      if (from && to) out.push({ from, to })
+      if (from && to) out.push({ from: localizedPath(from, entryLocale(entry)), to })
     }
     for (const [i, taxonomy] of taxonomies.entries()) {
       const terms = lists[i] ?? []
       const byKey = termsById(taxonomy.collection, terms)
       for (const term of terms) {
         const from = stalePath(term.data.path, text(term.data.slug) ?? term.id)
-        if (from) out.push({ from, to: termHref(taxonomy, term, byKey) })
+        if (from) out.push({ from: localizedPath(from, entryLocale(term)), to: termHref(taxonomy, term, byKey) })
       }
     }
   }

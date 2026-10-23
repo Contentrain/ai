@@ -26,6 +26,14 @@ interface Props {
   nofollow?: boolean | undefined
   siteName: string
   locale?: string | undefined
+  /** The page's posts feed (a root path); absent, the site's `/rss.xml`. */
+  feed?: string | undefined
+  /**
+   * The page in every language that has it, this one included (`hreflang`: a language tag; absolute URLs), and the one
+   * a visitor of no listed language gets (`xDefault`: the default locale's). Empty for a page not translated.
+   */
+  alternates?: ReadonlyArray<{ hreflang: string, href: string }>
+  xDefault?: string | undefined
   published?: Date | undefined
   modified?: Date | undefined
   jsonLd?: ReadonlyArray<Record<string, unknown>>
@@ -33,15 +41,19 @@ interface Props {
 
 const {
   title, description, shareTitle = title, shareDescription = description, canonical, image, type = 'website', noindex = false, nofollow = false,
-  siteName, locale, published, modified, jsonLd = [],
+  siteName, locale, feed: feedPath = withBase('/rss.xml'), alternates = [], xDefault, published, modified, jsonLd = [],
 } = Astro.props
 
 const robots = [noindex ? 'noindex' : 'index', nofollow ? 'nofollow' : 'follow', 'max-image-preview:large'].join(', ')
-const feed = new URL(withBase('/rss.xml'), Astro.site ?? canonical).href
+const feed = new URL(feedPath, Astro.site ?? canonical).href
+// A page asked not to be indexed names no alternates either: there is no address of it to prefer.
+const languages = noindex ? [] : alternates
 ---
 <title>{title}</title>
 {description && <meta name="description" content={description} />}
 {!noindex && <link rel="canonical" href={canonical} />}
+{languages.map(alternate => <link rel="alternate" hreflang={alternate.hreflang} href={alternate.href} />)}
+{languages.length > 0 && xDefault && <link rel="alternate" hreflang="x-default" href={xDefault} />}
 <meta name="robots" content={robots} />
 <link rel="alternate" type="application/rss+xml" title={siteName} href={feed} />
 <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
@@ -52,6 +64,7 @@ const feed = new URL(withBase('/rss.xml'), Astro.site ?? canonical).href
 {!noindex && <meta property="og:url" content={canonical} />}
 {shareDescription && <meta property="og:description" content={shareDescription} />}
 {locale && <meta property="og:locale" content={locale.replace('-', '_')} />}
+{languages.filter(alternate => alternate.hreflang !== locale).map(alternate => <meta property="og:locale:alternate" content={alternate.hreflang.replace('-', '_')} />)}
 {image && <meta property="og:image" content={image} />}
 {published && <meta property="article:published_time" content={published.toISOString()} />}
 {modified && <meta property="article:modified_time" content={modified.toISOString()} />}

@@ -76,6 +76,7 @@ jobs:
         # every other entry kind at its kept old address (pages, terms, a custom type: entry-path; a renamed one of each: a 301),
         # a migrated comment thread drawn at build time (unbound and bound to Studio),
         # a form the owner kept on WordPress,
+        # a site in two languages (hreflang, a language switcher, a feed and a sitemap each) and one whose default has a prefix,
         # a site with no posts (its /blog/ page stays a page, no empty list: no-posts),
         # and a sample build whose links to the source's other pages go to the live site.
         run: |
@@ -93,6 +94,8 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture entry-path
           node scripts/starter-gates.mjs --local-sdk --fixture og-fields
           node scripts/starter-gates.mjs --local-sdk --fixture ar-site
+          node scripts/starter-gates.mjs --local-sdk --fixture i18n-site
+          node scripts/starter-gates.mjs --local-sdk --fixture i18n-prefixed
           node scripts/starter-gates.mjs --local-sdk --fixture comments
           node scripts/starter-gates.mjs --local-sdk --fixture comments --media studio
           node scripts/starter-gates.mjs --local-sdk --fixture forms-wordpress

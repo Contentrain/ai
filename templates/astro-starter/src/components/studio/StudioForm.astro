@@ -11,6 +11,7 @@
 // to, or links to the form on the WordPress site: a live link, with a line
 // saying where it is sent.
 import { getStringTable } from '../../lib/content'
+import { localeOf } from '../../lib/locales'
 import { formAddress, formFields, formHome, onWordPress } from '../../lib/features'
 import { siteConfig } from '../../site.config'
 import FormMount from './FormMount.astro'
@@ -27,7 +28,7 @@ const { model, class: className } = Astro.props
 const studio = siteConfig.studio
 const forms = siteConfig.features?.forms
 const home = formHome(model)
-const text = home ? await getStringTable(['common.', 'form.']) : {}
+const text = home ? await getStringTable(['common.', 'form.'], localeOf(Astro.url.pathname)) : {}
 const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
 const address = home === 'mailto' ? formAddress() : undefined
 const fields = home === 'needs_endpoint' ? formFields(model) : []

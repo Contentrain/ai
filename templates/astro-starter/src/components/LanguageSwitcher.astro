@@ -1,0 +1,28 @@
+---
+// The site's languages, as links: each to this page in that language, or to that language's home page where this
+// page has no translation. Plain links, no script: a visitor without JavaScript, and a crawler, follows them as they
+// are. Each link names its language in that language (`Deutsch`, `Türkçe`) and says it (`lang`, `hreflang`); the
+// current one is marked. A site in one language prints nothing.
+interface Props {
+  languages: ReadonlyArray<{ tag: string, label: string, href: string, current: boolean }>
+}
+
+const { languages } = Astro.props
+---
+{languages.length > 1 && (
+  <div class="container-page flex justify-end py-2 text-sm" data-cr-languages>
+    <ul class="flex flex-wrap gap-4">
+      {languages.map(language => (
+        <li>
+          <a
+            href={language.href}
+            hreflang={language.tag}
+            lang={language.tag}
+            aria-current={language.current ? 'page' : undefined}
+            class:list={['no-underline hover:underline', language.current ? 'font-semibold text-ink' : 'text-ink-muted']}
+          >{language.label}</a>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}

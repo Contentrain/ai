@@ -13,6 +13,7 @@ import { authorHref, byId, getPosts, getSite, getStrings, getTextOr, imageOf, po
 import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, termsById, text, type TypeEntry } from '../lib/custom'
 import { labelled, shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
+import { localeOf } from '../lib/locales'
 import { siteConfig } from '../site.config'
 import { cssSize } from '../lib/css-size'
 import { summarize } from '../lib/seo'
@@ -26,15 +27,16 @@ interface Props {
 }
 
 const { type, entry, targets } = Astro.props
+const pageLocale = localeOf(Astro.url.pathname)
 const { data } = entry
-const textOr = await getTextOr()
+const textOr = await getTextOr(pageLocale)
 const [site, t, fields, body, siblings, latestPosts, categories] = await Promise.all([
-  getSite(),
-  getStrings(),
+  getSite(pageLocale),
+  getStrings(pageLocale),
   shownFields(labelled(type.fields, `types.${type.collection}.fields`, textOr), data, targets),
-  bodyOf(type, entry) ? publicHtml(bodyOf(type, entry)) : undefined,
+  bodyOf(type, entry) ? publicHtml(bodyOf(type, entry), pageLocale) : undefined,
   type.adjacent || (type.more && type.moreOf !== 'posts') ? entriesOf(type.collection) : [],
-  type.more && type.moreOf === 'posts' ? getPosts() : [],
+  type.more && type.moreOf === 'posts' ? getPosts(pageLocale) : [],
   type.more && type.moreOf === 'posts' ? byId('categories') : new Map<string, Category>(),
 ])
 // Newest first: the previous entry is the older one, the next the newer, as in WordPress.
@@ -90,7 +92,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
       <PostMeta
         meta={type.meta}
         date={dateOf(data[type.card.date ?? 'published_at'])}
-        author={author ? { label: author.data.name, href: authorHref(author) } : undefined}
+        author={author ? { label: author.data.name, href: authorHref(author, pageLocale) } : undefined}
         terms={taxonomy ? terms.map(term => ({ label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term, allTerms) })) : []}
         locale={site.language}
       />

@@ -13,6 +13,7 @@ import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, res
 import { cssSize } from '../lib/css-size'
 import { servedPath, withBase } from '../lib/base'
 import { publicHtml } from '../lib/links'
+import { localeOf, localizedPath } from '../lib/locales'
 import { articleLd, summarize } from '../lib/seo'
 import { siteConfig } from '../site.config'
 import { safeHref } from '../components/kit/_shared/safe-url'
@@ -22,18 +23,19 @@ interface Props {
 }
 
 const { post } = Astro.props
+const pageLocale = localeOf(Astro.url.pathname)
 const { data } = post
 const [site, t, author, categories, tags, cover, categoryMap, tagMap, body, posts] = await Promise.all([
-  getSite(),
-  getStrings(),
+  getSite(pageLocale),
+  getStrings(pageLocale),
   data.author ? getEntry(data.author) : undefined,
   resolve(data.categories),
   resolve(data.tags),
   data.cover ? getEntry(data.cover) : undefined,
   byId('categories'),
   byId('tags'),
-  publicHtml(data.body),
-  getPosts(),
+  publicHtml(data.body, pageLocale),
+  getPosts(pageLocale),
 ])
 const layout = siteConfig.post
 // Newest first: the previous post is the older one, the next the newer, as in WordPress.
@@ -61,14 +63,14 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
   nofollow={data.seo?.nofollow}
   published={data.published_at}
   modified={data.modified_at}
-  jsonLd={[articleLd({ name: site.title, url: new URL(withBase('/'), Astro.site ?? Astro.url).href }, {
+  jsonLd={[articleLd({ name: site.title, url: new URL(localizedPath(withBase('/'), pageLocale), Astro.site ?? Astro.url).href }, {
     url,
     headline: data.title,
     description,
     image: image ? new URL(servedPath(image), Astro.site ?? Astro.url).href : undefined,
     published: data.published_at,
     modified: data.modified_at,
-    author: author ? { name: author.data.name, url: new URL(authorHref(author), Astro.site ?? Astro.url).href } : undefined,
+    author: author ? { name: author.data.name, url: new URL(authorHref(author, pageLocale), Astro.site ?? Astro.url).href } : undefined,
     section: categories[0]?.data.name,
     keywords: tags.map(tag => tag.data.name),
   })]}
@@ -83,7 +85,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       : part === 'title' ? <h1 class="[margin-bottom:var(--spacing-title,1rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>
       : part === 'byline' ? (
         <p class="mb-10 flex flex-wrap items-center gap-x-2 text-ink-muted" data-kit-meta>
-          {author && <span>{t('post.by')} <a href={safeHref(authorHref(author))} class="font-medium text-ink no-underline hover:text-accent-text">{author.data.name}</a></span>}
+          {author && <span>{t('post.by')} <a href={safeHref(authorHref(author, pageLocale))} class="font-medium text-ink no-underline hover:text-accent-text">{author.data.name}</a></span>}
           {author && data.published_at && <span aria-hidden="true">·</span>}
           {data.published_at && <time datetime={data.published_at.toISOString()}>{formatDate(data.published_at)}</time>}
           {updated && data.modified_at && (
@@ -106,7 +108,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       <PostMeta
         meta={layout.meta}
         date={data.published_at}
-        author={author ? { label: author.data.name, href: authorHref(author) } : undefined}
+        author={author ? { label: author.data.name, href: authorHref(author, pageLocale) } : undefined}
         terms={categories.map(category => ({ label: category.data.name, href: termHref('category', category, categoryMap) }))}
         tags={tags.map(tag => ({ label: tag.data.name, href: termHref('tag', tag, tagMap) }))}
         locale={locale}

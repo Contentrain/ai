@@ -8,6 +8,9 @@
 //   node scripts/starter-gates.mjs --fixture wp-demo    with templates/fixtures/wp-demo laid over it
 //   node scripts/starter-gates.mjs --fixture tr-site    a Turkish-only site: config default locale tr, site.language tr (endpopcorn)
 //   node scripts/starter-gates.mjs --fixture ar-site    an Arabic site: <html lang="ar" dir="rtl">
+//   node scripts/starter-gates.mjs --fixture i18n-site  a site in two languages: Turkish at the root, English under /en/
+//   node scripts/starter-gates.mjs --fixture i18n-prefixed
+//                                                       English under /en/ (the root redirects there), Arabic under /ar/ (rtl)
 //   node scripts/starter-gates.mjs --local-sdk          @contentrain/query (and the @contentrain/types it uses) from this checkout, not npm
 //   node scripts/starter-gates.mjs --out <dir>          keep the project there (default: a temp dir, removed on success)
 //   node scripts/starter-gates.mjs --fixture wp-demo --media studio

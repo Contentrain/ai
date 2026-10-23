@@ -6,6 +6,7 @@ import { Font } from 'astro:assets'
 import Analytics from '../components/Analytics.astro'
 import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
+import LanguageSwitcher from '../components/LanguageSwitcher.astro'
 import { safeHref } from '../components/kit/_shared/safe-url'
 import SEO from '../components/SEO.astro'
 import { servedPath, withBase } from '../lib/base'
@@ -15,9 +16,11 @@ import { textDirection } from '../lib/direction'
 import { copyrightOf, getSite, getStrings } from '../lib/content'
 import { onWordPress } from '../lib/features'
 import { menusAt } from '../lib/links'
+import { defaultLocale, feedPath, languageName, localeOf, localeTag, localizedPath, multilingual, siteLocales } from '../lib/locales'
 import { queryMap } from '../lib/redirects'
 import { describePage, documentTitle, localBusinessLd, organizationLd, websiteLd, type BusinessInput } from '../lib/seo'
 import { shareDescription, shareTitle } from '../lib/share'
+import { alternatesOf } from '../lib/site-routes'
 import { siteConfig } from '../site.config'
 import { overlays } from '../views/overlays'
 import '../styles/global.css'
@@ -45,14 +48,17 @@ interface Props {
 }
 
 const { title, fullTitle: seoTitle, description, ogTitle, ogDescription, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
-const [site, t, [primary], footerMenus] = await Promise.all([getSite(), getStrings(), menusAt('header'), menusAt('footer')])
+// The page's locale: the one whose prefix its address is under (a site in one language has one, at the root).
+const locale = localeOf(Astro.url.pathname)
+const [site, t, [primary], footerMenus, alternates] = await Promise.all([getSite(locale), getStrings(locale), menusAt('header', locale), menusAt('footer', locale), alternatesOf(Astro.url.pathname)])
 const contact = siteContact(site, siteConfig.contact)
 const sameAs = (site.same_as ?? []).map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))
 const social = [...sameAs, ...contact.socials.filter(link => !sameAs.some(known => known.href === link.href))]
 const origin = Astro.site ?? Astro.url
-const home = new URL(withBase('/'), origin).href
+const homePath = localizedPath(withBase('/'), locale)
+const home = new URL(homePath, origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
-const isHome = Astro.url.pathname === withBase('/')
+const isHome = Astro.url.pathname === homePath
 // A latest-posts home is no entry: its SEO title and description are the site's (`site.seo`, written from the source).
 const homeSeo = isHome ? site.seo : undefined
 const fullTitle = documentTitle({ seoTitle, title, isHome, home: homeSeo, site: site.title, tagline: site.tagline, template: siteConfig.titleTemplate })
@@ -62,7 +68,7 @@ const shareImage = image ?? site.social_image
 // Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
 const footerColumns = footerMenus.filter(menu => menu.items.length > 0)
 // The "RSS feed" link is the source's only where its footer has one (the feed file is served either way).
-const rss = siteConfig.footer?.feed === false ? undefined : { label: t('footer.rss'), href: withBase('/rss.xml') }
+const rss = siteConfig.footer?.feed === false ? undefined : { label: t('footer.rss'), href: feedPath(locale) }
 // Forms the source showed outside the page content with no place here, kept on WordPress (C5): each links to the
 // WordPress page that carries it — reachable, never silently gone. A form of a few pages (`on`: the theme builder's form
 // on /contact/) is linked at the end of those pages' content, as a form kept on WordPress is; a site-wide one (a footer
@@ -79,7 +85,22 @@ const pageForms = keptForms.filter(form => form.on?.some(path => withBase(path) 
 const footerExtras = [...(rss ? [rss] : []), ...footerForms]
 // WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
 // them with a 301 where the host reads one, and this map sends the browser on everywhere else.
-const wpQueries = isHome ? await queryMap() : {}
+const wpQueries = Astro.url.pathname === withBase('/') ? await queryMap() : {}
+// This page in the site's other languages (hreflang), and the switcher: each language links to this page in it, or to
+// its home page where this page is not translated.
+const tagOf = (code: string) => localeTag(code) ?? lang
+const languageLinks = alternates.map(alternate => ({ hreflang: tagOf(alternate.locale), href: new URL(alternate.href, origin).href }))
+// x-default: the page in the default language, where it has one.
+const original = alternates.find(alternate => alternate.locale === defaultLocale)
+const xDefault = original ? new URL(original.href, origin).href : undefined
+const languages = multilingual
+  ? siteLocales.map(({ code }) => ({
+      tag: tagOf(code),
+      label: languageName(tagOf(code)),
+      href: alternates.find(alternate => alternate.locale === code)?.href ?? localizedPath(withBase('/'), code),
+      current: code === locale,
+    }))
+  : []
 ---
 <!doctype html>
 <html lang={lang} dir={textDirection(lang)}>
@@ -110,6 +131,9 @@ const wpQueries = isHome ? await queryMap() : {}
       nofollow={nofollow}
       siteName={site.title}
       locale={lang}
+      feed={feedPath(locale)}
+      alternates={languageLinks}
+      xDefault={xDefault}
       published={published}
       modified={modified}
       jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...[localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined), ...jsonLd] : jsonLd}
@@ -120,6 +144,7 @@ const wpQueries = isHome ? await queryMap() : {}
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface">
       {t('nav.skip')}
     </a>
+    <LanguageSwitcher languages={languages} />
     <Header
       siteName={site.title}
       logo={site.logo ? { src: site.logo, alt: '' } : undefined}
@@ -137,7 +162,7 @@ const wpQueries = isHome ? await queryMap() : {}
       brandColor={cssColor(siteConfig.chrome?.brandColor)}
       menu={siteConfig.chrome?.menu}
       search={siteConfig.chrome?.header?.search ? { action: withBase('/search/'), label: t('search.label'), placeholder: t('search.placeholder'), submitLabel: t('search.submit') } : undefined}
-      homeHref={withBase('/')}
+      homeHref={homePath}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
       menuLabel={t('nav.menu')}
