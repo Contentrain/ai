@@ -76,6 +76,7 @@ jobs:
         # every other entry kind at its kept old address (pages, terms, a custom type: entry-path; a renamed one of each: a 301),
         # a migrated comment thread drawn at build time (unbound and bound to Studio),
         # a form the owner kept on WordPress,
+        # a site with no posts (its /blog/ page stays a page, no empty list: no-posts),
         # and a sample build whose links to the source's other pages go to the live site.
         run: |
           node scripts/starter-gates.mjs --local-sdk
@@ -96,6 +97,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture comments --media studio
           node scripts/starter-gates.mjs --local-sdk --fixture forms-wordpress
           node scripts/starter-gates.mjs --local-sdk --fixture empty-pages
+          node scripts/starter-gates.mjs --local-sdk --fixture no-posts
           node scripts/starter-gates.mjs --local-sdk --fixture composed-home
           node scripts/starter-gates.mjs --local-sdk --fixture composed-blog
           node scripts/starter-gates.mjs --local-sdk --fixture composed-blog-nolist
