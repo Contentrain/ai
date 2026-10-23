@@ -13,7 +13,7 @@ import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, res
 import { cssSize } from '../lib/css-size'
 import { servedPath, withBase } from '../lib/base'
 import { publicHtml } from '../lib/links'
-import { localeOf, localizedPath } from '../lib/locales'
+import { entryRef, localeOf, localizedPath } from '../lib/locales'
 import { articleLd, summarize } from '../lib/seo'
 import { siteConfig } from '../site.config'
 import { safeHref } from '../components/kit/_shared/safe-url'
@@ -125,7 +125,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
         {next && <a href={safeHref(postHref(next, categoryMap))} rel="next" class="text-ink">{next.data.title} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
-    <StudioComments model="posts" entry={post.id} open={data.comments_open} />
+    <StudioComments model="posts" {...entryRef(post)} open={data.comments_open} />
   </article>
   {more.length > 0 && (
     <section aria-labelledby="more-posts" data-cr-part="related" class="container-page pb-16">

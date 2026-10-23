@@ -64,6 +64,15 @@ export const entryLocale = (entry: { data: object }): string => {
   return typeof own === 'string' && byCode.has(own) ? own : defaultLocale
 }
 
+/**
+ * An entry as Studio and the carried comments name it: its own id, with its locale on a translated model. The loader keys
+ * a translated model's entries `<locale>/<id>` (every locale in one collection); the id after that prefix is the entry's.
+ */
+export function entryRef(entry: { id: string, data: object }): { entry: string, locale?: string } {
+  const own = (entry.data as { locale?: unknown }).locale
+  return typeof own === 'string' && entry.id.startsWith(`${own}/`) ? { entry: entry.id.slice(own.length + 1), locale: own } : { entry: entry.id }
+}
+
 /** The entries of one locale. On a one-language site every entry is the site's: nothing is left out. */
 export function inLocale<T extends { data: object }>(entries: readonly T[], locale: string): T[] {
   return multilingual ? entries.filter(entry => entryLocale(entry) === locale) : [...entries]

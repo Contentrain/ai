@@ -13,7 +13,7 @@ import { authorHref, byId, getPosts, getSite, getStrings, getTextOr, imageOf, po
 import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, termsById, text, type TypeEntry } from '../lib/custom'
 import { labelled, shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
-import { localeOf } from '../lib/locales'
+import { entryRef, localeOf } from '../lib/locales'
 import { siteConfig } from '../site.config'
 import { cssSize } from '../lib/css-size'
 import { summarize } from '../lib/seo'
@@ -103,7 +103,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
         {next && <a href={safeHref(pageOf(next))} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
-    {type.model && <StudioComments model={type.model} entry={entry.id} open={data.comments_open === true} />}
+    {type.model && <StudioComments model={type.model} {...entryRef(entry)} open={data.comments_open === true} />}
   </article>
   {more.length > 0 && (
     <section aria-labelledby="more-entries" data-cr-part="related" class="container-page pb-16">
