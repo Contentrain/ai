@@ -76,7 +76,15 @@
     "en/blog/new-season/index.html": {
       "contains": [
         "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/blog/yeni-sezon/\">",
-        "href=\"/en/category/news/\""
+        "href=\"/en/category/news/\"",
+        "data-count=\"1\"",
+        "Deniz Kaya"
+      ]
+    },
+    "blog/yeni-sezon/index.html": {
+      "contains": [
+        "data-count=\"1\"",
+        "Deniz Kaya"
       ]
     },
     "category/haberler/index.html": {
