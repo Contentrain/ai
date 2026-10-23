@@ -30,8 +30,11 @@ Read these files, not a list in this file: they are what the site builds from.
 
 `.mcp.json` registers the Contentrain MCP server (`npx contentrain serve --stdio`; the first use downloads the
 `contentrain` CLI). Use `contentrain_status` and `contentrain_describe` for the live view of models and entries, and
-its tools to add or change content and models. Writes go to the `contentrain` branch; with Contentrain Studio connected,
-Studio reviews and merges the same branch. The Contentrain agent rules and skills are not installed in this repository;
+its tools to add or change content and models. This project's workflow is `review` (`.contentrain/config.json`): each
+write is committed on its own `cr/…` review branch and, when the repository has a remote, **pushed to it**;
+`contentrain_merge` (or Studio, when connected) merges it into the `contentrain` branch. To keep writes local, set
+`"git": { "push": false }` in `.contentrain/config.json`, or `CONTENTRAIN_NO_PUSH=1` for one run. The Contentrain agent
+rules and skills are not installed in this repository;
 `npx skills add Contentrain/ai/packages/skills` adds them.
 
 ## This site
