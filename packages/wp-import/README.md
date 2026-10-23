@@ -77,10 +77,16 @@ models get `i18n: true`, content and meta are written per locale
 (`content/{domain}/{model}/{locale}.json`), and every translation in a group
 shares one entry id — the canonical member is the default-locale post (else
 the lowest id), so `entry_source_map[wp_id]` addresses each post by that id
-and its own locale. Locales are primary subtags (`tr_TR` → `tr`). Taxonomies
-stay per-store; the `language` / `post_translations` bookkeeping taxonomies
-never become models. `report.locales` and `report.translation_groups` say
-what happened. A monolingual site is unchanged (`i18n: false`, `data.json`).
+and its own locale. Locales are primary subtags (`tr_TR` → `tr`). A taxonomy
+stays one store-wide model unless its terms carry a language (`RawTerm.lang`,
+from the Bridge): then it is i18n too, and the Bridge's `term_pairs` fold each
+term translation group into one entry id the same way (default-locale term,
+else the lowest id). Every reference to a term — a post's taxonomy field, its
+primary category, an ACF term field, a menu target, a parent — resolves to its
+group's id. The `language` / `post_translations` bookkeeping taxonomies never
+become models. `report.locales`, `report.translation_groups` and
+`report.term_translation_groups` say what happened. A monolingual site is
+unchanged (`i18n: false`, `data.json`).
 
 Few sites are translated evenly. A post type whose content exists in some of the
 site's languages gets `model.locales` — the locales it actually has posts in,
