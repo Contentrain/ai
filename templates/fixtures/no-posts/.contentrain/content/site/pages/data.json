@@ -1,0 +1,14 @@
+{
+  "f0b000000001": {
+    "body": "<p>We make bread for the street.</p>",
+    "slug": "welcome",
+    "title": "Welcome",
+    "wp_id": 601
+  },
+  "f0b000000002": {
+    "body": "<p>Notes from the bakery, kept as one page.</p>",
+    "slug": "blog",
+    "title": "Blog",
+    "wp_id": 602
+  }
+}

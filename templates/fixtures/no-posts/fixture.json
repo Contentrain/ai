@@ -1,0 +1,20 @@
+{
+  "siteConfig": [
+    {
+      "from": "  home: { kind: 'posts' },",
+      "to": "  home: { kind: 'page', slug: 'welcome' },"
+    }
+  ],
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "We make bread for the street."
+      ]
+    },
+    "blog/index.html": {
+      "contains": [
+        "Notes from the bakery, kept as one page."
+      ]
+    }
+  }
+}
