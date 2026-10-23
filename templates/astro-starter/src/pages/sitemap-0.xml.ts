@@ -1,27 +1,9 @@
-// Every public address, from the route table: published entries only, never
-// an entry marked noindex, never a redirect (an empty inner page's included). Posts and pages carry their
-// last change.
+// The default language's addresses (every address on a site in one language), from the route table: see lib/sitemap.ts.
 import type { APIRoute } from 'astro'
-import { leftEmpty } from '../lib/empty-page'
-import { routeTable } from '../lib/site-routes'
+import { defaultLocale } from '../lib/locales'
+import { sitemapXml } from '../lib/sitemap'
+import { localeRoutes } from '../lib/site-routes'
 
-const escape = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-
-export const GET: APIRoute = async ({ site }) => {
-  const origin = site ?? new URL('http://localhost/')
-  const urls: string[] = []
-  for (const [href, route] of await routeTable()) {
-    // An inner page with nothing to build answers with a redirect, which a sitemap never lists.
-    if (route.view === 'page' && !route.isHome && leftEmpty(route)) continue
-    const entry = route.view === 'post' ? route.post.data : route.view === 'page' ? route.page.data : route.view === 'entry' ? route.entry.data : undefined
-    if ((entry?.seo as { noindex?: boolean } | undefined)?.noindex) continue
-    const changed = (entry?.modified_at ?? entry?.published_at) as Date | undefined
-    urls.push(`<url><loc>${escape(new URL(href, origin).href)}</loc>${changed ? `<lastmod>${changed.toISOString()}</lastmod>` : ''}</url>`)
-  }
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join('\n')}
-</urlset>
-`
-  return new Response(body, { headers: { 'Content-Type': 'application/xml; charset=utf-8' } })
-}
+export const GET: APIRoute = async ({ site }) => new Response(sitemapXml(await localeRoutes(defaultLocale), site ?? new URL('http://localhost/')), {
+  headers: { 'Content-Type': 'application/xml; charset=utf-8' },
+})

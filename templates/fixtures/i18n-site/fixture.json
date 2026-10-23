@@ -1,0 +1,127 @@
+{
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  locales: { prefixes: { tr: '', en: 'en' }, tags: { tr: 'tr', en: 'en' } },\n  sourceHosts: [],"
+    }
+  ],
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "<html lang=\"tr\" dir=\"ltr\"",
+        "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/\">",
+        "<link rel=\"alternate\" hreflang=\"en\" href=\"https://example.com/en/\">",
+        "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://example.com/\">",
+        "data-cr-languages",
+        "href=\"/en/\" hreflang=\"en\" lang=\"en\"",
+        "href=\"/rss.xml\"",
+        "href=\"/blog/yeni-sezon/\"",
+        "href=\"/hakkimizda/\""
+      ],
+      "excludes": [
+        "href=\"/blog/new-season/\"",
+        "href=\"/en/blog/new-season/\""
+      ]
+    },
+    "en/index.html": {
+      "contains": [
+        "<html lang=\"en\" dir=\"ltr\"",
+        "Independent Cinema",
+        "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/\">",
+        "<link rel=\"alternate\" hreflang=\"en\" href=\"https://example.com/en/\">",
+        "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://example.com/\">",
+        "href=\"/\" hreflang=\"tr\" lang=\"tr\"",
+        "href=\"/en/rss.xml\"",
+        "href=\"/en/blog/new-season/\"",
+        "href=\"/en/about/\"",
+        "href=\"/en/category/news/\""
+      ],
+      "excludes": [
+        "Yeni sezon",
+        "Yalnız Türkçe",
+        "href=\"/hakkimizda/\""
+      ]
+    },
+    "hakkimizda/index.html": {
+      "contains": [
+        "<link rel=\"alternate\" hreflang=\"en\" href=\"https://example.com/en/about/\">",
+        "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/hakkimizda/\">",
+        "href=\"/en/about/\" hreflang=\"en\""
+      ]
+    },
+    "en/about/index.html": {
+      "contains": [
+        "<html lang=\"en\"",
+        "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/hakkimizda/\">",
+        "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://example.com/hakkimizda/\">",
+        "href=\"/hakkimizda/\" hreflang=\"tr\""
+      ]
+    },
+    "iletisim/index.html": {
+      "contains": [
+        "href=\"/en/\" hreflang=\"en\""
+      ],
+      "excludes": [
+        "rel=\"alternate\" hreflang"
+      ]
+    },
+    "blog/yalniz-turkce/index.html": {
+      "contains": [
+        "href=\"/en/\" hreflang=\"en\""
+      ],
+      "excludes": [
+        "rel=\"alternate\" hreflang"
+      ]
+    },
+    "en/blog/new-season/index.html": {
+      "contains": [
+        "<link rel=\"alternate\" hreflang=\"tr\" href=\"https://example.com/blog/yeni-sezon/\">",
+        "href=\"/en/category/news/\""
+      ]
+    },
+    "category/haberler/index.html": {
+      "contains": [
+        "<link rel=\"alternate\" hreflang=\"en\" href=\"https://example.com/en/category/news/\">"
+      ]
+    },
+    "sitemap-index.xml": {
+      "contains": [
+        "https://example.com/sitemap-0.xml",
+        "https://example.com/sitemap-en.xml"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/hakkimizda/"
+      ],
+      "excludes": [
+        "https://example.com/en/"
+      ]
+    },
+    "sitemap-en.xml": {
+      "contains": [
+        "https://example.com/en/about/",
+        "https://example.com/en/blog/new-season/"
+      ],
+      "excludes": [
+        "https://example.com/hakkimizda/"
+      ]
+    },
+    "rss.xml": {
+      "contains": [
+        "https://example.com/blog/yeni-sezon/"
+      ],
+      "excludes": [
+        "new-season"
+      ]
+    },
+    "en/rss.xml": {
+      "contains": [
+        "https://example.com/en/blog/new-season/"
+      ],
+      "excludes": [
+        "yeni-sezon"
+      ]
+    }
+  }
+}

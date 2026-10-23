@@ -1,0 +1,137 @@
+{
+  "domain": "site",
+  "fields": {
+    "body": {
+      "label": "Body",
+      "order": 50,
+      "type": "richtext"
+    },
+    "cover": {
+      "label": "Cover",
+      "model": "media",
+      "order": 100,
+      "type": "relation"
+    },
+    "excerpt": {
+      "label": "Excerpt",
+      "order": 40,
+      "type": "text"
+    },
+    "form": {
+      "description": "A Studio form shown under the page body — the id of the model its submissions go to.",
+      "label": "Form model",
+      "order": 160,
+      "type": "string"
+    },
+    "link": {
+      "label": "Original permalink",
+      "order": 130,
+      "type": "url"
+    },
+    "menu_order": {
+      "label": "Menu order",
+      "order": 150,
+      "type": "integer"
+    },
+    "modified_at": {
+      "label": "Modified at",
+      "order": 120,
+      "type": "datetime"
+    },
+    "parent": {
+      "label": "Parent",
+      "model": "pages",
+      "order": 140,
+      "type": "relation"
+    },
+    "path": {
+      "description": "This page's address on the old site, kept where the permalink pattern would build another (a parent that did not move, a slug the store spells differently). Used only while its last part is this page's slug: change the slug and the page moves to the pattern's address, the old one redirecting there. Clearing it moves the page too; add a redirect for the old address if it is still linked.",
+      "label": "Kept address",
+      "order": 146,
+      "type": "string"
+    },
+    "path_prefix": {
+      "description": "The folders before this page's address on the old site (company for /company/about-us/), kept because its parent page was not moved. Used only while the page has no parent; clear it to put the page at the top level.",
+      "label": "Address prefix",
+      "order": 145,
+      "type": "string"
+    },
+    "published_at": {
+      "label": "Published at",
+      "order": 60,
+      "type": "datetime"
+    },
+    "seo": {
+      "fields": {
+        "canonical": {
+          "label": "Canonical URL",
+          "order": 30,
+          "type": "url"
+        },
+        "description": {
+          "label": "Meta description",
+          "max": 320,
+          "order": 20,
+          "type": "text"
+        },
+        "image": {
+          "label": "Social image",
+          "order": 40,
+          "type": "image"
+        },
+        "nofollow": {
+          "label": "Do not follow links",
+          "order": 60,
+          "type": "boolean"
+        },
+        "noindex": {
+          "label": "Hide from search engines",
+          "order": 50,
+          "type": "boolean"
+        },
+        "og_description": {
+          "label": "Social description (og:description)",
+          "order": 75,
+          "type": "text"
+        },
+        "og_title": {
+          "label": "Social title (og:title)",
+          "order": 70,
+          "type": "string"
+        },
+        "title": {
+          "label": "SEO title",
+          "order": 10,
+          "type": "string"
+        }
+      },
+      "label": "SEO",
+      "order": 900,
+      "type": "object"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 110,
+      "type": "integer",
+      "unique": true
+    }
+  },
+  "i18n": true,
+  "id": "pages",
+  "kind": "collection",
+  "name": "Pages",
+  "title_field": "title"
+}

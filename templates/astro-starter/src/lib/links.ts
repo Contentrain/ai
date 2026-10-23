@@ -18,9 +18,10 @@ import { scrollingTables, tableLabel } from './body-tables'
 import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
+import { defaultLocale, feedPath, multilingual, sharedIn, siteLocales } from './locales'
 
-/** Addresses outside the route table that the site serves: search, the feed. */
-const SERVED = new Set(['/search/', '/rss.xml'].map(withBase))
+/** Addresses outside the route table that the site serves: search, the feed (each locale's). */
+const SERVED = new Set([withBase('/search/'), ...siteLocales.map(locale => feedPath(locale.code))])
 /** A file in public/ (media, documents): served as it is, not a route. */
 const FILE = /\/[^/]+\.[a-z\d]{2,5}$/i
 const SCHEMES = new Set(['mailto:', 'tel:', 'sms:'])
@@ -221,9 +222,9 @@ function mediaText(html: string, index: MediaIndex): string {
  * images without an alt take their media library entry's, local raster images are served optimized, and a table no
  * table block holds scrolls in its own region.
  */
-export async function publicHtml(html: string): Promise<string>
-export async function publicHtml(html: string | undefined): Promise<string | undefined>
-export async function publicHtml(html: string | undefined): Promise<string | undefined> {
+export async function publicHtml(html: string, locale?: string): Promise<string>
+export async function publicHtml(html: string | undefined, locale?: string): Promise<string | undefined>
+export async function publicHtml(html: string | undefined, locale = defaultLocale): Promise<string | undefined> {
   if (!html) return html
   let result = html
   if (result.includes('<a')) {
@@ -238,7 +239,7 @@ export async function publicHtml(html: string | undefined): Promise<string | und
       return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
     })
   }
-  if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings()))
+  if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings(locale)))
   return result.includes('<img') ? optimizedImages(mediaText(result, await media())) : result
 }
 
@@ -264,25 +265,34 @@ export async function publicItems<T extends object>(items: readonly T[] | undefi
 
 type MenuItem = CollectionEntry<'menuItems'>
 
+/**
+ * The ids a menu item's target may have on a page of a locale: on a site in several languages, that locale's entry first
+ * (the loader keys a translated model's entries `<locale>/<id>`), then the id as stored (a model that is not translated).
+ */
+const targetIds = (ref: string, locale: string): string[] => (multilingual ? [`${locale}/${ref}`, ref] : [ref])
+
 /** Where a menu item points: its target entry's public address, else its own URL made public. */
-async function itemHref(item: MenuItem, link: (url: string | undefined) => string | undefined): Promise<string | undefined> {
+async function itemHref(item: MenuItem, link: (url: string | undefined) => string | undefined, locale: string): Promise<string | undefined> {
   const target = item.data.target
   if (!target) return link(item.data.url)
+  const ids = targetIds(target.ref, locale)
+  const pick = <T>(entries: ReadonlyMap<string, T>) => ids.map(id => entries.get(id)).find(entry => entry !== undefined)
   // The entry must be published (the collections hold nothing else) and its address public.
   switch (target.model) {
     case 'posts': {
-      const [post, categories] = await Promise.all([getEntry('posts', target.ref), byId('categories')])
+      const [posts, categories] = await Promise.all([Promise.all(ids.map(id => getEntry('posts', id))), byId('categories')])
+      const post = posts.find(entry => entry !== undefined)
       return post ? link(postHref(post, categories)) : undefined
     }
     case 'pages': {
       const pages = await byId('pages')
-      const page = pages.get(target.ref)
+      const page = pick(pages)
       return page ? link(pageHref(page, pages)) : undefined
     }
     case 'categories':
     case 'tags': {
       const terms = await byId(target.model)
-      const term = terms.get(target.ref)
+      const term = pick(terms)
       return term ? link(termHref(target.model === 'categories' ? 'category' : 'tag', term, terms)) : undefined
     }
     default: {
@@ -291,7 +301,7 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
       const collection = collectionOf(target.model)
       for (const type of siteConfig.types ?? []) {
         if (type.collection === collection) {
-          const entry = await entryById(collection, target.ref)
+          const entry = (await Promise.all(ids.map(id => entryById(collection, id)))).find(found => found !== undefined)
           // A list-only type's entry has no page: the item is dropped, as one pointing at a draft is.
           const href = entry ? entryHref(type, entry) : undefined
           return href ? link(href) : undefined
@@ -300,7 +310,8 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
         if (taxonomy) {
           // A nested term's address carries its parents: the taxonomy's terms are read for the chain.
           const terms = taxonomy.pattern.includes(':path') ? termsById(collection, await entriesOf(collection)) : undefined
-          const term = terms?.get(`${collection}:${target.ref}`) ?? await entryById(collection, target.ref)
+          const found = await Promise.all(ids.map(async id => terms?.get(`${collection}:${id}`) ?? entryById(collection, id)))
+          const term = found.find(entry => entry !== undefined)
           return term ? link(customTermHref(taxonomy, term, terms)) : undefined
         }
       }
@@ -319,9 +330,9 @@ const collectionOf = (model: string): string => model.replace(/[-_]([a-z\d])/g, 
  *
  * @public generated section views call it (a plan's `menu:` binding)
  */
-export async function getMenu(slug: string): Promise<NavItem[]> {
-  const menu = (await getCollection('menus', entry => entry.data.slug === slug))[0]
-  return menu ? menuItems(menu) : []
+export async function getMenu(slug: string, locale = defaultLocale): Promise<NavItem[]> {
+  const menu = sharedIn(await getCollection('menus', entry => entry.data.slug === slug), locale)[0]
+  return menu ? menuItems(menu, locale) : []
 }
 
 /** The theme locations each area answers to: WordPress themes name them differently. */
@@ -336,23 +347,23 @@ const AREAS = {
  * where site.config names it. Each comes with its name, the navigation's accessible name, and the heading the source
  * printed above it, if any (`title`: a footer column's), and where that heading links when it is a link (`titleHref`).
  */
-export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, title?: string | undefined, titleHref?: string | undefined, items: NavItem[] }>> {
+export async function menusAt(area: keyof typeof AREAS, locale = defaultLocale): Promise<Array<{ name: string, title?: string | undefined, titleHref?: string | undefined, items: NavItem[] }>> {
   const configured = area === 'header' ? [siteConfig.menus.primary] : [...siteConfig.menus.footer]
-  const all = await getCollection('menus')
+  const all = sharedIn(await getCollection('menus'), locale)
   const placed = all.filter(menu => (menu.data.locations?.length ? menu.data.locations.some(AREAS[area]) : configured.includes(menu.data.slug)))
   const rank = (menu: Menu) => {
     const index = configured.indexOf(menu.data.slug)
     return index === -1 ? configured.length : index
   }
   const ordered = placed.toSorted((a, b) => rank(a) - rank(b) || String(a.data.locations ?? '').localeCompare(String(b.data.locations ?? '')))
-  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, title: menu.data.title || undefined, titleHref: (menu.data.title && menu.data.title_href) || undefined, items: await menuItems(menu) })))
+  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, title: menu.data.title || undefined, titleHref: (menu.data.title && menu.data.title_href) || undefined, items: await menuItems(menu, locale) })))
 }
 
 type Menu = CollectionEntry<'menus'>
 
-async function menuItems(menu: Menu): Promise<NavItem[]> {
+async function menuItems(menu: Menu, locale: string): Promise<NavItem[]> {
   const [items, link] = await Promise.all([resolve(menu.data.items), publicLinks()])
-  const hrefs = new Map(await Promise.all(items.map(async item => [item.id, await itemHref(item, link)] as const)))
+  const hrefs = new Map(await Promise.all(items.map(async item => [item.id, await itemHref(item, link, locale)] as const)))
   const sorted = items.filter(item => hrefs.get(item.id) !== undefined).toSorted((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
   const node = (item: MenuItem): NavItem => ({
     label: item.data.title,

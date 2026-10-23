@@ -199,6 +199,15 @@ export interface SiteConfig {
    */
   sourceHosts: readonly string[]
   /**
+   * A site in several languages (WordPress: Polylang or WPML, a language per directory): for each locale of
+   * `.contentrain/config.json` `locales.supported`, by its content code (`de`, `pt-BR`), the address segment its pages
+   * live under (`prefixes`: `de`, `pt-br`, or `''` for the one at the root) and the language tag its pages print
+   * (`tags`: `pt-BR`). Every locale builds its own pages, lists, archives, feed and sitemap under its prefix; a page
+   * translated into another locale (the same entry id in that locale's content file) links to it. A default locale with
+   * a prefix makes the root redirect to its home. Absent: a site in one language, the project's default, at the root.
+   */
+  locales?: { prefixes: Readonly<Record<string, string>>, tags: Readonly<Record<string, string>> }
+  /**
    * Only on a migration's sample build: the source site's origin (`https://site.com`). The sample
    * holds a few pages, so a link to one of the source's other pages has no route here; with this
    * set it points at that page on the live source site instead of being dropped. Unset, such a

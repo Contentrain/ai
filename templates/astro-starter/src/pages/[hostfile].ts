@@ -8,6 +8,7 @@
 // name starts with an underscore, hence the parameter.)
 import type { APIRoute, GetStaticPaths } from 'astro'
 import { withBase } from '../lib/base'
+import { rootRedirect } from '../lib/locales'
 import { attachmentRules, prefixRules, queriedRules, queryRules, redirectRules } from '../lib/redirects'
 
 /** Cloudflare Pages reads at most 2,000 static rules; Netlify reads more but slows with every one. */
@@ -24,16 +25,20 @@ export const GET: APIRoute = async () => {
   // A host takes the first rule that matches, so the order is WordPress's: the site's own redirects
   // (Redirection, Rank Math) answer before an attachment page does. Exact addresses, then prefixes,
   // then query addresses, and the attachment pages last.
+  // The root of a site whose default language has a prefix leads to that language's home. Last of all: a host takes the
+  // first rule that matches, and `/?p=12` or `/?attachment_id=7` must reach its own target, not the home.
+  const root = rootRedirect()
   const lines = [
     ...rules.map(rule => (rule.status === 410 ? `${rule.from} ${withBase('/404.html')} 410` : `${rule.from} ${rule.to} ${rule.status}`)),
     ...prefixes.map(rule => `${rule.from} ${rule.to} ${rule.status}`),
     ...own.map(query),
     ...queried.map(rule => `${rule.path} ${rule.query.map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`).join(' ')} ${rule.to} ${rule.status}`),
   ]
+  const rootLines = root ? [`${root.from} ${root.to} 301`] : []
   // Attachment pages are the least of the old addresses: over the host's limit they are what gives way.
   const attachmentLines = [...attachments.paths.map(rule => `${rule.from} ${rule.to} ${rule.status}`), ...queries.filter(rule => rule.param === 'attachment_id').map(query)]
-  const kept = attachmentLines.slice(0, Math.max(0, HOST_RULE_LIMIT - lines.length))
-  const out = [...lines, ...kept]
+  const kept = attachmentLines.slice(0, Math.max(0, HOST_RULE_LIMIT - lines.length - rootLines.length))
+  const out = [...lines, ...kept, ...rootLines]
   const note = kept.length < attachmentLines.length ? `# ${attachmentLines.length - kept.length} attachment page redirect(s) left out: over the host's ${HOST_RULE_LIMIT}-rule limit (a path one is still its redirect page).\n` : ''
   return new Response(`# Generated at build: the redirects collection (edit in Contentrain Studio), prefixes, then query addresses, then attachment pages.\n${note}${out.join('\n')}\n`, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },

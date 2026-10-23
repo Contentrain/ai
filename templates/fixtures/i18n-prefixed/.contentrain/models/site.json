@@ -1,0 +1,184 @@
+{
+  "domain": "site",
+  "fields": {
+    "analytics_host": {
+      "description": "Matomo, or self-hosted Plausible: the server's https address.",
+      "label": "Analytics host",
+      "order": 92,
+      "type": "url"
+    },
+    "analytics_id": {
+      "description": "GA4 G-…, GTM GTM-…, Plausible domain, Fathom site ID or Matomo site number.",
+      "label": "Analytics ID",
+      "order": 91,
+      "type": "string"
+    },
+    "analytics_provider": {
+      "description": "Loaded only after the visitor accepts cookies in the site's consent bar. Without a consent bar on the site it never loads.",
+      "label": "Analytics provider",
+      "options": [
+        "ga4",
+        "gtm",
+        "plausible",
+        "fathom",
+        "matomo"
+      ],
+      "order": 90,
+      "type": "select"
+    },
+    "business": {
+      "description": "Where the business is and when it is open. Search engines show it beside the site; with no address, telephone, position or hours nothing is printed.",
+      "fields": {
+        "city": {
+          "label": "City",
+          "order": 30,
+          "type": "string"
+        },
+        "country": {
+          "label": "Country",
+          "order": 60,
+          "type": "string"
+        },
+        "latitude": {
+          "label": "Latitude",
+          "order": 80,
+          "type": "number"
+        },
+        "longitude": {
+          "label": "Longitude",
+          "order": 81,
+          "type": "number"
+        },
+        "opening_hours": {
+          "description": "One line each, as schema.org writes them: Mo-Fr 09:00-17:00.",
+          "items": "string",
+          "label": "Opening hours",
+          "order": 90,
+          "type": "array"
+        },
+        "postal_code": {
+          "label": "Postal code",
+          "order": 50,
+          "type": "string"
+        },
+        "price_range": {
+          "description": "As the business says it: $$, €10–20.",
+          "label": "Price range",
+          "order": 95,
+          "type": "string"
+        },
+        "region": {
+          "label": "Region or state",
+          "order": 40,
+          "type": "string"
+        },
+        "serves_cuisine": {
+          "items": "string",
+          "label": "Cuisine",
+          "order": 96,
+          "type": "array"
+        },
+        "street": {
+          "label": "Street address",
+          "order": 20,
+          "type": "string"
+        },
+        "telephone": {
+          "label": "Telephone",
+          "order": 70,
+          "type": "string"
+        },
+        "type": {
+          "label": "Kind of business",
+          "options": [
+            "LocalBusiness",
+            "Restaurant",
+            "Store",
+            "ProfessionalService",
+            "LodgingBusiness"
+          ],
+          "order": 10,
+          "type": "select"
+        }
+      },
+      "label": "Business",
+      "order": 75,
+      "type": "object"
+    },
+    "language": {
+      "label": "Language",
+      "order": 40,
+      "type": "string"
+    },
+    "logo": {
+      "label": "Logo",
+      "order": 50,
+      "type": "image"
+    },
+    "organization": {
+      "label": "Organization name",
+      "order": 70,
+      "type": "string"
+    },
+    "same_as": {
+      "items": "url",
+      "label": "Social profiles",
+      "order": 80,
+      "type": "array"
+    },
+    "seo": {
+      "fields": {
+        "description": {
+          "label": "Meta description",
+          "max": 320,
+          "order": 20,
+          "type": "text"
+        },
+        "og_description": {
+          "label": "Social description (og:description)",
+          "order": 75,
+          "type": "text"
+        },
+        "og_title": {
+          "label": "Social title (og:title)",
+          "order": 70,
+          "type": "string"
+        },
+        "title": {
+          "label": "SEO title",
+          "order": 10,
+          "type": "string"
+        }
+      },
+      "label": "Home page SEO",
+      "order": 85,
+      "type": "object"
+    },
+    "social_image": {
+      "label": "Default social image",
+      "order": 60,
+      "type": "image"
+    },
+    "tagline": {
+      "label": "Tagline",
+      "order": 20,
+      "type": "string"
+    },
+    "title": {
+      "label": "Site title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "url": {
+      "label": "URL",
+      "order": 30,
+      "type": "url"
+    }
+  },
+  "i18n": true,
+  "id": "site",
+  "kind": "singleton",
+  "name": "Site",
+  "title_field": "title"
+}

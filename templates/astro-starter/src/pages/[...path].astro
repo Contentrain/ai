@@ -10,6 +10,7 @@ import { composedViews } from '../views/composed'
 import { withBase } from '../lib/base'
 import { getPosts } from '../lib/content'
 import { leftEmpty } from '../lib/empty-page'
+import { localeOf, localizedPath, rootRedirect } from '../lib/locales'
 import { siteConfig } from '../site.config'
 import EntryView from '../views/EntryView.astro'
 import ListView from '../views/ListView.astro'
@@ -39,7 +40,10 @@ export const getStaticPaths = (async () => {
     seen.add(rule.from)
     attached.push([rule.from, { view: 'redirect', to: rule.to, status: rule.status }])
   }
-  return [...routes, ...moved, ...attached].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))
+  // A default language with a prefix of its own: the root leads to its home page (`/` → `/en/`).
+  const root = rootRedirect()
+  const entry: Array<readonly [string, Moved]> = root && (!only || only.has('')) ? [[root.from, { view: 'redirect', to: root.to, status: 301 }]] : []
+  return [...entry, ...routes, ...moved, ...attached].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))
 }) satisfies GetStaticPaths
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>
@@ -54,12 +58,14 @@ const composed = route.view === 'page' ? composedViews[route.page.data.wp_id ?? 
 // the host's redirects file (`_redirects`, built from the redirects collection) where the collection has a rule for that
 // address. This is the guard behind it.
 const empty = leftEmpty(route)
-if (empty && route.view === 'page' && !route.isHome) return Astro.redirect(route.trail.at(-1)?.href ?? withBase('/'), 301)
-const latest = empty ? (await getPosts()).slice(0, siteConfig.postsPerPage) : []
+const locale = localeOf(Astro.url.pathname)
+const home = localizedPath(withBase('/'), locale)
+if (empty && route.view === 'page' && !route.isHome) return Astro.redirect(route.trail.at(-1)?.href ?? home, 301)
+const latest = empty ? (await getPosts(locale)).slice(0, siteConfig.postsPerPage) : []
 const PageRoute = composed ?? PageView
 ---
 {route.view === 'post' && <PostView post={route.post} />}
 {route.view === 'page' && !empty && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} subpages={route.subpages} list={route.list} />}
-{route.view === 'page' && empty && <ListView seo={route.page.data.seo} description={route.page.data.seo?.description} posts={latest} base={withBase('/')} current={1} total={1} />}
+{route.view === 'page' && empty && <ListView seo={route.page.data.seo} description={route.page.data.seo?.description} posts={latest} base={home} current={1} total={1} />}
 {route.view === 'entry' && <EntryView type={route.type} entry={route.entry} targets={route.targets} />}
 {route.view === 'list' && <ListView {...route} />}

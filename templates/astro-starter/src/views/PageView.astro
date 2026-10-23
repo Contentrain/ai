@@ -10,6 +10,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { withBase } from '../lib/base'
 import { getSite, getStrings, imageOf, type Page } from '../lib/content'
 import { publicHtml } from '../lib/links'
+import { localeOf, localizedPath } from '../lib/locales'
 import type { ListPage } from '../lib/site-routes'
 import { breadcrumbLd, pageTrail, summarize } from '../lib/seo'
 import { safeHref } from '../components/kit/_shared/safe-url'
@@ -26,8 +27,9 @@ interface Props {
 }
 
 const { page, trail, isHome, subpages = [] } = Astro.props
+const pageLocale = localeOf(Astro.url.pathname)
 const { data } = page
-const [cover, t, body, site] = await Promise.all([data.cover ? getEntry(data.cover) : undefined, getStrings(), publicHtml(data.body), getSite()])
+const [cover, t, body, site] = await Promise.all([data.cover ? getEntry(data.cover) : undefined, getStrings(pageLocale), publicHtml(data.body, pageLocale), getSite(pageLocale)])
 const origin = Astro.site ?? Astro.url
 const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 ---
@@ -42,7 +44,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
   noindex={data.seo?.noindex}
   nofollow={data.seo?.nofollow}
   modified={data.modified_at}
-  jsonLd={isHome ? [] : [breadcrumbLd(pageTrail({ name: site.title, url: new URL(withBase('/'), origin).href }, crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href }))))]}
+  jsonLd={isHome ? [] : [breadcrumbLd(pageTrail({ name: site.title, url: new URL(localizedPath(withBase('/'), pageLocale), origin).href }, crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href }))))]}
 >
   <article class="container-prose py-12 md:py-16">
     {trail.length > 0 && (

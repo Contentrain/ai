@@ -1,0 +1,54 @@
+{
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  locales: { prefixes: { en: 'en', ar: 'ar' }, tags: { en: 'en', ar: 'ar' } },\n  sourceHosts: [],"
+    }
+  ],
+  "contentConfig": [
+    {
+      "from": "    loader: loader('pages'),\n    schema: z.object({\n",
+      "to": "    loader: loader('pages'),\n    schema: z.object({\n      locale: z.string().optional(),\n"
+    },
+    {
+      "from": "    loader: loader('site'),\n    schema: z.object({\n",
+      "to": "    loader: loader('site'),\n    schema: z.object({\n      locale: z.string().optional(),\n"
+    }
+  ],
+  "distFiles": {
+    "_redirects": {
+      "contains": [
+        "/ /en/ 301"
+      ]
+    },
+    "en/index.html": {
+      "contains": [
+        "<html lang=\"en\" dir=\"ltr\"",
+        "<link rel=\"alternate\" hreflang=\"ar\" href=\"https://example.com/ar/\">",
+        "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://example.com/en/\">",
+        "href=\"/rss.xml\"",
+        "href=\"/en/about/\""
+      ]
+    },
+    "ar/index.html": {
+      "contains": [
+        "<html lang=\"ar\" dir=\"rtl\"",
+        "<link rel=\"alternate\" hreflang=\"en\" href=\"https://example.com/en/\">",
+        "<link rel=\"alternate\" hreflang=\"x-default\" href=\"https://example.com/en/\">",
+        "href=\"/ar/rss.xml\"",
+        "href=\"/en/\" hreflang=\"en\" lang=\"en\""
+      ]
+    },
+    "en/about/index.html": {
+      "contains": [
+        "<link rel=\"alternate\" hreflang=\"ar\" href=\"https://example.com/ar/"
+      ]
+    },
+    "sitemap-index.xml": {
+      "contains": [
+        "https://example.com/sitemap-0.xml",
+        "https://example.com/sitemap-ar.xml"
+      ]
+    }
+  }
+}
