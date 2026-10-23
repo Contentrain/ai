@@ -12,7 +12,7 @@ import { servedPath, withBase } from '../lib/base'
 import { siteContact } from '../lib/contact'
 import { cssColor, cssLength, cssSpacing, cssWeight } from '../lib/css-size'
 import { textDirection } from '../lib/direction'
-import { getSite, getStrings } from '../lib/content'
+import { copyrightOf, getSite, getStrings } from '../lib/content'
 import { onWordPress } from '../lib/features'
 import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
@@ -159,7 +159,7 @@ const wpQueries = isHome ? await queryMap() : {}
     <Footer
       siteName={site.organization ?? site.title}
       tagline={site.tagline}
-      copyright={siteConfig.footer?.copyright ?? siteConfig.chrome?.copyright}
+      copyright={copyrightOf(site.copyright)}
       border={siteConfig.footer?.border}
       align={siteConfig.chrome?.footerAlign}
       pack={siteConfig.chrome?.footerColumns ? 'end' : undefined}

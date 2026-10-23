@@ -310,6 +310,7 @@ export const collections = {
       analytics_host: z.string().optional(),
       analytics_id: z.string().optional(),
       analytics_provider: z.enum(['ga4', 'gtm', 'plausible', 'fathom', 'matomo']).optional(),
+      copyright: z.string().optional(),
       language: z.string().optional(),
       logo: z.string().optional(),
       organization: z.string().optional(),

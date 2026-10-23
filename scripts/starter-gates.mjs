@@ -32,7 +32,8 @@
 // titles and addresses of the fixture's drafts, which no menu, body link,
 // sitemap or feed may reveal. `distFiles` names built files and text each
 // must contain or must not (the host's redirect rules, a redirect page, the
-// sitemap), and `distFilesByMedia` the same for one `--media` mode only. `optimizedInDist` names images that must reach dist as
+// sitemap), and `distFilesByMedia` the same for one `--media` mode only. `uiStrings` adds entries to a language's
+// interface-string table. `optimizedInDist` names images that must reach dist as
 // resized copies with a srcset, from public/ or from Studio's media host.
 
 import { execFileSync, spawn } from 'node:child_process'
@@ -90,6 +91,13 @@ cpSync(starter, project, {
 const fixtureDir = values.fixture ? join(root, 'templates', 'fixtures', values.fixture) : undefined
 if (fixtureDir) cpSync(fixtureDir, project, { recursive: true, filter: source => source !== join(fixtureDir, 'fixture.json') })
 const fixture = fixtureDir && existsSync(join(fixtureDir, 'fixture.json')) ? JSON.parse(readFileSync(join(fixtureDir, 'fixture.json'), 'utf8')) : {}
+// `uiStrings`: entries a migration adds to a language's interface-string table ({ en: { key: value } }) — the site's own
+// names (`types.<collection>.archive_title`…). Merged into the starter's table; the starter's own keys stay.
+for (const [locale, entries] of Object.entries(fixture.uiStrings ?? {})) {
+  const file = join(project, '.contentrain', 'content', 'site', 'ui-strings', `${locale}.json`)
+  const table = { ...JSON.parse(readFileSync(file, 'utf8')), ...entries }
+  writeFileSync(file, `${JSON.stringify(Object.fromEntries(Object.entries(table).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))), null, 2)}\n`)
+}
 // `siteConfig`: lines of src/site.config.ts the fixture replaces ({ from, to }) — the settings a migration writes there.
 // `contentConfig`: the same for src/content.config.ts — the fields a migrated site's models add (a page's `comments_open`).
 for (const [key, name] of [['siteConfig', 'site.config.ts'], ['contentConfig', 'content.config.ts']]) {
