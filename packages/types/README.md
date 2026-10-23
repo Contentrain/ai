@@ -551,11 +551,11 @@ copied**: a plan names fields, and the engine applies it to every entry.
 
 | Part | Holds |
 |---|---|
-| `site` | the starter's `site.config.ts` (permalinks, home, postsPerPage, menu slugs, studio), plus `url`, `redirects` and `tokens` (the kit's `@theme` roles, extra scale, WordPress presets, self-hosted fonts) |
+| `site` | the starter's `site.config.ts` (permalinks, home, postsPerPage, menu slugs, studio), plus `url`, `redirects` and `tokens` (the kit's `@theme` roles, extra scale, WordPress presets, self-hosted fonts); a multilingual site's `locales` (`default`, `supported`, and per content locale code its address `prefixes` and BCP 47 `tags`) |
 | `layout` | header and footer placements shared by every route |
 | `models` | `import` models (wp-import's ids) are referenced; `plan` models carry `name`, `domain`, `i18n`, `title_field`, `fields` and `extract` rules (builder element → entry → `<path>\|<prop>` field paths) |
 | `components` | `kit` (catalog id; the kit's copy planner places it under `src/components/kit/<id>/`) or `site` (props + a brief for the writer) |
-| `routes` | pattern, fact template, `source` (one page per entry), `body` `rich-text` \| `composed`, and placements |
+| `routes` | pattern, fact template, `source` (one page per entry), `body` `rich-text` \| `composed`, and placements; `locale` when a route builds a non-default locale's pages |
 | `decisions` | who answered what (rule, cache, jew, haiku, opus, fallback, human) |
 
 A placement binds props with a small closed value set: `field:<name>`,
@@ -568,7 +568,11 @@ array prop (`card-grid.items`); without it, the component repeats per entry.
 reference resolves, that permalinks and values are well formed, that required
 props are bound, that plan models are valid Contentrain models (a text-like
 `title_field`), and that routes over one model give each entry exactly one
-address. Kit catalog and fact checks belong to the caller.
+address. With `site.locales`, the default is supported and equals `site.locale`,
+every supported code (`LOCALE_PATTERN`) has one prefix and one tag, at most one
+locale is served at the root and no two share a prefix; a route's `locale` is a
+site locale. `CSS_LENGTH` is the CSS size it accepts, exported for a plan's
+producer. Kit catalog and fact checks belong to the caller.
 
 ## Understand contract
 

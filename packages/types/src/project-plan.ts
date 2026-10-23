@@ -17,7 +17,7 @@
 // Addresses the starter owns are not plan routes: `/search/`, `/rss.xml`,
 // `/404`, `robots.txt` and the sitemap. A plan never emits them.
 
-import { isTitleFieldType, titleFieldTarget, type FieldDef, type ModelKind } from './index.js'
+import { isTitleFieldType, LOCALE_PATTERN, titleFieldTarget, type FieldDef, type ModelKind } from './index.js'
 
 export const PROJECT_PLAN_FORMAT = 'contentrain-project-plan@1'
 
@@ -100,13 +100,30 @@ export interface ChromeFrameStep { min: number, width: number }
 /** From `min` px of viewport up, the post cards run in `columns` columns. */
 export interface ChromeColumnStep { min: number, columns: number }
 
+/**
+ * A multilingual site's languages. Every map is keyed by the content locale code (`LOCALE_PATTERN`: `de`, `pt-BR`), the
+ * key of the content files. `prefixes[code]`: the source's address segment for that language (`pt-br`), or `''` for
+ * the language served at the root. `tags[code]`: its BCP 47 tag for `lang` and `hreflang` (`pt-BR`).
+ */
+export interface PlanLocales {
+  default: string
+  supported: string[]
+  prefixes: Record<string, string>
+  tags: Record<string, string>
+}
+
 export interface PlanSite {
   /** Public URL the site is built for (`astro.config` `site`). */
   url: string
   title: string
   description?: string
-  /** Default locale, short form (`en`, `tr`). */
+  /** Default locale, short form (`en`, `tr`). With `locales`, the same code as `locales.default`. */
   locale: string
+  /**
+   * The site's languages, when it has more than one (absent: one language, `locale`). Decided once before the plan and
+   * read from here by every later stage.
+   */
+  locales?: PlanLocales
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
   /**
    * The front page: the posts, one page by `slug`, or (`view`, no slug) a front composed from sections with no page entry
@@ -377,6 +394,11 @@ export interface PlanRoute {
    * Absent: the starter's own label for the taxonomy, none for a post type.
    */
   label?: string
+  /**
+   * The content locale this route builds its pages in (a `site.locales.supported` code). Absent: the default locale, so
+   * a single-locale plan names none. A multilingual site plans the same routes once per locale.
+   */
+  locale?: string
 }
 
 export interface PlanPlacement {
@@ -586,7 +608,11 @@ function displayTooLarge(value: string): boolean {
   if (min) return !min.some(arg => absoluteRem(arg) !== undefined)
   return true
 }
-const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
+/**
+ * A CSS size the plan accepts: a length in px, rem, em or %, or clamp/calc/min/max of numbers, never `url()` or `var()`.
+ * Exported so a plan's producer refuses the same values the validator does.
+ */
+export const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
 /**
  * How many object levels a field nests: 0 for a scalar or a list of scalars, 1 for an object of scalars,
@@ -640,6 +666,35 @@ function postMetaErrors(meta: unknown, at: string): string[] {
   return shape ? [] : [`${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } or { part: date | author | terms | tags, prefix?, suffix? } (words plain, 1-100 characters)`]
 }
 
+/** A BCP 47 tag's shape (`de`, `pt-BR`, `zh-Hant-TW`). */
+const LANGUAGE_TAG = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
+/** One address segment a language is served under (`de`, `pt-br`). */
+const LOCALE_PREFIX = /^[A-Za-z0-9_-]+$/
+
+/** `site.locales`: the default is supported, every supported code has one prefix and one tag, no two share a prefix. */
+function planLocalesErrors(site: PlanSite): string[] {
+  const locales = site.locales
+  if (locales === undefined) return []
+  const errors: string[] = []
+  const supported = Array.isArray(locales.supported) ? locales.supported : []
+  if (!supported.length) errors.push('site.locales.supported lists no locale')
+  for (const code of supported) if (typeof code !== 'string' || !LOCALE_PATTERN.test(code)) errors.push(`site.locales.supported ${String(code)} is not a locale code (en, pt-BR)`)
+  if (new Set(supported).size !== supported.length) errors.push('site.locales.supported lists a locale twice')
+  if (!supported.includes(locales.default)) errors.push(`site.locales.default ${String(locales.default)} is not in site.locales.supported`)
+  if (locales.default !== site.locale) errors.push(`site.locales.default ${String(locales.default)} is not site.locale ${String(site.locale)}`)
+  for (const key of ['prefixes', 'tags'] as const) {
+    const map = locales[key] ?? {}
+    for (const code of supported) if (!Object.hasOwn(map, code)) errors.push(`site.locales.${key} has no entry for ${code}`)
+    for (const code of Object.keys(map)) if (!supported.includes(code)) errors.push(`site.locales.${key}.${code} is not a supported locale`)
+  }
+  const prefixes = Object.entries(locales.prefixes ?? {})
+  for (const [code, prefix] of prefixes) if (typeof prefix !== 'string' || (prefix !== '' && !LOCALE_PREFIX.test(prefix))) errors.push(`site.locales.prefixes.${code} is not '' or one address segment`)
+  if (prefixes.filter(([, prefix]) => prefix === '').length > 1) errors.push('site.locales.prefixes serves more than one locale at the root')
+  else if (new Set(prefixes.map(([, prefix]) => prefix)).size !== prefixes.length) errors.push('site.locales.prefixes gives two locales the same prefix')
+  for (const [code, tag] of Object.entries(locales.tags ?? {})) if (typeof tag !== 'string' || !LANGUAGE_TAG.test(tag)) errors.push(`site.locales.tags.${code} is not a BCP 47 tag`)
+  return errors
+}
+
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
@@ -653,6 +708,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (key !== 'post' && /:category\b/.test(value)) errors.push(`site.permalinks.${key} uses :category, which only a post address has (${value})`)
   }
   if (!Number.isSafeInteger(site?.postsPerPage) || site.postsPerPage < 1) errors.push('site.postsPerPage is not a positive integer')
+  if (site) errors.push(...planLocalesErrors(site))
   if (site?.post) {
     const parts = site.post.header ?? []
     if (parts.some(part => !['terms', 'title', 'byline', 'cover'].includes(part)) || new Set(parts).size !== parts.length) errors.push('site.post.header lists a part twice or one the starter does not have')
@@ -897,6 +953,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     routeIds.add(r.id)
     if (!PERMALINK.test(r.pattern)) errors.push(`route ${r.id}: pattern ${r.pattern} must start and end with "/"`)
     if (r.label !== undefined && (typeof r.label !== 'string' || !r.label.trim() || r.label.length > 60 || /[\r\n]/.test(r.label))) errors.push(`route ${r.id}: label must be one short line of text`)
+    if (r.locale !== undefined && !(site?.locales ? (Array.isArray(site.locales.supported) ? site.locales.supported : []) : [site?.locale]).includes(r.locale)) errors.push(`route ${r.id}: locale ${String(r.locale)} is not a site locale`)
     if (r.source) {
       if (!knownModel(r.source.model)) errors.push(`route ${r.id}: source model ${r.source.model} is not declared`)
       ;(byModel.get(r.source.model) ?? byModel.set(r.source.model, []).get(r.source.model)!).push(r)
