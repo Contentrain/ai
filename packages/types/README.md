@@ -569,7 +569,7 @@ reference resolves, that permalinks and values are well formed, that required
 props are bound, that plan models are valid Contentrain models (a text-like
 `title_field`), and that routes over one model give each entry exactly one
 address. With `site.locales`, the default is supported and equals `site.locale`,
-every supported code (`LOCALE_PATTERN`) has one prefix and one tag, at most one
+every supported code (`LOCALE_PATTERN`) has one prefix and one tag, only the default
 locale is served at the root and no two share a prefix; a route's `locale` is a
 site locale. `CSS_LENGTH` is the CSS size it accepts, exported for a plan's
 producer. Kit catalog and fact checks belong to the caller.

@@ -89,14 +89,19 @@ describe('validateProjectPlan', () => {
       'site.locales.prefixes has no entry for pt-br',
       'site.locales.prefixes.fr is not a supported locale',
       'site.locales.prefixes.de is not \'\' or one address segment',
+      "site.locales.prefixes.en is '' but only the default locale is served at the root",
       'site.locales.tags.de is not a BCP 47 tag',
     ])
   })
 
-  it('serves one locale at the root and gives no two locales one prefix', () => {
+  it('serves only the default locale at the root and gives no two locales one prefix', () => {
     const p = plan()
     p.site.locales = { default: 'en', supported: ['en', 'de'], prefixes: { en: '', de: '' }, tags: { en: 'en', de: 'de' } }
-    expect(validateProjectPlan(p).errors).toEqual(['site.locales.prefixes serves more than one locale at the root'])
+    expect(validateProjectPlan(p).errors).toEqual(["site.locales.prefixes.de is '' but only the default locale is served at the root", 'site.locales.prefixes gives two locales the same prefix'])
+    p.site.locales.prefixes = { en: 'en', de: '' }
+    expect(validateProjectPlan(p).errors).toEqual(["site.locales.prefixes.de is '' but only the default locale is served at the root"])
+    p.site.locales.prefixes = { en: 'en', de: 'de' }
+    expect(validateProjectPlan(p).errors).toEqual([])
     p.site.locales.prefixes = { en: 'x', de: 'x' }
     expect(validateProjectPlan(p).errors).toEqual(['site.locales.prefixes gives two locales the same prefix'])
     p.site.locales.supported = []
