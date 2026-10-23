@@ -75,6 +75,11 @@
       "required": true,
       "description": "Site title (site.title or site.organization)."
     },
+    "homeHref": {
+      "type": "url",
+      "default": "/",
+      "description": "Where the brand (the site name) links: the site's home."
+    },
     "tagline": {
       "type": "string",
       "description": "A line under the name (site.tagline, or the source footer's about text); line breaks are kept, so a credit under it stays its own line."
