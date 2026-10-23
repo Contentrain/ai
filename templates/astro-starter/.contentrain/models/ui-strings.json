@@ -1,5 +1,5 @@
 {
-  "description": "What the site says around its content — navigation, lists, search, forms and comments — per language. A missing key shows the key itself.",
+  "description": "What the site says around its content — navigation, lists, search, forms and comments — per language. A missing key shows the key itself. The site's own names live here too, so they can be renamed: `types.<type>.archive_title` and `types.<type>.archive_label` (the heading and eyebrow of a custom type's archive page), `types.<type>.<taxonomy>.title` (the eyebrow of its term pages) and `types.<type>.fields.<field>` (a field's label on the type's pages); without one of these the theme's name is shown.",
   "domain": "site",
   "i18n": true,
   "id": "ui-strings",

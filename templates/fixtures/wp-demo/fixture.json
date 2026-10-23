@@ -1,4 +1,12 @@
 {
+  "uiStrings": {
+    "en": {
+      "types.project.archive_title": "Our projects",
+      "types.project.fields.client": "Customer",
+      "types.project.fields.location.city": "Town",
+      "types.project.projectType.title": "Sector"
+    }
+  },
   "dependencies": {
     "@zag-js/tabs": "^1.44.0",
     "@zag-js/vanilla": "^1.44.0",
@@ -146,6 +154,7 @@
         ">Leadership</a>": 2
       },
       "contains": [
+        "Northwind Works. All rights reserved.",
         "Email: <a href=\"mailto:hello@northwind.example\"",
         "Phone: <a href=\"tel:+441170000000\"",
         "column-gap:22px",
@@ -173,6 +182,7 @@
         "/blog/search-without-a-server/"
       ],
       "excludes": [
+        "{year}",
         "Sidebar only link"
       ]
     },
@@ -233,7 +243,7 @@
         "Grid Monitor",
         "/projects/harbour-bridge/",
         "Infrastructure",
-        "text-balance\">Archives: Projects</h1>"
+        "text-balance\">Archives: Our projects</h1>"
       ],
       "excludes": [
         "Unannounced Tunnel",
@@ -246,7 +256,8 @@
         "Harbour Bridge",
         "The harbour bridge links the quay",
         "<dt",
-        "Client",
+        ">Customer</dt>",
+        ">Town</dt>",
         "Port Authority",
         "href=\"mailto:bridge@harbour.example\"",
         "Featured project",
@@ -276,6 +287,8 @@
       ],
       "excludes": [
         "field_",
+        ">Client</dt>",
+        ">City</dt>",
         "href=\"javascript:",
         "src=\"javascript:"
       ]
@@ -305,7 +318,7 @@
     "project-type/software/index.html": {
       "contains": [
         "Grid Monitor",
-        "text-balance\">Project type: Software</h1>"
+        "text-balance\">Sector: Software</h1>"
       ],
       "excludes": [
         "Harbour Bridge",
@@ -356,7 +369,7 @@
     "project-type/infrastructure/bridges/index.html": {
       "contains": [
         "Harbour Bridge",
-        "Project type: Bridges"
+        "Sector: Bridges"
       ],
       "excludes": [
         "Grid Monitor"

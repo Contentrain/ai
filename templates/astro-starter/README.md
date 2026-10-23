@@ -98,6 +98,14 @@ preview; a site you publish builds without it.
   mounts (only on pages that render one).
 - **Interface text is content.** Every label the site prints comes from the
   `ui-strings` dictionary, in the site's language; a missing key shows the key.
+  The site's own names are there too, so an editor renames them in Studio: a
+  custom type's archive heading and eyebrow (`types.<type>.archive_title`,
+  `types.<type>.archive_label`), its term pages' eyebrow
+  (`types.<type>.<taxonomy>.title`) and its field labels
+  (`types.<type>.fields.<field>`); without an entry the name in `site.config.ts`
+  is shown. The footer's copyright line is the `site` singleton's `copyright`
+  (`{year}` is the current year, empty means no line), else the line in
+  `site.config.ts`.
 - **Addresses are kept.** Permalinks follow WordPress tokens (`:slug`, `:path`,
   `:year`, `:month`, `:day`, `:id`, and `:category` for posts) and the site is
   built with trailing slashes. `:category` is WordPress's `%category%`: the

@@ -6,14 +6,14 @@
 // (astro.config.mjs) there is no file at all. (The parameter is what lets the
 // route build nothing: a plain `llms.txt.ts` always writes a file.)
 import type { APIRoute, GetStaticPaths } from 'astro'
-import { getSite } from '../lib/content'
+import { getSite, getTextOr } from '../lib/content'
 import { LLMS_LINKS, llmsTxt, type LlmsLink } from '../lib/llms'
 import { routeTable } from '../lib/site-routes'
 
 export const getStaticPaths = (() => (import.meta.env.SITE ? [{ params: { llms: 'llms' } }] : [])) satisfies GetStaticPaths
 
 export const GET: APIRoute = async ({ site: origin }) => {
-  const site = await getSite()
+  const [site, textOr] = await Promise.all([getSite(), getTextOr()])
   const sections = new Map<string, LlmsLink[]>([['Posts', []], ['Pages', []]])
   const add = (name: string, link: LlmsLink) => sections.set(name, [...(sections.get(name) ?? []), link])
   for (const [path, route] of await routeTable()) {
@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ site: origin }) => {
     }
     if (route.view === 'post') add('Posts', link)
     else if (route.view === 'page') add('Pages', link)
-    else if (route.view === 'entry') add(route.type.archive?.title ?? route.type.collection, link)
+    else if (route.view === 'entry') add(route.type.archive ? textOr(`types.${route.type.collection}.archive_title`, route.type.archive.title) : route.type.collection, link)
   }
   // Newest first; undated links keep their order after the dated ones.
   const newest = (links: LlmsLink[]) => links.map((link, index) => ({ link, index }))

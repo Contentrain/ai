@@ -135,14 +135,39 @@ export function imageOf(media: Media): ImageInput {
  * the same language (`tr`), then English, then any other locale's entry fills what is missing.
  * A key no locale has shows the key itself.
  */
-export async function getStrings(): Promise<(key: string) => string> {
+async function stringMap(): Promise<Map<string, string>> {
   const [entries, site] = await Promise.all([getCollection('uiStrings'), getSite()])
   const { language } = site
   const text = new Map<string, string>()
   for (const entry of entries.toSorted((a, b) => localeRank(a.data.locale, language) - localeRank(b.data.locale, language))) {
     text.set(entry.data.key, entry.data.value)
   }
+  return text
+}
+
+export async function getStrings(): Promise<(key: string) => string> {
+  const text = await stringMap()
   return key => text.get(key) ?? key
+}
+
+/**
+ * The site's own words for what `site.config.ts` names (a custom type's archive heading, a field's label): the
+ * `ui-strings` entry when the store has one — an editor renames it in Studio —, else the config's value. Never the key.
+ * Keys: `types.<collection>.archive_title`, `types.<collection>.archive_label`, `types.<collection>.<taxonomy>.title`,
+ * `types.<collection>.fields.<field>` (a nested field: `fields.<group>.<field>`).
+ */
+export async function getTextOr(): Promise<(key: string, fallback: string) => string> {
+  const text = await stringMap()
+  return (key, fallback) => text.get(key)?.trim() || fallback
+}
+
+/**
+ * The footer's copyright line: the site's own (`site.copyright`, edited in Studio; empty = no line), else the line the
+ * theme printed (`site.config.ts`), else the footer's default.
+ */
+export function copyrightOf(own: string | undefined): string | false | undefined {
+  if (own !== undefined) return own.trim() ? own : false
+  return siteConfig.footer?.copyright ?? siteConfig.chrome?.copyright
 }
 
 /** Every interface string, for a client-side component that renders its own text. */

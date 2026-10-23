@@ -9,7 +9,7 @@ import { getCollection } from 'astro:content'
 import { siteConfig } from '../site.config'
 import { entriesOf, entryCard, entryHref, newestFirst, refIds, termHref as customTermHref, text, type Card, type TypeEntry } from './custom'
 import { targetsOf, type Targets } from './fields'
-import { authorHref, byId, getPosts, getSite, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
+import { authorHref, byId, getPosts, getSite, getStrings, getTextOr, pageHref, postHref, termHref, type Page, type Post } from './content'
 import { withBase } from './base'
 import { pagePath, permalinks } from './routes'
 import type { CustomType } from '../site.config'
@@ -102,7 +102,10 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
   const types = siteConfig.types ?? []
   if (types.length === 0) return
   const names = new Set(types.flatMap(type => [type.collection, ...(type.taxonomies ?? []).map(taxonomy => taxonomy.collection)]))
-  const entries = new Map(await Promise.all([...names].map(async name => [name, await entriesOf(name)] as const)))
+  const [entries, textOr] = await Promise.all([
+    Promise.all([...names].map(async name => [name, await entriesOf(name)] as const)).then(list => new Map(list)),
+    getTextOr(),
+  ])
   const targets = targetsOf(types, entries)
   const terms = new Map([...entries].flatMap(([name, list]) => list.map(entry => [`${name}:${entry.id}`, entry] as const)))
   const paginateCards = (base: string, cards: Card[], heading: { title: string, eyebrow?: string, description?: string }) => {
@@ -116,12 +119,16 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
     const own = newestFirst(entries.get(type.collection) ?? [], type.card.date)
     for (const entry of own) add(entryHref(type, entry), { view: 'entry', type, entry, targets })
     const cards = new Map(await Promise.all(own.map(async entry => [entry.id, await entryCard(type, entry, terms)] as const)))
-    if (type.archive) paginateCards(withBase(type.archive.pattern), [...cards.values()], { title: type.archive.title, ...(type.archive.label ? { eyebrow: type.archive.label } : {}) })
+    // The archive's heading and eyebrow, and each term archive's eyebrow: the editor's words in `ui-strings`, else the config's.
+    if (type.archive) {
+      const label = type.archive.label ? textOr(`types.${type.collection}.archive_label`, type.archive.label) : undefined
+      paginateCards(withBase(type.archive.pattern), [...cards.values()], { title: textOr(`types.${type.collection}.archive_title`, type.archive.title), ...(label ? { eyebrow: label } : {}) })
+    }
     for (const taxonomy of type.taxonomies ?? []) {
       for (const term of entries.get(taxonomy.collection) ?? []) {
         const members = own.filter(entry => refIds(entry.data[taxonomy.field]).includes(term.id)).flatMap(entry => cards.get(entry.id) ?? [])
         const description = text(term.data.description)
-        paginateCards(customTermHref(taxonomy, term, terms), members, { title: text(term.data.name) ?? term.id, eyebrow: taxonomy.title, ...(description ? { description } : {}) })
+        paginateCards(customTermHref(taxonomy, term, terms), members, { title: text(term.data.name) ?? term.id, eyebrow: textOr(`types.${type.collection}.${taxonomy.collection}.title`, taxonomy.title), ...(description ? { description } : {}) })
       }
     }
   }

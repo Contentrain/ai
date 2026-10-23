@@ -1,5 +1,6 @@
 {
   "address": "12 Harbour Road\nBristol",
+  "copyright": "© {year} Northwind Works. All rights reserved.",
   "email": "hello@northwind.example",
   "email_label": "Email:",
   "language": "en",

@@ -8,9 +8,9 @@ import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
-import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, type Category, type Media } from '../lib/content'
+import { authorHref, byId, getPosts, getSite, getStrings, getTextOr, imageOf, postHref, type Category, type Media } from '../lib/content'
 import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, termsById, text, type TypeEntry } from '../lib/custom'
-import { shownFields, type Targets } from '../lib/fields'
+import { labelled, shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
 import { siteConfig } from '../site.config'
 import { cssSize } from '../lib/css-size'
@@ -26,10 +26,11 @@ interface Props {
 
 const { type, entry, targets } = Astro.props
 const { data } = entry
+const textOr = await getTextOr()
 const [site, t, fields, body, siblings, latestPosts, categories] = await Promise.all([
   getSite(),
   getStrings(),
-  shownFields(type.fields, data, targets),
+  shownFields(labelled(type.fields, `types.${type.collection}.fields`, textOr), data, targets),
   bodyOf(type, entry) ? publicHtml(bodyOf(type, entry)) : undefined,
   type.adjacent || (type.more && type.moreOf !== 'posts') ? entriesOf(type.collection) : [],
   type.more && type.moreOf === 'posts' ? getPosts() : [],
