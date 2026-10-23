@@ -21,6 +21,7 @@ import { isRemoteAllowed } from 'astro/assets/utils'
 import { widthCap, widthsUpTo } from '../components/kit/_shared/image-widths'
 import { servedPath, withoutBase } from './base'
 import { mediaSize } from './media'
+import { sameFile } from './srcset'
 
 const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{avif,jpeg,jpg,png,tif,tiff,webp,AVIF,JPEG,JPG,PNG,TIF,TIFF,WEBP}', { import: 'default' })
 const IMG = /<img\b[^>]*>/gi
@@ -44,31 +45,14 @@ const isRoot = (src: string) => src.startsWith('/') && !src.startsWith('//')
 const servedAt = (src: string) => (isRoot(src) ? servedPath(src) : src)
 
 /**
- * The file an address is, whatever size of it: host and path, with WordPress's size suffixes (`-300x200`, `-scaled`)
- * taken off the name. `null` for an address that is not one.
- */
-function attachment(src: string): string | null {
-  try {
-    const url = new URL(src, 'https://site.invalid')
-    return `${url.host}${url.pathname.replace(/(?:-\d+x\d+|-scaled)+(\.[a-z0-9]+)$/i, '$1')}`
-  }
-  catch { return null }
-}
-
-/** The address of each candidate of a srcset (`a.jpg 300w, b.jpg 600w`). */
-const candidates = (srcset: string) => srcset.split(/,\s+/).map(part => part.trim().split(/\s+/)[0] ?? '').filter(Boolean)
-
-/**
  * The tag as written, made safe: its srcset kept only when every candidate is `src`'s own file (served under a
  * `base`), else gone; `sizes` only with a srcset, `auto` only with lazy loading; a known size written when it has none.
  */
 function kept(tag: string, src: string): string {
   let next = isRoot(src) && servedAt(src) !== src ? write(tag, 'src', servedAt(src)) : tag
   const srcset = unescaped(read(next, 'srcset'))
-  const own = attachment(src)
   if (srcset !== undefined) {
-    const list = candidates(srcset)
-    if (list.length && own && list.every(candidate => attachment(candidate) === own))
+    if (sameFile(src, srcset))
       next = write(next, 'srcset', srcset.split(/,\s+/).map((part) => { const [at = '', ...rest] = part.trim().split(/\s+/); return [servedAt(at), ...rest].join(' ') }).join(', '))
     else next = drop(next, 'srcset')
   }
