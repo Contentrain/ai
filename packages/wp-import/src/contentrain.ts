@@ -11,7 +11,7 @@
 //    here: this is the one place that knows both sides of the mapping, and the
 //    comments intake downstream cannot exist without it.
 
-import type { EntrySourceMap, FieldDef, ModelDefinition, RawAcfOptionsPage, RawAcfValue, RawIR, RawPost } from '@contentrain/types'
+import type { EntrySourceMap, FieldDef, ModelDefinition, RawAcfOptionsPage, RawAcfValue, RawIR, RawPost, RawTerm } from '@contentrain/types'
 import { stripBlockDelimiters } from './blocks.js'
 import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfScrub, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
@@ -82,10 +82,12 @@ export interface ImportReport {
   skipped_types: string[]
   dropped_relations: number
   models: Record<string, { kind: string; domain: string; fields: number; entries: number }>
-  /** Default first, then every other language seen on a post. One entry on a monolingual site. */
+  /** Default first, then every other language seen on a post or a translated term. One entry on a monolingual site. */
   locales: string[]
   /** Translation groups that were folded into one entry id across locales. */
   translation_groups: number
+  /** Term translation groups (`term_pairs`) folded into one entry id across locales. */
+  term_translation_groups: number
   /**
    * Password-protected posts imported as `draft`, whatever their WordPress
    * status. Their body is the protected text, and nothing downstream (query
@@ -206,7 +208,10 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
   // i18n and content is written per locale.
   const postLocale = (p: RawPost): string =>
     normLocale(p.lang ?? p.terms.find((t) => t.taxonomy === 'language')?.slug) || locale
-  const locales = [locale, ...[...new Set(raw.posts.filter((p) => !SKIP_TYPES.test(p.type)).map(postLocale))].filter((l) => l !== locale).toSorted()]
+  // A term carries its language (`RawTerm.lang`, bridge rung) only in a taxonomy the plugin translates.
+  const termLocale = (t: RawTerm): string => normLocale(t.lang) || locale
+  const termLocales = raw.terms.filter((t) => t.lang && !LANGUAGE_TAXONOMIES.has(t.taxonomy)).map(termLocale)
+  const locales = [locale, ...[...new Set([...raw.posts.filter((p) => !SKIP_TYPES.test(p.type)).map(postLocale), ...termLocales])].filter((l) => l !== locale).toSorted()]
   const multilingual = locales.length > 1
   // Translation groups → one canonical post per group. Its entry id is shared
   // by every translation, which is how an i18n collection addresses one entry
@@ -245,6 +250,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
     models: {},
     locales,
     translation_groups: translationGroups,
+    term_translation_groups: 0,
     password_protected_drafts: 0,
     site_title_missing: false,
   }
@@ -281,6 +287,25 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
   // ── identities (shared formulas — REST and WXR must agree) ──
   const authorId = (login: string): string => hexId(`authors:${login}`)
   const termId = (tax: string, slug: string): string => hexId(`${tax}:${slug}`)
+  // Term translation groups (`term_pairs`): every member shares its canonical member's entry id — the default
+  // locale's term, else the lowest id, as for posts — so a translated taxonomy is an i18n model holding one entry
+  // per group in each locale it has. A group with two members in one normalized locale stays unfolded.
+  const termByWpId = new Map(raw.terms.filter((t) => t.id !== null).map((t) => [t.id!, t]))
+  const canonicalTermSlug = new Map<string, string>()
+  for (const pair of raw.term_pairs ?? []) {
+    const members = [...new Set(Object.values(pair.translations))]
+      .map((id) => termByWpId.get(id))
+      .filter((t): t is RawTerm => t !== undefined && t.taxonomy === pair.taxonomy)
+    if (members.length < 2 || new Set(members.map(termLocale)).size !== members.length) continue
+    const canonical = members.find((t) => termLocale(t) === locale) ?? members.reduce((a, b) => (a.id! <= b.id! ? a : b))
+    for (const t of members) canonicalTermSlug.set(`${t.taxonomy}:${t.slug}`, canonical.slug)
+    report.term_translation_groups++
+  }
+  /** The entry id a reference to a term resolves to: its group's canonical member's. */
+  const termRef = (tax: string, slug: string): string => termId(tax, canonicalTermSlug.get(`${tax}:${slug}`) ?? slug)
+  const i18nTaxonomies = new Set(multilingual ? raw.terms.filter((t) => t.lang).map((t) => t.taxonomy) : [])
+  const termExists = (mid: string, id: string): boolean =>
+    contents[mid]?.[id] !== undefined || Object.values(localeContents[mid] ?? {}).some((bucket) => bucket[id] !== undefined)
   const usedSlugs = new Map<string, number>()
   const postSlug = (p: RawPost): string => {
     // The slug is the page's address: kept as the source served it (any script), not transliterated.
@@ -351,7 +376,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
     if (kind === 'post') return postEntry.get(id) ?? null
     if (kind === 'media') { const m = mediaRef(id); return m ? { model: 'media', ref: m } : null }
     if (kind === 'user') { const a = authorById.get(id); return a && models.authors ? { model: 'authors', ref: authorId(slugify(a.login)) } : null }
-    if (kind === 'term') { const t = termById.get(id); return t && models[taxModelId(t.taxonomy)] ? { model: taxModelId(t.taxonomy), ref: termId(t.taxonomy, t.slug) } : null }
+    if (kind === 'term') { const t = termById.get(id); return t && models[taxModelId(t.taxonomy)] ? { model: taxModelId(t.taxonomy), ref: termRef(t.taxonomy, t.slug) } : null }
     return null
   }
   interface AcfFieldPlan { def?: FieldDef; kind?: AcfReference; multiple: boolean; models: Set<string> }
@@ -466,8 +491,13 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
   )
   for (const tax of taxonomies) {
     const mid = taxModelId(tax)
+    const i18n = i18nTaxonomies.has(tax)
+    // As for post types: the locales this taxonomy really has terms in, when that is not all of them.
+    const covered = locales.filter((l) => l === locale || raw.terms.some((t) => t.taxonomy === tax && termLocale(t) === l))
     addModel({
-      id: mid, name: mid, kind: 'collection', domain: 'blog', i18n: false, title_field: 'name',
+      id: mid, name: mid, kind: 'collection', domain: 'blog', i18n,
+      ...(i18n && covered.length < locales.length ? { locales: covered } : {}),
+      title_field: 'name',
       fields: {
         name: { type: 'string', required: true, label: 'Name', order: 10 },
         slug: { type: 'slug', required: true, unique: true, label: 'Slug', order: 20 },
@@ -477,18 +507,21 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       },
     })
     for (const t of raw.terms.filter((x) => x.taxonomy === tax)) {
-      const id = termId(tax, t.slug)
-      contents[mid]![id] = pick(
+      const id = termRef(tax, t.slug)
+      const loc = termLocale(t)
+      const content = i18n ? ((localeContents[mid] ??= {})[loc] ??= {}) : contents[mid]!
+      const meta = i18n ? ((localeMetas[mid] ??= {})[loc] ??= {}) : metas[mid]!
+      content[id] = pick(
         {
           name: strip(t.name),
           slug: addressSlug(t.slug) || `term-${t.id}`,
           description: strip(t.description),
-          parent: t.parent && t.parent_resolved ? termId(tax, t.parent) : null,
+          parent: t.parent && t.parent_resolved ? termRef(tax, t.parent) : null,
           wp_id: t.id,
         },
         new Set(['name', 'slug', 'description', 'parent', 'wp_id']),
       )
-      metas[mid]![id] = importMeta('published')
+      meta[id] = importMeta('published')
     }
   }
   // referenced-but-unlisted terms join the pool (marked resolved:false upstream, never dropped)
@@ -497,9 +530,13 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       if (t.taxonomy === 'nav_menu' || t.taxonomy === 'post_format' || t.resolved) continue
       const mid = taxModelId(t.taxonomy)
       if (!models[mid]) continue
-      const id = termId(t.taxonomy, t.slug)
-      contents[mid]![id] ??= { name: strip(t.name), slug: addressSlug(t.slug) || `term-${hexId(`${t.taxonomy}:${t.slug}`).slice(0, 8)}` }
-      metas[mid]![id] ??= importMeta('published')
+      const id = termRef(t.taxonomy, t.slug)
+      if (termExists(mid, id)) continue
+      // An unlisted term has no language of its own: the default locale's file holds it.
+      const content = models[mid]!.i18n ? ((localeContents[mid] ??= {})[locale] ??= {}) : contents[mid]!
+      const meta = models[mid]!.i18n ? ((localeMetas[mid] ??= {})[locale] ??= {}) : metas[mid]!
+      content[id] = { name: strip(t.name), slug: addressSlug(t.slug) || `term-${hexId(`${t.taxonomy}:${t.slug}`).slice(0, 8)}` }
+      meta[id] = importMeta('published')
     }
   }
 
@@ -664,8 +701,8 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       if (fields.author && p.author) e.author = authorId(slugify(p.author))
       for (const t of taxes) {
         e[taxModelId(t)] = p.terms
-          .filter((x) => x.taxonomy === t && contents[taxModelId(t)]![termId(t, x.slug)])
-          .map((x) => termId(t, x.slug))
+          .filter((x) => x.taxonomy === t && termExists(taxModelId(t), termRef(t, x.slug)))
+          .map((x) => termRef(t, x.slug))
       }
       if (fields.cover && p.meta._thumbnail_id) {
         const m = mediaRef(Number(p.meta._thumbnail_id))
@@ -682,10 +719,10 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       if (fields.primary_category) {
         const termWpId = primaryCategoryId(p)
         const term = termWpId === undefined ? undefined : termById.get(termWpId)
-        const ref = term && term.taxonomy === 'category' ? termId('category', term.slug) : undefined
+        const ref = term && term.taxonomy === 'category' ? termRef('category', term.slug) : undefined
         // Only a category the post is in, as Yoast and Rank Math check before using it; a stale one is left out.
         const assigned = ref !== undefined && Array.isArray(e[taxModelId('category')]) && (e[taxModelId('category')] as string[]).includes(ref)
-        if (ref && assigned && contents[taxModelId('category')]?.[ref]) e.primary_category = ref
+        if (ref && assigned && termExists(taxModelId('category'), ref)) e.primary_category = ref
         else if (termWpId !== undefined) report.dropped_relations++
       }
       if (fields.template && typeof p.meta._wp_page_template === 'string' && p.meta._wp_page_template !== 'default')
@@ -778,7 +815,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
           else report.dropped_relations++
         }
         if (i.target.kind === 'term' && i.target.resolved && i.target.slug && models[taxModelId(i.target.taxonomy)])
-          e.target = toTarget.ref({ model: taxModelId(i.target.taxonomy), ref: termId(i.target.taxonomy, i.target.slug) })
+          e.target = toTarget.ref({ model: taxModelId(i.target.taxonomy), ref: termRef(i.target.taxonomy, i.target.slug) })
         if (i.classes?.length) e.classes = i.classes
         if (i.description) e.description = strip(i.description)
         contents['menu-items']![itemRef(i.id)] = e

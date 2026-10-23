@@ -565,6 +565,52 @@ describe('comments export', () => {
     expect(result.report.models.posts!.entries).toBe(2)
   })
 
+  it('translated terms (bridge term_pairs + RawTerm.lang) share one entry id per group, and references resolve to it', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const hello = raw.posts.find((p) => p.id === 10)!
+    const terms = [
+      { id: 501, taxonomy: 'category', slug: 'news', name: 'News', parent: null, parent_resolved: true, description: '', lang: 'en' },
+      { id: 502, taxonomy: 'category', slug: 'haberler', name: 'Haberler', parent: null, parent_resolved: true, description: '', lang: 'tr' },
+      { id: 503, taxonomy: 'category', slug: 'sadece', name: 'Sadece', parent: null, parent_resolved: true, description: '', lang: 'tr' },
+    ]
+    const posts = [
+      { ...hello, id: 10, lang: 'en', terms: [{ taxonomy: 'category', slug: 'news', name: 'News', resolved: true }] },
+      { ...hello, id: 20, slug: 'merhaba', title: 'Merhaba', lang: 'tr', terms: [{ taxonomy: 'category', slug: 'haberler', name: 'Haberler', resolved: true }, { taxonomy: 'category', slug: 'sadece', name: 'Sadece', resolved: true }] },
+    ]
+    const result = rawToContentrain({
+      ...raw, posts, terms, comments: [],
+      language_pairs: [{ post: 10, translations: { en: 10, tr: 20 } }],
+      term_pairs: [{ term: 501, taxonomy: 'category', translations: { en: 501, tr: 502 } }],
+    }, { updatedBy: 'test' })
+
+    const model = JSON.parse(result.files['.contentrain/models/categories.json']!)
+    expect(model.i18n).toBe(true)
+    expect(result.files['.contentrain/content/blog/categories/data.json']).toBeUndefined()
+    const en = JSON.parse(result.files['.contentrain/content/blog/categories/en.json']!)
+    const tr = JSON.parse(result.files['.contentrain/content/blog/categories/tr.json']!)
+    const shared = hexId('category:news')
+    expect(en[shared]).toMatchObject({ name: 'News', slug: 'news', wp_id: 501 })
+    expect(tr[shared]).toMatchObject({ name: 'Haberler', slug: 'haberler', wp_id: 502 })
+    // An untranslated term is its own entry, in its own locale only.
+    expect(tr[hexId('category:sadece')]).toMatchObject({ wp_id: 503 })
+    expect(en[hexId('category:sadece')]).toBeUndefined()
+    expect(JSON.parse(result.files['.contentrain/meta/categories/tr.json']!)[shared].status).toBe('published')
+    // Each post's category reference is the group's id, whichever translation it names.
+    const postsTr = JSON.parse(result.files['.contentrain/content/blog/posts/tr.json']!)
+    const postsEn = JSON.parse(result.files['.contentrain/content/blog/posts/en.json']!)
+    expect(postsEn[hexId('posts:hello-world')].categories).toEqual([shared])
+    expect(postsTr[hexId('posts:hello-world')].categories).toEqual([shared, hexId('category:sadece')])
+    expect(result.report.term_translation_groups).toBe(1)
+  })
+
+  it('terms without a language stay one data.json model, whatever term_pairs says', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const result = rawToContentrain({ ...raw, term_pairs: [{ term: 1, taxonomy: 'category', translations: { en: 1 } }] }, { updatedBy: 'test' })
+    expect(JSON.parse(result.files['.contentrain/models/categories.json']!).i18n).toBe(false)
+    expect(result.files['.contentrain/content/blog/categories/data.json']).toBeDefined()
+    expect(result.report.term_translation_groups).toBe(0)
+  })
+
   it('a partially-translated site declares each model\'s real locale coverage', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const hello = raw.posts.find((p) => p.id === 10)!

@@ -91,6 +91,11 @@ export interface RawTerm {
   /** Whether `parent` names a term present in this document. */
   parent_resolved?: boolean | null
   description?: string
+  /**
+   * The term's language as the multilingual plugin names it (Polylang slug, WPML code — the key `term_pairs`
+   * uses), for a taxonomy the plugin translates. Absent otherwise.
+   */
+  lang?: string
 }
 
 /** A post's reference to a term — kept even when the term itself is absent. */
@@ -118,8 +123,9 @@ export interface RawAcfValue {
 
 /**
  * One ACF Options Page (bridge rung): site-wide fields that belong to no post.
- * Values are the default language's; a translation plugin's per-language copy
- * is not read. Secret fields are left out by the exporter, as on a post.
+ * `fields` are the default language's; with a translation plugin (WPML + ACFML,
+ * ACF Options for Polylang) the other languages' copies are in `translations`.
+ * Secret fields are left out by the exporter, as on a post.
  */
 export interface RawAcfOptionsPage {
   /** The page's menu slug, sanitized (`site-settings`). */
@@ -130,6 +136,10 @@ export interface RawAcfOptionsPage {
   post_id: string
   /** Field name → value, keyed like `RawPost.acf`. */
   fields: Record<string, RawAcfValue>
+  /** The language `fields` are in, when a translation plugin gives the page per-language copies. */
+  lang?: string
+  /** Language code → the fields whose value differs in that language's copy. */
+  translations?: Record<string, Record<string, RawAcfValue>>
 }
 
 export interface RawPost {
@@ -246,6 +256,8 @@ export interface RawMenu {
    * block theme's navigation. Absent when the producer does not know.
    */
   locations?: string[]
+  /** The menu's language as the multilingual plugin names it; with Polylang, `locations` are that language's. */
+  lang?: string
   /**
    * The heading the site prints above this menu where it shows it (a footer column's "Company", "Support"). Not the
    * menu's name, which is an admin label: absent when the page prints none, or the producer did not read it.
@@ -705,6 +717,70 @@ export interface RawLanguagePair {
   post: number
   /** locale → post id of the translation. */
   translations: Record<string, number>
+  /** Languages the site has that this group lacks (bridge rung). */
+  missing_translations?: string[]
+}
+
+/** A term translation group (bridge rung): one per group, written by its canonical member (default language, else lowest id). */
+export interface RawTermPair {
+  term: number
+  taxonomy: string
+  /** Language code → term id of the translation, the term itself included. */
+  translations: Record<string, number>
+  /** Languages the site has that this group lacks. */
+  missing_translations?: string[]
+}
+
+/**
+ * One language as the multilingual plugin declares it, with Polylang's own `pll/v1/languages` field names. Every
+ * value is the plugin's, unnormalised (`locale` 'pt_BR', `w3c` 'pt-BR'): readers normalise. A field the plugin does
+ * not answer (WPML's tag or direction) is absent, never guessed.
+ */
+export interface RawLanguage {
+  /** The plugin's code (Polylang slug, WPML code): the key of every translation map and of `lang`. */
+  slug: string
+  /** WordPress locale ('tr_TR'). */
+  locale: string
+  /** BCP 47 tag (Polylang `w3c`, WPML `tag`). */
+  w3c?: string
+  name: string
+  is_default: boolean
+  is_rtl?: boolean
+  /** The language's home as the plugin builds it — the evidence for its URL prefix. */
+  home_url: string
+  order: number
+  /** This language's front page and posts page (post ids), null when unset. */
+  page_on_front?: number | null
+  page_for_posts?: number | null
+}
+
+/** A multilingual site's languages (bridge rung), as Polylang or WPML declares them. */
+export interface RawLanguages {
+  plugin: 'polylang' | 'wpml'
+  /** The default language's `slug`. */
+  default: string
+  /**
+   * How addresses carry the language, from the plugin's setting: Polylang `force_lang` (content | directory |
+   * subdomain | domain), WPML `language_negotiation_type` (directory | domain | query). With plain permalinks a
+   * directory setting still serves `?lang=`: `home_url` is what the site actually uses.
+   */
+  scheme?: 'content' | 'directory' | 'subdomain' | 'domain' | 'query'
+  /** The default language is left out of its addresses (Polylang `hide_default`; WPML no directory for the default). */
+  hide_default?: boolean
+  /** Polylang `rewrite`: `/language/` removed from pretty permalinks. */
+  rewrite?: boolean
+  list: RawLanguage[]
+}
+
+/** An interface string the multilingual plugin translates (site title, tagline, registered theme/plugin strings). */
+export interface RawLanguageString {
+  /** The name and group it is registered under, when the plugin's registry was loaded. */
+  name?: string
+  context?: string
+  /** The source text. */
+  string: string
+  /** Language code → translation; a language nobody translated is absent. */
+  translations: Record<string, string>
 }
 
 /**
@@ -732,6 +808,12 @@ export interface RawIR {
   /** Outside services the site is connected to (`RawIntegrationScan.services`). */
   integrations?: RawIntegration[]
   language_pairs?: RawLanguagePair[]
+  /** The site's languages (bridge rung), present only when a multilingual plugin declared them. */
+  languages?: RawLanguages
+  /** Term translation groups (bridge rung), with `languages`. */
+  term_pairs?: RawTermPair[]
+  /** Translated interface strings (bridge rung), with `languages`. */
+  strings?: RawLanguageString[]
   /** Site options (bridge rung), verbatim. */
   options?: Record<string, unknown>
   /** ACF Options Pages (bridge rung): site-wide fields, one entry per page. */
