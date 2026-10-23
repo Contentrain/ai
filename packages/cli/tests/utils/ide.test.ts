@@ -45,6 +45,15 @@ describe('detectIdes', () => {
   })
 })
 
+describe('the Astro starter\'s .mcp.json', () => {
+  it('is byte for byte what writeMcpConfig writes for Claude Code', async () => {
+    // templates/astro-starter ships .mcp.json for every delivered site; the CLI's config is its only source.
+    await writeMcpConfig(root, 'claude-code')
+    const starter = join(dirname(fileURLToPath(import.meta.url)), '../../../../templates/astro-starter/.mcp.json')
+    expect(await readFile(starter, 'utf-8')).toBe(await readFile(join(root, '.mcp.json'), 'utf-8'))
+  })
+})
+
 describe('writeMcpConfig for codex', () => {
   it('writes a TOML table when no config exists', async () => {
     const result = await writeMcpConfig(root, 'codex')
