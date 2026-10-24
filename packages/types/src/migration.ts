@@ -1594,6 +1594,12 @@ export interface HandoffOffer {
   cost_comparison?: CostComparison
   /** e.g. "keeping comments on WordPress means the WordPress server stays live". */
   warning?: string
+  /**
+   * The offer the order chose for this capability. At most one offer per capability carries it; a reader shows the
+   * chosen one and hides the alternatives the customer turned down. Absent on every offer of a capability = no choice
+   * was recorded, all of them are still open.
+   */
+  chosen?: true
 }
 
 /**
@@ -1653,5 +1659,9 @@ export interface MigrationHandoff {
   offers?: HandoffOffer[]
   /** Where the generated site's runtime components were bound, when an offer was fulfilled. */
   runtime?: RuntimeBinding
+  /**
+   * Plain-English lines for the person receiving the site (what was removed, what waits for a connection, what stays
+   * on WordPress). Not measurement telemetry and not a verdict: those live in the producer's own receipt.
+   */
   notes?: string[]
 }

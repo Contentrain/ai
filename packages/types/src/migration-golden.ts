@@ -80,6 +80,7 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       capability: 'comments',
       provider: 'studio_managed',
+      chosen: true,
     },
     {
       capability: 'comments',
@@ -89,6 +90,7 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       capability: 'forms',
       provider: 'studio_managed',
+      chosen: true,
     },
     {
       capability: 'forms',
@@ -99,6 +101,7 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
       capability: 'ecommerce',
       provider: 'keep_wordpress',
       warning: 'if the shop stays on WordPress, WooCommerce and the payment setup keep running on the old server',
+      chosen: true,
     },
   ],
   runtime: {
@@ -106,16 +109,8 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     project_id: 'p1',
   },
   notes: [
-    'build passed · quality gate passed',
-    'visual fidelity: post median 97.6 (1280 px)',
-    '6 families · 7 routes · 120 posts · 9 pages',
     'content store: 4 models · 131 entries (.contentrain, @contentrain/wp-import) · TRUNCATED: media 3/12',
-    'runtime addresses: 128 routes bound · 1 COULD NOT BE BOUND',
-    'store media: 12 URLs rewritten to local paths · 300 old-origin URLs remain (media move: Studio)',
     'form model: contact (4 fields, cf7) — takes submissions once the form block is opened in Studio',
-    'editability: 5/7 routes render their content from data · 2 routes NOT EDITABLE (content baked into the chrome) · 2 fields are carried in the data but not rendered',
-    'family generality: 3/5 families proven against the live site · not proven: category (weak), page-solo-0 (single-sample)',
-    'component mount points: c-comments (comments, 1 family) · c-contact (form, 1 family) · bound to Studio: https://studio.test / p1',
     'comments: 2 (approved 1 · pending 1) · export inline · 1 closed thread · 1 unmatched',
     'comments export: stays out of Git — the comments are in the delivery package (receipt) and move to Studio through Migrate',
   ],
