@@ -531,8 +531,13 @@ export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] 
 export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
 
 /** What the handoff can give Studio to run instead of WordPress, as the status answer reports it. */
-export const MIGRATE_GRANT_CAPABILITIES = ['comments', 'forms'] as const
+export const MIGRATE_GRANT_CAPABILITIES = ['comments', 'forms', 'media'] as const
 export type MigrateGrantCapability = (typeof MIGRATE_GRANT_CAPABILITIES)[number]
+/** Where the move of the files a delivery left on WordPress stands in Studio (`capabilities.media`). */
+export const MIGRATE_GRANT_MEDIA_STATES = ['connected', 'pending', 'review', 'paused'] as const
+export type MigrateGrantMediaState = (typeof MIGRATE_GRANT_MEDIA_STATES)[number]
+/** `capabilities` in a grant status answer: comments and forms are connected or pending; media has its own states. */
+export type MigrateGrantCapabilities = Partial<Record<Exclude<MigrateGrantCapability, 'media'>, 'connected' | 'pending'>> & { media?: MigrateGrantMediaState }
 
 /** The signed envelope every Migrate → Studio request after provisioning carries. */
 interface MigrateS2sEnvelope {
@@ -581,8 +586,19 @@ export interface MigrateGrantStatusResponse {
    * - `pending`: not yet.
    * A capability kept on WordPress has no key. Migrate reads an absent key as `pending`, never as `connected`: until it
    * is connected, "can you turn off WordPress" lists it as a step.
+   *
+   * `media` — the files the delivery left loading from WordPress (too large or too many for the repository), which
+   * Studio moves into its media library and then points the content at:
+   * - `connected`: every file Studio takes is moved, and the new addresses are on the default branch. A file over the
+   *   plan's size limit for one file is never taken: it still loads from WordPress, and Migrate, which knows each file's
+   *   size, keeps saying so.
+   * - `pending`: being moved, or not started yet (the project is not connected).
+   * - `review`: moved; the change to the new addresses waits for a reviewer in Studio (or an open pull request).
+   * - `paused`: the move stopped because the workspace's media storage is full; it goes on when there is room.
+   * Absent: no such file, or a Studio that does not report it. Migrate, which knows whether it left files on WordPress,
+   * reads an absent key for a delivery that did as `pending`.
    */
-  capabilities?: Partial<Record<MigrateGrantCapability, 'connected' | 'pending'>>
+  capabilities?: MigrateGrantCapabilities
 }
 
 export interface MigrateInstallUrlResponse {
@@ -657,7 +673,7 @@ export function validateMigrateGrantStatusResponse(input: unknown):
   }
   if (input.capabilities !== undefined) {
     const capabilities = input.capabilities
-    if (!isObject(capabilities) || Object.entries(capabilities).some(([key, value]) => !(MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) || (value !== 'connected' && value !== 'pending')))
+    if (!isObject(capabilities) || Object.entries(capabilities).some(([key, value]) => !(MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) || !(key === 'media' ? MIGRATE_GRANT_MEDIA_STATES as readonly unknown[] : ['connected', 'pending']).includes(value)))
       errors.push('capabilities: invalid')
   }
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
