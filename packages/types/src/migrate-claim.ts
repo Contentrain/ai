@@ -597,6 +597,9 @@ export interface MigrateGrantStatusResponse {
    * - `paused`: the move stopped because the workspace's media storage is full; it goes on when there is room.
    * Absent: no such file, or a Studio that does not report it. Migrate, which knows whether it left files on WordPress,
    * reads an absent key for a delivery that did as `pending`.
+   *
+   * The validator drops a capability it does not know, and a state it does not know for one, and keeps the rest: a key
+   * added later never makes an older reader refuse the ones it knows.
    */
   capabilities?: MigrateGrantCapabilities
 }
@@ -671,12 +674,14 @@ export function validateMigrateGrantStatusResponse(input: unknown):
     const account = input.workspace_github_account
     if (!isObject(account) || !isText(account.login) || (account.type !== 'User' && account.type !== 'Organization')) errors.push('workspace_github_account: invalid')
   }
+  // Forward-compatible: a capability this version does not know, or a state it does not know for one, is dropped on its
+  // own — the others survive, so a Studio that reports something new never costs an older Migrate what it can read.
+  let capabilities: MigrateGrantCapabilities | undefined
   if (input.capabilities !== undefined) {
-    const capabilities = input.capabilities
-    if (!isObject(capabilities) || Object.entries(capabilities).some(([key, value]) => !(MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) || !(key === 'media' ? MIGRATE_GRANT_MEDIA_STATES as readonly unknown[] : ['connected', 'pending']).includes(value)))
-      errors.push('capabilities: invalid')
+    if (!isObject(input.capabilities)) errors.push('capabilities: invalid')
+    else capabilities = Object.fromEntries(Object.entries(input.capabilities).filter(([key, value]) => (MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) && (key === 'media' ? MIGRATE_GRANT_MEDIA_STATES as readonly unknown[] : ['connected', 'pending']).includes(value)))
   }
-  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
+  return errors.length === 0 ? { ok: true, response: { ...input, ...(capabilities ? { capabilities } : {}) } as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
 
 /**
