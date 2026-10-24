@@ -136,6 +136,13 @@
   .prose-site.prose-lg :where(h2):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.3333333); }
   .prose-site.prose-lg :where(h3):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.5); }
   .prose-site.prose-lg :where(h4):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.5555556); }
+  /*
+   * The reading measure, in the text's own characters: a body's column is set in rem, so a narrow face or a small
+   * body size would run its lines past ~90 characters. `ch` follows each block's own face and size; 62ch keeps a line
+   * under 90 average characters even in a narrow face (the column itself, its pictures and wide blocks keep their width).
+   */
+  .prose-site :where(p, li, dd, blockquote):not(:where([class~='not-prose'], [class~='not-prose'] *)) { max-width: 62ch; }
+  .prose-site :where(.has-text-align-center, .aligncenter):not(:where([class~='not-prose'], [class~='not-prose'] *)) { margin-inline: auto; }
   /* A kit heading drawn with the tight track takes the heading track instead (see --tracking-heading). */
   :is(h1, h2, h3, h4, h5, h6).tracking-tight { letter-spacing: var(--tracking-heading, var(--tracking-tight)); }
 }
