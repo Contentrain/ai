@@ -1,7 +1,7 @@
 {
   "id": "header",
   "name": "Header",
-  "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
+  "description": "Site header: brand (logo and/or name), navigation, an optional call-to-action button and an optional utility row above the bar (phone, mail, address, hours).",
   "category": "chrome",
   "uses": ["nav", "search-box"],
   "shared": ["Button.astro", "KitImage.astro", "image-widths.ts", "instance-id.ts", "muted.ts", "safe-url.ts", "types.ts"],
@@ -27,7 +27,8 @@
     "showName": { "type": "boolean", "default": true, "description": "Show the site name next to the logo." },
     "homeHref": { "type": "url", "default": "/", "description": "Where the brand links." },
     "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "children": { "type": "array" } } }, "description": "Primary menu (menus → menu-items)." },
-    "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } }, "description": "Header button, shown on wide screens." },
+    "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } }, "description": "Header button, on every screen width." },
+    "strip": { "type": "array", "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url" } } }, "description": "A row above the bar for what the source's header prints next to its menu: a phone number, a mail address, the address, the opening hours. A line with an href is a link (tel:, mailto:, a page). On a phone it folds into the menu drawer after the menu; with no menu it stays above the bar." },
     "search": { "type": "object", "fields": { "label": { "type": "string" }, "placeholder": { "type": "string" }, "submitLabel": { "type": "string" }, "action": { "type": "url" } }, "description": "A search field in the bar: a GET form to the site's search page (default /search); below the bar on a phone." },
     "navLabel": { "type": "string", "description": "Accessible name of the navigation (ui-strings nav.label)." },
     "menuLabel": { "type": "string", "description": "Narrow-screen toggle text (ui-strings nav.menu)." },

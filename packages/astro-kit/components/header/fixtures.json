@@ -20,7 +20,16 @@
       "action": {
         "label": "Subscribe",
         "href": "/subscribe/"
-      }
+      },
+      "strip": [
+        {
+          "label": "(417) 522-7711",
+          "href": "tel:+14175227711"
+        },
+        {
+          "label": "Mon–Fri 9:00–17:00"
+        }
+      ]
     }
   },
   {
