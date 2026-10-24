@@ -311,6 +311,12 @@ describe('validateMigrateGrantStatusResponse: kind and plan state', () => {
     for (const bad of [null, 'ABB65', {}, { login: '', type: 'User' }, { login: 'x', type: 'Bot' }])
       expect(validateMigrateGrantStatusResponse({ ...base, workspace_github_account: bad })).toEqual({ ok: false, errors: ['workspace_github_account: invalid'] })
   })
+  it('takes each capability given to Studio as connected or pending, and refuses another capability or value', () => {
+    expect(validateMigrateGrantStatusResponse({ ...base, capabilities: { comments: 'pending', forms: 'connected' } }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ ...base, capabilities: {} }).ok).toBe(true)
+    for (const bad of [null, 'connected', { forms: 'yes' }, { search: 'connected' }])
+      expect(validateMigrateGrantStatusResponse({ ...base, capabilities: bad })).toEqual({ ok: false, errors: ['capabilities: invalid'] })
+  })
 })
 
 describe('validateMigrateGrantStatusResponse', () => {

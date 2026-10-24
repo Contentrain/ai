@@ -530,6 +530,10 @@ export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] 
  */
 export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
 
+/** What the handoff can give Studio to run instead of WordPress, as the status answer reports it. */
+export const MIGRATE_GRANT_CAPABILITIES = ['comments', 'forms'] as const
+export type MigrateGrantCapability = (typeof MIGRATE_GRANT_CAPABILITIES)[number]
+
 /** The signed envelope every Migrate → Studio request after provisioning carries. */
 interface MigrateS2sEnvelope {
   iss: typeof MIGRATE_STUDIO_CLAIM_ISSUER
@@ -571,6 +575,14 @@ export interface MigrateGrantStatusResponse {
    * account and warns on another. Absent when the workspace has no installation (or GitHub did not answer).
    */
   workspace_github_account?: { login: string, type: 'User' | 'Organization' }
+  /**
+   * Each capability the handoff gave Studio, and whether it works there yet:
+   * - `connected`: the site's binding is written on the default branch (forms), and the old comments are in (comments).
+   * - `pending`: not yet.
+   * A capability kept on WordPress has no key. Migrate reads an absent key as `pending`, never as `connected`: until it
+   * is connected, "can you turn off WordPress" lists it as a step.
+   */
+  capabilities?: Partial<Record<MigrateGrantCapability, 'connected' | 'pending'>>
 }
 
 export interface MigrateInstallUrlResponse {
@@ -642,6 +654,11 @@ export function validateMigrateGrantStatusResponse(input: unknown):
   if (input.workspace_github_account !== undefined) {
     const account = input.workspace_github_account
     if (!isObject(account) || !isText(account.login) || (account.type !== 'User' && account.type !== 'Organization')) errors.push('workspace_github_account: invalid')
+  }
+  if (input.capabilities !== undefined) {
+    const capabilities = input.capabilities
+    if (!isObject(capabilities) || Object.entries(capabilities).some(([key, value]) => !(MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) || (value !== 'connected' && value !== 'pending')))
+      errors.push('capabilities: invalid')
   }
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
