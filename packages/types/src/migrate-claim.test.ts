@@ -324,6 +324,14 @@ describe('validateMigrateGrantStatusResponse: kind and plan state', () => {
     const misplaced = validateMigrateGrantStatusResponse({ ...base, capabilities: { forms: 'review' } })
     expect(misplaced.ok && misplaced.response.capabilities).toEqual({})
   })
+  it('takes the count of files Studio refused as too large, and drops one that is not a count', () => {
+    const taken = validateMigrateGrantStatusResponse({ ...base, capabilities: { media: 'connected' }, media_refused_too_large: 3 })
+    expect(taken.ok && taken.response.media_refused_too_large).toBe(3)
+    for (const bad of [-1, 1.5, '3', null]) {
+      const result = validateMigrateGrantStatusResponse({ ...base, media_refused_too_large: bad })
+      expect(result.ok && 'media_refused_too_large' in result.response).toBe(false)
+    }
+  })
 })
 
 describe('validateMigrateGrantStatusResponse', () => {

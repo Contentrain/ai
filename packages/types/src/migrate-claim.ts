@@ -602,6 +602,14 @@ export interface MigrateGrantStatusResponse {
    * added later never makes an older reader refuse the ones it knows.
    */
   capabilities?: MigrateGrantCapabilities
+  /**
+   * Of the files the delivery left on WordPress for Studio to move, how many Studio refused because they are larger than
+   * the plan accepts for one file (`media.max_file_size_mb`). Files the manifest already marks `file-too-large` are not
+   * counted: Migrate counts those itself. They still load from WordPress, and `capabilities.media`
+   * says nothing of them (`connected` covers the files Studio took). Absent = not known; Migrate then keeps saying they
+   * may still be on WordPress where the plan's limit is below its own. Dropped on its own when it is not a count.
+   */
+  media_refused_too_large?: number
 }
 
 export interface MigrateInstallUrlResponse {
@@ -681,7 +689,10 @@ export function validateMigrateGrantStatusResponse(input: unknown):
     if (!isObject(input.capabilities)) errors.push('capabilities: invalid')
     else capabilities = Object.fromEntries(Object.entries(input.capabilities).filter(([key, value]) => (MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) && (key === 'media' ? MIGRATE_GRANT_MEDIA_STATES as readonly unknown[] : ['connected', 'pending']).includes(value)))
   }
-  return errors.length === 0 ? { ok: true, response: { ...input, ...(capabilities ? { capabilities } : {}) } as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
+  // Forward-compatible like `capabilities`: a value that is not a count is dropped, never the answer.
+  const { media_refused_too_large: refused, ...rest } = input
+  const refusedCount = typeof refused === 'number' && Number.isInteger(refused) && refused >= 0 ? { media_refused_too_large: refused } : {}
+  return errors.length === 0 ? { ok: true, response: { ...rest, ...(capabilities ? { capabilities } : {}), ...refusedCount } as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
 
 /**
