@@ -2,6 +2,11 @@
 // The frame of a composed page: the same head, breadcrumbs and title as a
 // rich-text page, with the page's sections full width below. Sections bring
 // their own containers; text between them is set in the reading column.
+//
+// Nothing in the starter imports this frame; only a composed page view written into a project does. So the
+// starter's knip.json lists it in ignoreFiles, or the empty starter's own `knip` gate fails. In a composed
+// project the entry is stale and migrate's last pass drops it. The note sits here, not in knip.json: that file
+// is plain JSON, and migrate reads it with JSON.parse.
 import Breadcrumb from '../components/kit/breadcrumb/Breadcrumb.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { withBase } from '../lib/base'
