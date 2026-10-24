@@ -15,7 +15,7 @@ import { cssColor, cssLength, cssSpacing, cssWeight } from '../lib/css-size'
 import { textDirection } from '../lib/direction'
 import { copyrightOf, getSite, getStrings } from '../lib/content'
 import { onWordPress } from '../lib/features'
-import { menusAt } from '../lib/links'
+import { menusAt, publicLinks } from '../lib/links'
 import { defaultLocale, feedPath, languageName, localeOf, localeTag, localizedPath, multilingual, siteLocales } from '../lib/locales'
 import { queryMap } from '../lib/redirects'
 import { describePage, documentTitle, localBusinessLd, organizationLd, websiteLd, type BusinessInput } from '../lib/seo'
@@ -57,9 +57,13 @@ const social = [...sameAs, ...contact.socials.filter(link => !sameAs.some(known 
 const origin = Astro.site ?? Astro.url
 const homePath = localizedPath(withBase('/'), locale)
 const home = new URL(homePath, origin).href
-// The source header's button: a path on the site goes under the base like every other link.
+// The source header's button and the lines beside its menu, linked like every stored link: a source page as this
+// site's path, a call or a mail as it is; a button whose target is not public is left out, a line keeps its words.
+const linkOf = await publicLinks()
 const sourceAction = siteConfig.chrome?.header?.action
-const headerAction = sourceAction ? { label: sourceAction.label, href: withBase(sourceAction.href) } : undefined
+const actionHref = sourceAction ? linkOf(sourceAction.href) : undefined
+const headerAction = sourceAction && actionHref ? { label: sourceAction.label, href: actionHref } : undefined
+const headerStrip = siteConfig.chrome?.header?.strip?.items.map(line => ({ label: line.label, href: linkOf(line.href) }))
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
 const isHome = Astro.url.pathname === homePath
 // A latest-posts home is no entry: its SEO title and description are the site's (`site.seo`, written from the source).
@@ -165,7 +169,7 @@ const languages = multilingual
       brandColor={cssColor(siteConfig.chrome?.brandColor)}
       menu={siteConfig.chrome?.menu}
       action={headerAction}
-      strip={siteConfig.chrome?.header?.strip?.items.map(line => ({ label: line.label, href: line.href === undefined ? undefined : withBase(line.href) }))}
+      strip={headerStrip}
       search={siteConfig.chrome?.header?.search ? { action: withBase('/search/'), label: t('search.label'), placeholder: t('search.placeholder'), submitLabel: t('search.submit') } : undefined}
       homeHref={homePath}
       items={primary?.items ?? []}
