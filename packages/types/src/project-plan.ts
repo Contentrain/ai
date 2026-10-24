@@ -218,7 +218,10 @@ export interface PlanSite {
    * `border: false` draws no line under the bar; `brandWeight` and `brandTracking` set the site name's weight and
    * letter-spacing; `offsetTop` is the space above the bar and `padTop`/`padBottom` the space inside it above and below
    * its content (CSS lengths, a fluid theme's as a `clamp()`). `search: true`: the source's header holds a search form;
-   * the bar shows a search field that sends to the starter's `/search/` page. A key absent: the starter's own.
+   * the bar shows a search field that sends to the starter's `/search/` page. `action`: the button the source's header
+   * prints outside its menu (a booking or contact link), on every screen width. `strip`: the lines the source's header
+   * prints next to its menu (a phone number, a mail address, the address, the hours), in a row above the bar that folds
+   * into the menu drawer on a phone; a line with an `href` is a link (`tel:`, `mailto:`, a page). A key absent: the starter's own.
    * `parts: true`: the header and footer are a block theme's template parts (Twenty Twenty-Five), sized by the theme's
    * presets (the footer's site title at the h2 size) the way a classic theme's are read off its render. Absent, a plan
    * with `chrome` is read as a classic theme's and one without as a block theme's (plans before 1.50).
@@ -242,7 +245,7 @@ export interface PlanSite {
     postFrame?: ChromeFrameStep[]
     listColumns?: ChromeColumnStep[]
     footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }
-    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string, search?: true }
+    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string, search?: true, action?: { label: string, href: string }, strip?: { items: Array<{ label: string, href?: string }> } }
     breadcrumbs?: 'always'
     menu?: 'mega'
   }
@@ -551,6 +554,11 @@ export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
 /** A letter-spacing the starter writes into a style: `normal`, or a signed length. */
 const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 
+/** Words a header prints on a button or a line: a string with something to read, short enough for a bar. */
+const isLabel = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '' && value.length <= 200
+/** An address a header links: http(s), `mailto:`, `tel:` or a path on the site. */
+const isHref = (value: unknown): boolean => typeof value === 'string' && /^(?:https?:\/\/\S|mailto:\S|tel:\S|\/(?!\/))/i.test(value)
+
 /** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
 /** A colour that goes into a style attribute: hex, `rgb()`/`rgba()` or `hsl()`/`hsla()` of numbers; never a `;` or `url()`. */
 const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
@@ -771,6 +779,13 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
       if (header.brandTracking !== undefined && !LETTER_SPACING.test(header.brandTracking)) errors.push(`site.chrome.header.brandTracking ${header.brandTracking} is not a letter spacing`)
       for (const key of ['offsetTop', 'padTop', 'padBottom'] as const) {
         if (header[key] !== undefined && !CSS_LENGTH.test(header[key]!)) errors.push(`site.chrome.header.${key} ${header[key]} is not a CSS size`)
+      }
+      const { action, strip } = header
+      if (action !== undefined && (action === null || typeof action !== 'object' || !isLabel(action.label) || !isHref(action.href))) errors.push('site.chrome.header.action is not a label and an address')
+      if (strip !== undefined) {
+        const items = strip?.items
+        if (!Array.isArray(items) || items.length === 0 || items.length > 8) errors.push('site.chrome.header.strip.items is not a list of 1–8 lines')
+        else if (items.some(item => item === null || typeof item !== 'object' || !isLabel(item.label) || (item.href !== undefined && !isHref(item.href)))) errors.push('site.chrome.header.strip.items has a line that is not a label with an optional address')
       }
     }
   }

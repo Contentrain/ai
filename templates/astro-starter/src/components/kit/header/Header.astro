@@ -1,6 +1,6 @@
 ---
-// Site header: brand (logo and/or name), navigation and an optional call to
-// action.
+// Site header: brand (logo and/or name), navigation, an optional call to
+// action and an optional utility row above the bar (phone, mail, address, hours).
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
@@ -63,7 +63,14 @@ interface Props {
   showName?: boolean | undefined
   homeHref?: string | undefined
   items: NavItem[]
+  /** The header's button, on every screen width. */
   action?: ActionInput | undefined
+  /**
+   * A row above the bar for what the source's header prints next to its menu: a phone number, a mail address, the
+   * address, the opening hours. A line with an `href` is a link (`tel:`, `mailto:`, a page). On a phone the row folds
+   * into the menu drawer, after the menu; with no menu it stays above the bar.
+   */
+  strip?: Array<{ label: string, href?: string | undefined }> | undefined
   /** A search field in the bar (a GET form to the site's search page); below the bar until lg. */
   search?: { label?: string | undefined, placeholder?: string | undefined, submitLabel?: string | undefined, action?: string | undefined } | undefined
   navLabel?: string | undefined
@@ -76,7 +83,7 @@ interface Props {
   menu?: 'flyout' | 'mega' | undefined
 }
 
-const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, brandColor, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
+const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, brandColor, logo, showName = true, homeHref = '/', items, action, strip = [], search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position, bordered })
 // The header's search field: `header-search` on a page, a second header's its own (its label points at its own input).
 const searchId = search ? instanceId(Astro.locals, undefined, 'header-search') : undefined
@@ -84,11 +91,22 @@ const rootStyle = offsetTop ? `margin-top: ${offsetTop}` : undefined
 const innerStyle = [padTop && `padding-top: ${padTop}`, padBottom && `padding-bottom: ${padBottom}`].filter(Boolean).join('; ') || undefined
 const brandColour = brandColorValue(brandColor)
 const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`, brandColour && `color: ${brandColour}`].filter(Boolean).join('; ') || undefined
+// The row above the bar folds into the drawer only where there is one: Nav prints nothing without items.
+const stripFolds = items.length > 0
 // A tagline under the name keeps its line on a phone, as themes print it: the navigation wraps below.
 // The search field sits in the bar from lg; at md the bar already holds the navigation, so the field keeps its own row.
 const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-nowrap' : undefined
 ---
 <header class={root()} style={rootStyle}>
+  {strip.length > 0 && (
+    <div class:list={['border-b border-current/10 text-sm', stripFolds && 'hidden md:block']} data-kit-strip>
+      <ul class={`container-page flex flex-wrap items-center justify-end gap-x-6 gap-y-1 py-2 ${muted}`}>
+        {strip.map(line => (
+          <li>{line.href ? <a href={safeHref(line.href)} class="text-current no-underline hover:underline">{line.label}</a> : line.label}</li>
+        ))}
+      </ul>
+    </div>
+  )}
   <div class={inner({ class: wrap })} style={innerStyle}>
     {tagline
       ? (
@@ -112,8 +130,8 @@ const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-
       </div>
     )}
     <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ms-auto']}>
-      <Nav items={items} menu={menu} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" color={linkNav ? 'link' : 'current'} align={layout === 'centered' ? 'center' : 'end'} />
-      {action && <Button action={action} size="sm" class="hidden md:inline-flex" />}
+      <Nav items={items} menu={menu} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" extra={stripFolds ? strip : undefined} color={linkNav ? 'link' : 'current'} align={layout === 'centered' ? 'center' : 'end'} />
+      {action && <Button action={action} size="sm" />}
     </div>
   </div>
 </header>

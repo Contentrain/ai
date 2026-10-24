@@ -57,6 +57,9 @@ const social = [...sameAs, ...contact.socials.filter(link => !sameAs.some(known 
 const origin = Astro.site ?? Astro.url
 const homePath = localizedPath(withBase('/'), locale)
 const home = new URL(homePath, origin).href
+// The source header's button: a path on the site goes under the base like every other link.
+const sourceAction = siteConfig.chrome?.header?.action
+const headerAction = sourceAction ? { label: sourceAction.label, href: withBase(sourceAction.href) } : undefined
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
 const isHome = Astro.url.pathname === homePath
 // A latest-posts home is no entry: its SEO title and description are the site's (`site.seo`, written from the source).
@@ -161,6 +164,8 @@ const languages = multilingual
       linkNav={siteConfig.chrome?.navLinks}
       brandColor={cssColor(siteConfig.chrome?.brandColor)}
       menu={siteConfig.chrome?.menu}
+      action={headerAction}
+      strip={siteConfig.chrome?.header?.strip?.items.map(line => ({ label: line.label, href: line.href === undefined ? undefined : withBase(line.href) }))}
       search={siteConfig.chrome?.header?.search ? { action: withBase('/search/'), label: t('search.label'), placeholder: t('search.placeholder'), submitLabel: t('search.submit') } : undefined}
       homeHref={homePath}
       items={primary?.items ?? []}

@@ -3566,7 +3566,7 @@
     {
       "id": "header",
       "name": "Header",
-      "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
+      "description": "Site header: brand (logo and/or name), navigation, an optional call-to-action button and an optional utility row above the bar (phone, mail, address, hours).",
       "category": "chrome",
       "uses": [
         "nav",
@@ -3739,7 +3739,23 @@
               ]
             }
           },
-          "description": "Header button, shown on wide screens."
+          "description": "Header button, on every screen width."
+        },
+        "strip": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url"
+              }
+            }
+          },
+          "description": "A row above the bar for what the source's header prints next to its menu: a phone number, a mail address, the address, the opening hours. A line with an href is a link (tel:, mailto:, a page). On a phone it folds into the menu drawer after the menu; with no menu it stays above the bar."
         },
         "search": {
           "type": "object",
@@ -4664,6 +4680,22 @@
         "part": {
           "type": "string",
           "description": "What the navigation is, for checks that find a page's parts (data-cr-part), e.g. \"nav-header\"."
+        },
+        "extra": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url"
+              }
+            }
+          },
+          "description": "Lines after the menu in the narrow-screen menu (a header's phone, address, hours); a line with an href is a link."
         }
       },
       "slots": {},
