@@ -311,11 +311,26 @@ describe('validateMigrateGrantStatusResponse: kind and plan state', () => {
     for (const bad of [null, 'ABB65', {}, { login: '', type: 'User' }, { login: 'x', type: 'Bot' }])
       expect(validateMigrateGrantStatusResponse({ ...base, workspace_github_account: bad })).toEqual({ ok: false, errors: ['workspace_github_account: invalid'] })
   })
-  it('takes each capability given to Studio as connected or pending, and refuses another capability or value', () => {
+  it('takes each capability given to Studio with its states (media has its own), and refuses capabilities that are not an object', () => {
     expect(validateMigrateGrantStatusResponse({ ...base, capabilities: { comments: 'pending', forms: 'connected' } }).ok).toBe(true)
     expect(validateMigrateGrantStatusResponse({ ...base, capabilities: {} }).ok).toBe(true)
-    for (const bad of [null, 'connected', { forms: 'yes' }, { search: 'connected' }])
+    expect(validateMigrateGrantStatusResponse({ ...base, capabilities: { forms: 'connected', media: 'review' } }).ok).toBe(true)
+    for (const bad of [null, 'connected'])
       expect(validateMigrateGrantStatusResponse({ ...base, capabilities: bad })).toEqual({ ok: false, errors: ['capabilities: invalid'] })
+  })
+  it('drops an unknown capability, or an unknown state for one, and keeps the rest (a key added later never costs the known ones)', () => {
+    const result = validateMigrateGrantStatusResponse({ ...base, capabilities: { comments: 'connected', forms: 'pending', search: 'connected', media: 'yes' } })
+    expect(result.ok && result.response.capabilities).toEqual({ comments: 'connected', forms: 'pending' })
+    const misplaced = validateMigrateGrantStatusResponse({ ...base, capabilities: { forms: 'review' } })
+    expect(misplaced.ok && misplaced.response.capabilities).toEqual({})
+  })
+  it('takes the count of files Studio refused as too large, and drops one that is not a count', () => {
+    const taken = validateMigrateGrantStatusResponse({ ...base, capabilities: { media: 'connected' }, media_refused_too_large: 3 })
+    expect(taken.ok && taken.response.media_refused_too_large).toBe(3)
+    for (const bad of [-1, 1.5, '3', null]) {
+      const result = validateMigrateGrantStatusResponse({ ...base, media_refused_too_large: bad })
+      expect(result.ok && 'media_refused_too_large' in result.response).toBe(false)
+    }
   })
 })
 

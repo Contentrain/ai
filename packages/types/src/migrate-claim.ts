@@ -531,8 +531,13 @@ export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] 
 export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
 
 /** What the handoff can give Studio to run instead of WordPress, as the status answer reports it. */
-export const MIGRATE_GRANT_CAPABILITIES = ['comments', 'forms'] as const
+export const MIGRATE_GRANT_CAPABILITIES = ['comments', 'forms', 'media'] as const
 export type MigrateGrantCapability = (typeof MIGRATE_GRANT_CAPABILITIES)[number]
+/** Where the move of the files a delivery left on WordPress stands in Studio (`capabilities.media`). */
+export const MIGRATE_GRANT_MEDIA_STATES = ['connected', 'pending', 'review', 'paused'] as const
+export type MigrateGrantMediaState = (typeof MIGRATE_GRANT_MEDIA_STATES)[number]
+/** `capabilities` in a grant status answer: comments and forms are connected or pending; media has its own states. */
+export type MigrateGrantCapabilities = Partial<Record<Exclude<MigrateGrantCapability, 'media'>, 'connected' | 'pending'>> & { media?: MigrateGrantMediaState }
 
 /** The signed envelope every Migrate → Studio request after provisioning carries. */
 interface MigrateS2sEnvelope {
@@ -581,8 +586,30 @@ export interface MigrateGrantStatusResponse {
    * - `pending`: not yet.
    * A capability kept on WordPress has no key. Migrate reads an absent key as `pending`, never as `connected`: until it
    * is connected, "can you turn off WordPress" lists it as a step.
+   *
+   * `media` — the files the delivery left loading from WordPress (too large or too many for the repository), which
+   * Studio moves into its media library and then points the content at:
+   * - `connected`: every file Studio takes is moved, and the new addresses are on the default branch. A file over the
+   *   plan's size limit for one file is never taken: it still loads from WordPress, and Migrate, which knows each file's
+   *   size, keeps saying so.
+   * - `pending`: being moved, or not started yet (the project is not connected).
+   * - `review`: moved; the change to the new addresses waits for a reviewer in Studio (or an open pull request).
+   * - `paused`: the move stopped because the workspace's media storage is full; it goes on when there is room.
+   * Absent: no such file, or a Studio that does not report it. Migrate, which knows whether it left files on WordPress,
+   * reads an absent key for a delivery that did as `pending`.
+   *
+   * The validator drops a capability it does not know, and a state it does not know for one, and keeps the rest: a key
+   * added later never makes an older reader refuse the ones it knows.
    */
-  capabilities?: Partial<Record<MigrateGrantCapability, 'connected' | 'pending'>>
+  capabilities?: MigrateGrantCapabilities
+  /**
+   * Of the files the delivery left on WordPress for Studio to move, how many Studio refused because they are larger than
+   * the plan accepts for one file (`media.max_file_size_mb`). Files the manifest already marks `file-too-large` are not
+   * counted: Migrate counts those itself. They still load from WordPress, and `capabilities.media`
+   * says nothing of them (`connected` covers the files Studio took). Absent = not known; Migrate then keeps saying they
+   * may still be on WordPress where the plan's limit is below its own. Dropped on its own when it is not a count.
+   */
+  media_refused_too_large?: number
 }
 
 export interface MigrateInstallUrlResponse {
@@ -655,12 +682,17 @@ export function validateMigrateGrantStatusResponse(input: unknown):
     const account = input.workspace_github_account
     if (!isObject(account) || !isText(account.login) || (account.type !== 'User' && account.type !== 'Organization')) errors.push('workspace_github_account: invalid')
   }
+  // Forward-compatible: a capability this version does not know, or a state it does not know for one, is dropped on its
+  // own — the others survive, so a Studio that reports something new never costs an older Migrate what it can read.
+  let capabilities: MigrateGrantCapabilities | undefined
   if (input.capabilities !== undefined) {
-    const capabilities = input.capabilities
-    if (!isObject(capabilities) || Object.entries(capabilities).some(([key, value]) => !(MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) || (value !== 'connected' && value !== 'pending')))
-      errors.push('capabilities: invalid')
+    if (!isObject(input.capabilities)) errors.push('capabilities: invalid')
+    else capabilities = Object.fromEntries(Object.entries(input.capabilities).filter(([key, value]) => (MIGRATE_GRANT_CAPABILITIES as readonly string[]).includes(key) && (key === 'media' ? MIGRATE_GRANT_MEDIA_STATES as readonly unknown[] : ['connected', 'pending']).includes(value)))
   }
-  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
+  // Forward-compatible like `capabilities`: a value that is not a count is dropped, never the answer.
+  const { media_refused_too_large: refused, ...rest } = input
+  const refusedCount = typeof refused === 'number' && Number.isInteger(refused) && refused >= 0 ? { media_refused_too_large: refused } : {}
+  return errors.length === 0 ? { ok: true, response: { ...rest, ...(capabilities ? { capabilities } : {}), ...refusedCount } as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
 
 /**
