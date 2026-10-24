@@ -1,5 +1,13 @@
 # @contentrain/types
 
+## 1.76.0
+
+### Minor Changes
+
+- 1394d25: Grant status answers `capabilities`: for each capability the handoff gave Studio (`comments`, `forms`), `connected` once it works there or `pending`. Optional; a capability kept on WordPress has no key. `validateMigrateGrantStatusResponse` refuses an unknown capability or value (`capabilities: invalid`). New `MIGRATE_GRANT_CAPABILITIES` and `MigrateGrantCapability`.
+- 0c5eb8d: `HandoffOffer.chosen` (optional, `true`): the offer the order chose for its capability, at most one per capability; a reader shows it and hides the alternatives the customer turned down. Absent on every offer of a capability = no choice recorded. `MIGRATION_HANDOFF_GOLDEN` marks the chosen offers and its `notes` keep only the customer's lines: the verdict line and the measurement telemetry (visual fidelity, counts, runtime addresses, store media, editability, family generality, component mount points) are gone, as Migrate no longer writes them. A reader that showed `notes` verbatim shows only customer text now.
+- c286b42: Header: the button shows on every screen width, and a new `strip` prop prints a row above the bar for the lines a site's header shows next to its menu (phone, mail, address, hours); on a phone the row folds into the menu drawer. Nav takes `extra` lines after the menu in its narrow-screen menu. Project plans carry them as `site.chrome.header.action` and `site.chrome.header.strip`.
+
 ## 1.75.0
 
 ### Minor Changes
