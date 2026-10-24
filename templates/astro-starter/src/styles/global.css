@@ -167,6 +167,18 @@
     overflow-wrap: break-word;
   }
 
+  /* The reading measure for every paragraph on the page, whoever wrote its classes (a kit component, the site's own):
+     a line under 90 average characters in any face. It is a width, not a max-width, so a max-w-* utility on the same
+     paragraph still narrows it and never widens it past 62ch. A centred paragraph's box stays centred. A paragraph that
+     is a flex or grid item keeps the size its layout gives it (a width there would stretch a price or a caption), and
+     a WordPress wide or full paragraph still breaks out of its column. */
+  :where(main) :where(:not([class~='flex'], [class*=':flex'], [class~='inline-flex'], [class*=':inline-flex'], [class~='grid'], [class*=':grid'], [class~='inline-grid'], [class*=':inline-grid']) > p:not(.alignwide, .alignfull)) {
+    width: min(100%, 62ch);
+  }
+  :where(main) :where(.text-center) :where(:not([class~='flex'], [class*=':flex'], [class~='inline-flex'], [class*=':inline-flex'], [class~='grid'], [class*=':grid'], [class~='inline-grid'], [class*=':inline-grid']) > p), :where(main) :where(:not([class~='flex'], [class*=':flex'], [class~='inline-flex'], [class*=':inline-flex'], [class~='grid'], [class*=':grid'], [class~='inline-grid'], [class*=':inline-grid']) > p.text-center) {
+    margin-inline: auto;
+  }
+
   /* Letter spacing is drawn for Latin. It pulls apart joined scripts (Arabic,
      Syriac, Thaana), splits Indic and Southeast Asian clusters and crowds CJK,
      and Hebrew is set without it, so in those languages the tracking tokens
