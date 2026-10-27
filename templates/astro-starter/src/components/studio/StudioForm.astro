@@ -40,12 +40,12 @@ const noteId = `cr-form-note-${model.replace(/[^\w-]/g, '-')}`
 {home === 'studio' && studio && <FormMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} text={text} class={className} />}
 {home === 'endpoint' && forms?.home === 'endpoint' && <StaticForm model={model} action={forms.action} text={text} class={className} />}
 {address && (
-  <p class:list={['cr-form-mount', className]} data-cr-part="form" data-state="mailto">
+  <p class:list={['cr-form-mount', className]} data-cr-part="form" data-state="mailto" data-model={model}>
     {text['form.mailto'] ?? 'Write to us at'} <a href={`mailto:${encodeURI(address)}`} class="underline underline-offset-4">{address}</a>
   </p>
 )}
 {wordpress && (
-  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress">
+  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress" data-model={model}>
     <p class="cr-form-note" id={noteId}>{(text['form.wordpress_note'] ?? 'This form is sent on {site}.').replace('{site}', host)}</p>
     <p class="cr-actions"><a href={safeHref(wordpress)} class="cr-form-link" aria-describedby={noteId}>{text['form.wordpress'] ?? 'Open the form'}</a></p>
   </div>

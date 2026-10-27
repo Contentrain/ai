@@ -8,7 +8,7 @@
   "distFiles": {
     "write-to-us/index.html": {
       "contains": [
-        "data-cr-part=\"form\" data-state=\"wordpress\"",
+        "data-cr-part=\"form\" data-state=\"wordpress\" data-model=\"contact-messages\"",
         "This form is sent on old.example.",
         "<a href=\"https://old.example/contact-us/\" class=\"cr-form-link\"",
         "Subscribe on old.example",

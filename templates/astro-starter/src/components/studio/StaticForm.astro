@@ -25,7 +25,7 @@ const valid = action.startsWith('https://') && fields.length > 0
 const html = fieldsHtml(fields, 'cr-static')
 ---
 {valid && (
-  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="endpoint">
+  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="endpoint" data-model={model}>
     <form class="cr-form" method="post" action={safeUrl(action)}>
       <Fragment set:html={html} />
       <p class="cr-hp" aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">

@@ -10,7 +10,11 @@
     },
     {
       "from": "  sourceHosts: [],",
-      "to": "  types: [{\n    collection: 'docs',\n    model: 'docs',\n    single: '/docs/:slug/',\n    taxonomies: [{ collection: 'docsCategory', pattern: '/docs-category/:path/', field: 'docs-category', title: 'Docs category' }],\n    card: { title: 'title', date: 'published_at' },\n    body: 'body',\n    fields: [{ name: 'docs-category', label: 'Docs category', type: 'relations', collection: 'docsCategory' }],\n  }],\n  sourceHosts: [],"
+      "to": "  types: [{\n    collection: 'docs',\n    model: 'docs',\n    single: '/docs/:slug/',\n    archive: { pattern: '/docs/', title: 'All docs' },\n    taxonomies: [{ collection: 'docsCategory', pattern: '/docs-category/:path/', field: 'docs-category', title: 'Docs category' }],\n    card: { title: 'title', date: 'published_at' },\n    body: 'body',\n    fields: [{ name: 'docs-category', label: 'Docs category', type: 'relations', collection: 'docsCategory' }],\n  }],\n  sourceHosts: [],"
+    },
+    {
+      "from": "  titleTemplate: '{title} – {site}',",
+      "to": "  titleTemplate: '{title} – {site}',\n  chrome: { breadcrumbs: 'always' },"
     }
   ],
   "absentFromDist": [
@@ -67,7 +71,9 @@
     "category/reviews/index.html": {
       "contains": [
         "Reviews",
-        "<link rel=\"canonical\" href=\"https://example.com/category/reviews/\">"
+        "<link rel=\"canonical\" href=\"https://example.com/category/reviews/\">",
+        "<nav aria-label=\"Breadcrumb\" data-cr-part=\"breadcrumb\">",
+        "<li aria-current=\"page\" class=\"text-ink\">Reviews</li>"
       ]
     },
     "docs/wordpress-hosting/site-management/wordpress-file-manager/index.html": {
@@ -89,12 +95,17 @@
     },
     "docs/getting-started/index.html": {
       "contains": [
-        "A docs page at the pattern"
+        "A docs page at the pattern",
+        "<nav aria-label=\"Breadcrumb\" data-cr-part=\"breadcrumb\">",
+        "<li aria-current=\"page\" class=\"text-ink\">A docs page at the pattern</li>",
+        "<a href=\"/docs/\" class=\"text-ink-muted no-underline hover:text-ink hover:underline\">All docs</a>"
       ]
     },
     "docs-category/spectra-blocks/index.html": {
       "contains": [
-        "Spectra blocks"
+        "Spectra blocks",
+        "<nav aria-label=\"Breadcrumb\" data-cr-part=\"breadcrumb\">",
+        "<li aria-current=\"page\" class=\"text-ink\">Spectra blocks</li>"
       ]
     },
     "docs-category/spectra-blocks/blocks-and-extensions-spectra-blocks/index.html": {
@@ -140,6 +151,17 @@
         "https://example.com/docs/wordpress-hosting/site-management/wordpress-file-manager/",
         "https://example.com/wordpress-help/development/fix-curl-error-35/",
         "https://example.com/docs-category/spectra-blocks/blocks-and-extensions-spectra-blocks/"
+      ]
+    },
+    "index.html": {
+      "excludes": [
+        "data-cr-part=\"breadcrumb\""
+      ]
+    },
+    "docs/index.html": {
+      "contains": [
+        "<nav aria-label=\"Breadcrumb\" data-cr-part=\"breadcrumb\">",
+        "<li aria-current=\"page\" class=\"text-ink\">All docs</li>"
       ]
     }
   }
