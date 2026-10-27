@@ -1,9 +1,10 @@
 ---
 // A paginated list of posts: the blog index and the category, tag and author
-// archives — as cards (a grid, or one column), or each post in full (siteConfig.lists.display), as the
+// archives (under their breadcrumb on a source that prints one on every page) — as cards (a grid, or one column), or each post in full (siteConfig.lists.display), as the
 // source's query loop showed them.
 import { formatDay, siteTimeZone } from '../lib/dates'
 import { getEntry } from 'astro:content'
+import Breadcrumb from '../components/kit/breadcrumb/Breadcrumb.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import Pagination from '../components/kit/pagination/Pagination.astro'
 import Prose from '../components/kit/prose/Prose.astro'
@@ -14,6 +15,7 @@ import type { Card } from '../lib/custom'
 import { withBase } from '../lib/base'
 import { publicHtml } from '../lib/links'
 import { localeOf, localizedPath } from '../lib/locales'
+import type { Crumb } from '../lib/site-routes'
 import { collectionLd, describePage } from '../lib/seo'
 import { siteConfig } from '../site.config'
 import { safeHref } from '../components/kit/_shared/safe-url'
@@ -32,9 +34,11 @@ interface Props {
   base: string
   current: number
   total: number
+  /** The archive's ancestors, root first (`chrome.breadcrumbs: 'always'`): the home page, a term's type archive. */
+  trail?: Crumb[] | undefined
 }
 
-const { title, eyebrow, description, seo, posts, cards: given, base, current, total } = Astro.props
+const { title, eyebrow, description, seo, posts, cards: given, base, current, total, trail = [] } = Astro.props
 const pageLocale = localeOf(Astro.url.pathname)
 // The source's titles, preview and canonical are the first page's; a later page keeps its own ("Journal – Page 2").
 const first = current === 1 ? seo : undefined
@@ -89,6 +93,11 @@ const metaDescription = describePage({
 >
   {/* data-cr-described: the description is the site's own words for the page, not the source's — counted for the owner. */}
   <div class="container-page py-12 md:py-16" data-cr-list data-cr-described={description?.trim() ? undefined : 'generated'}>
+    {trail.length > 0 && title && (
+      <div class:list={['mb-6', column && 'mx-auto max-w-(--container-prose)']}>
+        <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={title} label={t('nav.breadcrumb')} />
+      </div>
+    )}
     <header class:list={['mb-12 flex flex-col gap-3', column ? 'mx-auto max-w-(--container-prose)' : !siteConfig.lists.headingWidth && 'max-w-2xl', !showHeading && 'sr-only']} style={!column && siteConfig.lists.headingWidth ? `max-width:${siteConfig.lists.headingWidth}` : undefined}>
       {eyebrow && !prefixed && <p class="text-sm font-medium tracking-wide text-accent-text uppercase">{eyebrow}</p>}
       <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{prefixed ? `${eyebrow}: ${title}` : title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>

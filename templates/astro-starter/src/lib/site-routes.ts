@@ -26,8 +26,13 @@ export type Route =
   | { view: 'post', post: Post }
   /** `list`: page 1 of the post list, when a composed page carries it (the front page, or the posts page, drawn from sections). */
   | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean, subpages: Array<{ title: string, href: string }>, list?: ListPage }
-  | { view: 'entry', type: CustomType, entry: TypeEntry, targets: Targets }
-  | { view: 'list', title?: string, eyebrow?: string, description?: string, seo?: Page['data']['seo'], posts: Post[], cards?: Card[], base: string, current: number, total: number }
+  /** `trail`: the entry's breadcrumb (`chrome.breadcrumbs: 'always'`): the home page, then its type's archive when it has one. */
+  | { view: 'entry', type: CustomType, entry: TypeEntry, targets: Targets, trail?: Crumb[] }
+  /** `trail`: an archive's breadcrumb (`chrome.breadcrumbs: 'always'`): the home page, then a term's type archive. */
+  | { view: 'list', title?: string, eyebrow?: string, description?: string, seo?: Page['data']['seo'], posts: Post[], cards?: Card[], base: string, current: number, total: number, trail?: Crumb[] }
+
+/** One step of a breadcrumb trail, root first. */
+export interface Crumb { title: string, href: string }
 
 type PageRoute = Extract<Route, { view: 'page' }>
 
@@ -58,6 +63,8 @@ async function buildLocale(locale: string, add: Add): Promise<void> {
   ])
   // The front page's address: the site's directory (`/`, or `/blog/` under a `base`), under the locale's prefix.
   const home = localizedPath(withBase('/'), locale)
+  // A source that prints its breadcrumb on every page prints it on its archives and entries too, from the home page.
+  const root: Crumb[] | undefined = siteConfig.chrome?.breadcrumbs === 'always' ? [{ title: site.title, href: home }] : undefined
 
   /**
    * A post list split into pages at `base`, `base/page/2/`, … — page 1 exists even when empty. `leading`: posts the first
@@ -76,7 +83,7 @@ async function buildLocale(locale: string, add: Add): Promise<void> {
         const route = first(page)
         add(base, route, pageKey(route.page))
       }
-      else add(pagePath(base, current), { view: 'list', ...heading, ...page }, `${key}:${current}`)
+      else add(pagePath(base, current), { view: 'list', ...heading, ...page, ...(root && base !== home ? { trail: root } : {}) }, `${key}:${current}`)
     }
   }
 
@@ -150,14 +157,14 @@ async function buildLocale(locale: string, add: Add): Promise<void> {
     if (own.length > 0) paginate(`authors:${author.data.id}`, authorHref(author, locale), own, { title: author.data.name, eyebrow: t('archive.author'), ...(author.data.bio ? { description: author.data.bio } : {}) })
   }
 
-  await addTypeRoutes(locale, add)
+  await addTypeRoutes(locale, add, root)
 }
 
 /** What a page shows across locales: its entry id, which its translations share (the composed front page has none of its own). */
 const pageKey = (page: Page) => `pages:${page.data.id}`
 
 /** The custom post types: one page per entry, the archive, and a list per term — through the same pagination as the blog. */
-async function addTypeRoutes(locale: string, add: Add): Promise<void> {
+async function addTypeRoutes(locale: string, add: Add, root: Crumb[] | undefined): Promise<void> {
   const types = siteConfig.types ?? []
   if (types.length === 0) return
   const names = new Set(types.flatMap(type => [type.collection, ...(type.taxonomies ?? []).map(taxonomy => taxonomy.collection)]))
@@ -167,7 +174,7 @@ async function addTypeRoutes(locale: string, add: Add): Promise<void> {
   ])
   const targets = targetsOf(types, entries)
   const terms = new Map([...entries].flatMap(([name, list]) => list.map(entry => [`${name}:${entry.id}`, entry] as const)))
-  const paginateCards = (key: string, base: string, cards: Card[], heading: { title: string, eyebrow?: string, description?: string }) => {
+  const paginateCards = (key: string, base: string, cards: Card[], heading: { title: string, eyebrow?: string, description?: string, trail?: Crumb[] }) => {
     const size = siteConfig.postsPerPage
     const total = Math.max(1, Math.ceil(cards.length / size))
     for (let current = 1; current <= total; current++) {
@@ -177,21 +184,25 @@ async function addTypeRoutes(locale: string, add: Add): Promise<void> {
   const idOf = (entry: TypeEntry) => text(entry.data.id) ?? entry.id
   for (const type of types) {
     const own = newestFirst(entries.get(type.collection) ?? [], type.card.date)
+    // The archive's heading: the editor's words in `ui-strings`, else the config's.
+    const archive = type.archive ? { title: textOr(`types.${type.collection}.archive_title`, type.archive.title), href: localizedPath(withBase(type.archive.pattern), locale) } : undefined
+    // Below the type's archive: its entries and its terms' lists.
+    const under = root && [...root, ...(archive ? [archive] : [])]
     for (const entry of own) {
       const href = entryHref(type, entry)
-      if (href) add(href, { view: 'entry', type, entry, targets }, `${type.collection}:${idOf(entry)}`)
+      if (href) add(href, { view: 'entry', type, entry, targets, ...(under ? { trail: under } : {}) }, `${type.collection}:${idOf(entry)}`)
     }
     const cards = new Map(await Promise.all(own.map(async entry => [entry.id, await entryCard(type, entry, terms)] as const)))
-    // The archive's heading and eyebrow, and each term archive's eyebrow: the editor's words in `ui-strings`, else the config's.
-    if (type.archive) {
+    // The archive's eyebrow, and each term archive's: the editor's words in `ui-strings`, else the config's.
+    if (type.archive && archive) {
       const label = type.archive.label ? textOr(`types.${type.collection}.archive_label`, type.archive.label) : undefined
-      paginateCards(`${type.collection}:archive`, localizedPath(withBase(type.archive.pattern), locale), [...cards.values()], { title: textOr(`types.${type.collection}.archive_title`, type.archive.title), ...(label ? { eyebrow: label } : {}) })
+      paginateCards(`${type.collection}:archive`, archive.href, [...cards.values()], { title: archive.title, ...(label ? { eyebrow: label } : {}), ...(root ? { trail: root } : {}) })
     }
     for (const taxonomy of type.taxonomies ?? []) {
       for (const term of entries.get(taxonomy.collection) ?? []) {
         const members = own.filter(entry => refIds(entry.data[taxonomy.field]).includes(term.id)).flatMap(entry => cards.get(entry.id) ?? [])
         const description = text(term.data.description)
-        paginateCards(`${taxonomy.collection}:${idOf(term)}`, customTermHref(taxonomy, term, terms), members, { title: text(term.data.name) ?? term.id, eyebrow: textOr(`types.${type.collection}.${taxonomy.collection}.title`, taxonomy.title), ...(description ? { description } : {}) })
+        paginateCards(`${taxonomy.collection}:${idOf(term)}`, customTermHref(taxonomy, term, terms), members, { title: text(term.data.name) ?? term.id, eyebrow: textOr(`types.${type.collection}.${taxonomy.collection}.title`, taxonomy.title), ...(description ? { description } : {}), ...(under ? { trail: under } : {}) })
       }
     }
   }

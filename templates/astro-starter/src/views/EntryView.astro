@@ -1,8 +1,9 @@
 ---
-// One entry of a custom post type: title, image, rich-text body, the terms it is filed under and its typed
+// One entry of a custom post type: its breadcrumb (on a source that prints one on every page), title, image, rich-text body, the terms it is filed under and its typed
 // fields (siteConfig.types), each labelled as the editor knows it; an optional Studio form under the body (the entry's
 // `form`, as a page's); its comment thread when comments are open, as a post's.
 import { formatDay } from '../lib/dates'
+import Breadcrumb from '../components/kit/breadcrumb/Breadcrumb.astro'
 import FieldList from '../components/FieldList.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import PostMeta from '../components/PostMeta.astro'
@@ -20,15 +21,18 @@ import { siteConfig } from '../site.config'
 import { cssSize } from '../lib/css-size'
 import { summarize } from '../lib/seo'
 import type { CustomType } from '../site.config'
+import type { Crumb } from '../lib/site-routes'
 import { safeHref } from '../components/kit/_shared/safe-url'
 
 interface Props {
   type: CustomType
   entry: TypeEntry
   targets: Targets
+  /** The entry's ancestors, root first (`chrome.breadcrumbs: 'always'`): the home page, its type's archive. */
+  trail?: Crumb[] | undefined
 }
 
-const { type, entry, targets } = Astro.props
+const { type, entry, targets, trail = [] } = Astro.props
 const pageLocale = localeOf(Astro.url.pathname)
 const { data } = entry
 const textOr = await getTextOr(pageLocale)
@@ -81,6 +85,11 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
   nofollow={seo?.nofollow}
 >
   <article class="container-prose py-12 md:py-16" data-kit-entry>
+    {trail.length > 0 && (
+      <div class="mb-6">
+        <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={title} label={t('nav.breadcrumb')} />
+      </div>
+    )}
     {taxonomy && terms.length > 0 && (
       <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium" data-kit-meta>
         {terms.map(term => <a href={safeHref(termHref(taxonomy, term, allTerms))} class="text-accent-text no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}

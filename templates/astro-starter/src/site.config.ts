@@ -170,7 +170,9 @@ export interface SiteConfig {
    * one centred column; absent, brand and links to the sides. `footerColumns`: the link columns packed at the end edge, `gap` px apart, links `size` px (`narrowSize` px below 768), side by side below 768 at `narrowGap` px (absent: stacked); absent, they share the footer's width.
    * `header`: what the source's header does differently (no line under the bar, the site name's weight and letter-spacing, the space above and inside the bar, its button, the lines next to its menu); a key absent: the starter's own.
    * `breadcrumbs: 'always'`: the source prints a breadcrumb on top-level pages too, from the home page: they show
-   * home › page with its BreadcrumbList, and a nested page's trail starts from home. Absent, only nested pages show one.
+   * home › page with its BreadcrumbList, and a nested page's trail starts from home. A custom type's entry shows home ›
+   * its type's archive (when it has one) › entry, an archive or term list home › (the type's archive ›) list; the
+   * front page none. Absent, only nested pages show one.
    * `menu: 'mega'`: the header menu's submenus open as a wide panel of columns (the second level heads each column, the
    * third is listed under it) instead of a list under the item. Absent, the flyout.
    */
