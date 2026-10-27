@@ -1,5 +1,12 @@
 # @contentrain/query
 
+## 7.6.59
+
+### Patch Changes
+
+- Updated dependencies [dbc52cd]
+  - @contentrain/types@1.78.0
+
 ## 7.6.58
 
 ### Patch Changes

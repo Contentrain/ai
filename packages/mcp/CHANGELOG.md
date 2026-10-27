@@ -1,5 +1,12 @@
 # @contentrain/mcp
 
+## 3.11.17
+
+### Patch Changes
+
+- Updated dependencies [dbc52cd]
+  - @contentrain/types@1.78.0
+
 ## 3.11.16
 
 ### Patch Changes
