@@ -19,6 +19,7 @@ import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById 
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 import { defaultLocale, feedPath, multilingual, sharedIn, siteLocales } from './locales'
+import { placedIn, type MenuArea } from './menu-areas'
 
 /** Addresses outside the route table that the site serves: search, the feed (each locale's). */
 const SERVED = new Set([withBase('/search/'), ...siteLocales.map(locale => feedPath(locale.code))])
@@ -335,22 +336,15 @@ export async function getMenu(slug: string, locale = defaultLocale): Promise<Nav
   return menu ? menuItems(menu, locale) : []
 }
 
-/** The theme locations each area answers to: WordPress themes name them differently. */
-const AREAS = {
-  header: (location: string) => ['header', 'primary', 'main', 'menu-1', 'top'].includes(location),
-  footer: (location: string) => location.startsWith('footer'),
-} as const
-
 /**
- * The menus an area shows, as WordPress places them: a menu assigned to theme locations shows where
- * they are, so moving or unassigning it in Studio moves it on the site; a menu with no location shows
- * where site.config names it. Each comes with its name, the navigation's accessible name, and the heading the source
- * printed above it, if any (`title`: a footer column's), and where that heading links when it is a link (`titleHref`).
+ * The menus an area shows (`placedIn`: by theme location, the header by site.config's primary menu first). Each comes
+ * with its name, the navigation's accessible name, and the heading the source printed above it, if any (`title`: a
+ * footer column's), and where that heading links when it is a link (`titleHref`).
  */
-export async function menusAt(area: keyof typeof AREAS, locale = defaultLocale): Promise<Array<{ name: string, title?: string | undefined, titleHref?: string | undefined, items: NavItem[] }>> {
+export async function menusAt(area: MenuArea, locale = defaultLocale): Promise<Array<{ name: string, title?: string | undefined, titleHref?: string | undefined, items: NavItem[] }>> {
   const configured = area === 'header' ? [siteConfig.menus.primary] : [...siteConfig.menus.footer]
   const all = sharedIn(await getCollection('menus'), locale)
-  const placed = all.filter(menu => (menu.data.locations?.length ? menu.data.locations.some(AREAS[area]) : configured.includes(menu.data.slug)))
+  const placed = placedIn(area, all, configured)
   const rank = (menu: Menu) => {
     const index = configured.indexOf(menu.data.slug)
     return index === -1 ? configured.length : index
