@@ -1,0 +1,31 @@
+{
+  "domain": "custom",
+  "fields": {
+    "email": {
+      "label": "Your email",
+      "order": 10,
+      "required": true,
+      "type": "email"
+    },
+    "question": {
+      "label": "Your question",
+      "order": 20,
+      "required": true,
+      "type": "text"
+    }
+  },
+  "form": {
+    "enabled": true,
+    "exposedFields": [
+      "email",
+      "question"
+    ],
+    "honeypot": true,
+    "public": true
+  },
+  "i18n": false,
+  "id": "docs-requests",
+  "kind": "collection",
+  "name": "Docs requests",
+  "title_field": "email"
+}

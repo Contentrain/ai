@@ -1,12 +1,14 @@
 ---
 // One entry of a custom post type: title, image, rich-text body, the terms it is filed under and its typed
-// fields (siteConfig.types), each labelled as the editor knows it; its comment thread when comments are open, as a post's.
+// fields (siteConfig.types), each labelled as the editor knows it; an optional Studio form under the body (the entry's
+// `form`, as a page's); its comment thread when comments are open, as a post's.
 import { formatDay } from '../lib/dates'
 import FieldList from '../components/FieldList.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import PostMeta from '../components/PostMeta.astro'
 import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
+import StudioForm from '../components/studio/StudioForm.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
 import { authorHref, byId, getPosts, getSite, getStrings, getTextOr, imageOf, postHref, type Category, type Media } from '../lib/content'
@@ -63,6 +65,7 @@ const terms = taxonomy ? [...allTerms.values()].filter(term => refIds(data[taxon
 const [authorId] = type.meta ? refIds(data.author) : []
 const author = authorId ? await getEntry('authors', authorId) : undefined
 const title = entryTitle(type, entry)
+const form = text(data.form)
 const seo = data.seo as { title?: string, description?: string, og_title?: string, og_description?: string, noindex?: boolean, nofollow?: boolean, canonical?: string } | undefined
 const description = seo?.description ?? (type.card.excerpt ? text(data[type.card.excerpt]) : undefined) ?? summarize(body)
 ---
@@ -87,6 +90,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
     {cover && <figure class="mb-10"><KitImage image={imageOf(cover as Media)} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-[var(--radius-image,0.75rem)]" /></figure>}
     {type.fieldsFirst && fields.length > 0 && <div class="mb-10"><FieldList fields={fields} locale={site.language} /></div>}
     {body && <Prose html={body} />}
+    {form && <StudioForm model={form} class="mt-12" />}
     {!type.fieldsFirst && fields.length > 0 && <div class="mt-10 border-t border-line pt-8"><FieldList fields={fields} locale={site.language} /></div>}
     {type.meta && (
       <PostMeta

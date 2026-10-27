@@ -166,8 +166,8 @@ the project's delivery base (`https://cdn.example/api/cdn/v1/<project id>`).
 Without the file the site builds as usual: Studio images are shown as they
 are, and forms and comments fall back as described below.
 
-A page whose `form` field names a model shows that form under its body; a post
-with `comments_open` shows its thread. The form's fields (the model's public
+A page or a custom type's entry whose `form` field names a model shows that
+form under its body; a post with `comments_open` shows its thread. The form's fields (the model's public
 fields, labels and select options) are in the page HTML, and the script puts
 Studio's live form in their place. Without the binding, a form shows the
 address the source site published to write to (`features.email`); with none,

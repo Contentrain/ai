@@ -41,6 +41,7 @@ export const collections = {
       id: z.string(),
       body: z.string().optional(),
       'docs-category': z.array(reference('docsCategory')).default([]),
+      form: z.string().optional(),
       path: z.string().optional(),
       published_at: z.coerce.date().optional(),
       slug: z.string(),

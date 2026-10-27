@@ -73,13 +73,18 @@
     "docs/wordpress-hosting/site-management/wordpress-file-manager/index.html": {
       "contains": [
         "A docs page in a tree",
-        "<link rel=\"canonical\" href=\"https://example.com/docs/wordpress-hosting/site-management/wordpress-file-manager/\">"
+        "<link rel=\"canonical\" href=\"https://example.com/docs/wordpress-hosting/site-management/wordpress-file-manager/\">",
+        "data-cr-part=\"form\" data-state=\"needs_endpoint\" data-model=\"docs-requests\"",
+        "<li>Your email</li>"
       ]
     },
     "wordpress-help/development/fix-curl-error-35/index.html": {
       "contains": [
         "A help article under its own category",
         "<link rel=\"canonical\" href=\"https://example.com/wordpress-help/development/fix-curl-error-35/\">"
+      ],
+      "excludes": [
+        "data-cr-part=\"form\""
       ]
     },
     "docs/getting-started/index.html": {
