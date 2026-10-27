@@ -12,6 +12,12 @@
       "order": 50,
       "type": "relations"
     },
+    "form": {
+      "description": "A Studio form shown under the entry's body — the id of the model its submissions go to.",
+      "label": "Form model",
+      "order": 80,
+      "type": "string"
+    },
     "path": {
       "description": "This entry's address on the old site, kept where the type's pattern would build another.",
       "label": "Kept address",

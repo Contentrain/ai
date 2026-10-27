@@ -493,14 +493,16 @@ export type PlanBinding =
  * - `component` — a placed component carries it (`component`: a `PlanComponent` id). An element the
  *   mapping already turned into a section (core/details → faq) points at that section's component; it
  *   is not placed a second time.
- * - `starter` — the starter already provides it (`feature`: site search is Pagefind on `/search/`).
+ * - `starter` — the starter already provides it (`feature`: site search is Pagefind on `/search/`; `body-form` is a form in
+ *   a page's or a custom type's entry body, shown under the body by the entry's `form` field, with `model` the Studio form
+ *   model it is saved to).
  * - `prose` — it sits in a rich-text body and the prose renderer handles it (an oEmbed in a post).
  * - `drop` — deliberately not reproduced; `reason` says why.
  * - `needs_review` — no counterpart yet (an exit-intent popup, a payment form); `reason` says what a person must decide.
  */
 export type PlanBehaviorOutcome = 'component' | 'starter' | 'prose' | 'drop' | 'needs_review'
 
-export const PLAN_STARTER_FEATURES = ['search'] as const
+export const PLAN_STARTER_FEATURES = ['search', 'body-form'] as const
 export type PlanStarterFeature = (typeof PLAN_STARTER_FEATURES)[number]
 
 export interface PlanBehavior {
