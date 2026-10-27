@@ -8,11 +8,13 @@
 // needs Studio or a form endpoint) — no script, never a form that vanishes.
 // When the owner chose another home at migration (site.config.ts
 // `features.forms`), it posts to their form service, shows an address to write
-// to, or links to the form on the WordPress site: a live link, with a line
-// saying where it is sent.
+// to, or links to the form on the WordPress site: a live link to the page's
+// old address there (`sourcePathOf`: a moved page's own, from the redirects),
+// with a line saying where it is sent.
 import { getStringTable } from '../../lib/content'
 import { localeOf } from '../../lib/locales'
 import { formAddress, formFields, formHome, onWordPress } from '../../lib/features'
+import { sourcePathOf } from '../../lib/redirects'
 import { siteConfig } from '../../site.config'
 import FormMount from './FormMount.astro'
 import StaticForm from './StaticForm.astro'
@@ -29,7 +31,7 @@ const studio = siteConfig.studio
 const forms = siteConfig.features?.forms
 const home = formHome(model)
 const text = home ? await getStringTable(['common.', 'form.'], localeOf(Astro.url.pathname)) : {}
-const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
+const wordpress = home === 'wordpress' ? onWordPress(await sourcePathOf(Astro.url.pathname)) : undefined
 const address = home === 'mailto' ? formAddress() : undefined
 const fields = home === 'needs_endpoint' ? formFields(model) : []
 const host = wordpress ? new URL(wordpress).host : ''

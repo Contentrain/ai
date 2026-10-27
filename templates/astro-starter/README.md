@@ -175,7 +175,9 @@ its place says so (`data-state="needs_endpoint"`: the fields as text and "This
 form needs Studio or a form endpoint to receive messages"), never a form that
 vanishes. A form goes to the WordPress site only when the owner chose it
 (`features.forms.home: 'wordpress'`): a line saying where it is sent and a live
-link there.
+link there, to the page's old address (a page that moved has it in the
+`redirects`: the old address a 301 or 308 leads here from). A comment thread
+kept on WordPress links the same way.
 
 Comments a migration carried are drawn at build time from
 `src/data/comments.json` (`src/lib/comments.ts`): per entry, the approved

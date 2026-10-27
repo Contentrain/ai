@@ -15,6 +15,7 @@ import { staticThreadOf } from '../../lib/comments'
 import { getStringTable } from '../../lib/content'
 import { localeOf } from '../../lib/locales'
 import { commentsHome, onWordPress } from '../../lib/features'
+import { sourcePathOf } from '../../lib/redirects'
 import { siteConfig } from '../../site.config'
 import CommentsMount from './CommentsMount.astro'
 import StaticComments from './StaticComments.astro'
@@ -31,7 +32,7 @@ interface Props {
 
 const { model, entry, locale, open } = Astro.props
 const studio = siteConfig.studio
-const wordpress = open && commentsHome() === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
+const wordpress = open && commentsHome() === 'wordpress' ? onWordPress(await sourcePathOf(Astro.url.pathname)) : undefined
 const carried = wordpress ? undefined : staticThreadOf(model, entry, locale)
 const thread = carried && (open ? carried : { ...carried, closed: true })
 const text = studio || wordpress || thread ? await getStringTable(['common.', 'comments.', 'form.'], localeOf(Astro.url.pathname)) : {}

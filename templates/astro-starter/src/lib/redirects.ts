@@ -12,7 +12,7 @@
 import { getCollection } from 'astro:content'
 import { authorHref, byId, getRedirects, pageHref, stalePaths, termHref } from './content'
 import { staleTypePaths } from './custom'
-import { servedPath, withBase } from './base'
+import { servedPath, withBase, withoutBase } from './base'
 import { ownPath, publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
 
@@ -115,6 +115,20 @@ async function prefixTarget(to: string, routes: ReadonlyMap<string, unknown>, li
 }
 
 /** An attachment page's old address (`/post/image/`, `/?attachment_id=12`) and where it leads now. */
+/**
+ * The address a page had on the old site: the old address a permanent move (a 301 or 308 rule, not a prefix or a query)
+ * leads here from, else its own, from the site's root. A type served flat or a page whose parent did not move has its
+ * old address only in the redirects; a link to the old site's copy of a form or a comment thread needs that one.
+ */
+export async function sourcePathOf(pathname: string): Promise<string> {
+  const here = sitePath(withoutBase(pathname))
+  const from = (await getRedirects()).map(r => r.data)
+    .filter(d => (d.status === 301 || d.status === 308) && d.to && !d.from.includes('*') && !d.from.includes('?') && sitePath(d.to) === here)
+    .map(d => sitePath(d.from))
+    .toSorted()
+  return from[0] ?? here
+}
+
 export interface AttachmentRule { from: string, to: string, status: 301 }
 
 // WordPress's attachment pages, written by the migration's media stage only when there are any. Not
