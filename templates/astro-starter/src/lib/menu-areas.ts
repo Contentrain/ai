@@ -5,7 +5,7 @@
 /**
  * A theme location that is the header's. Themes name it `header`, `primary`, `main`, `menu-1` or `top`, or after it:
  * `header-menu`, `main-menu`, `primary_navigation`. A footer's or a top bar's never is: a theme's `topbar-menu` holds
- * account links, not the site's navigation. The same rule as migrate's `headerLocation`.
+ * account links, not the site's navigation. Keep in step with the importer's header-location rule.
  */
 function isHeaderLocation(location: string): boolean {
   return /^(?:header|primary|main|menu-1|top)$/.test(location) || (/header|primary|main/i.test(location) && !/footer|top[-_]?bar/i.test(location))
