@@ -10,7 +10,7 @@
       "contains": [
         "data-cr-part=\"form\" data-state=\"wordpress\"",
         "This form is sent on old.example.",
-        "<a href=\"https://old.example/write-to-us/\" class=\"cr-form-link\"",
+        "<a href=\"https://old.example/contact-us/\" class=\"cr-form-link\"",
         "Subscribe on old.example",
         "<a href=\"https://old.example/support/\" class=\"cr-form-link\""
       ],
@@ -19,7 +19,8 @@
         "disabled",
         "<cr-form",
         "method=\"post\"",
-        "needs_endpoint"
+        "needs_endpoint",
+        "old.example/write-to-us/"
       ]
     },
     "index.html": {
