@@ -10,6 +10,11 @@ This repo publishes the open-source package line for the Contentrain ecosystem:
 - `@contentrain/types`
 - `@contentrain/rules`
 - `@contentrain/skills`
+- `@contentrain/wp-import`
+- `@contentrain/emitter-astro`
+- `@contentrain/verify`
+- `@contentrain/astro-kit`
+- `@contentrain/decide`
 
 The main expectation is simple:
 

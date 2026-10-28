@@ -167,3 +167,7 @@ component props, then runs `astro check` and a build. Last, it compares
 screenshots at 390, 768 and 1280 px with `visual/<platform>/`. The starter
 carries some kit components in `src/components/kit/`, and a test keeps those
 copies identical to the source here.
+
+## License
+
+MIT

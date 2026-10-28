@@ -9,12 +9,17 @@ body:
     attributes:
       label: Target package
       options:
-        - @contentrain/mcp
+        - "@contentrain/mcp"
         - contentrain
-        - @contentrain/query
-        - @contentrain/types
-        - @contentrain/rules
-        - @contentrain/skills
+        - "@contentrain/query"
+        - "@contentrain/types"
+        - "@contentrain/rules"
+        - "@contentrain/skills"
+        - "@contentrain/wp-import"
+        - "@contentrain/emitter-astro"
+        - "@contentrain/verify"
+        - "@contentrain/astro-kit"
+        - "@contentrain/decide"
         - docs
         - cross-package
     validations:

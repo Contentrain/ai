@@ -255,6 +255,34 @@ npx contentrain generate --watch &
 npx astro dev
 ```
 
+### Content collections
+
+`@contentrain/query/astro` exports `contentrainLoader()`, a [content layer](https://docs.astro.build/en/guides/content-collections/) loader (Astro 5+). It reads the same `.contentrain` files as `contentrain generate`, so pages can use `getCollection()`, `getEntry()` and `<Content />`:
+
+```ts
+// src/content.config.ts
+import { defineCollection } from 'astro:content'
+import { contentrainLoader } from '@contentrain/query/astro'
+
+export const collections = {
+  posts: defineCollection({
+    loader: contentrainLoader({ model: 'blog-post', locale: 'en' }),
+  }),
+}
+```
+
+```astro
+---
+import { getCollection } from 'astro:content'
+
+const posts = await getCollection('posts')
+---
+
+<ul>{posts.map(post => <li>{post.data.title}</li>)}</ul>
+```
+
+Omit `locale` on an i18n model to load every locale (ids are prefixed, `en/my-post`). `publishedOnly` and `mediaBaseUrl` are covered in the [SDK reference](/packages/sdk). Use the loader or the generated client below, whichever fits the page; both read the same files.
+
 ### Page components
 
 SDK calls go in the frontmatter:
