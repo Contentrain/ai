@@ -270,3 +270,7 @@ non-colliding identities are unchanged. Rebuild the entry map and comments expor
 from the same corrected import. Locale normalization currently uses primary
 language codes: a group whose regional translations collapse to the same locale
 is rejected rather than silently overwritten.
+
+## License
+
+MIT

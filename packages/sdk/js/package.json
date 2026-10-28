@@ -29,6 +29,8 @@
     "nuxt",
     "nextjs",
     "astro",
+    "withastro",
+    "astro-loader",
     "sveltekit"
   ],
   "publishConfig": {
