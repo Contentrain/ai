@@ -1,6 +1,6 @@
 ---
 name: contentrain
-description: "Contentrain CMS architecture, content formats, and MCP tool usage. Use when working with .contentrain/ directory, content models, or Contentrain MCP tools."
+description: "Contentrain architecture, content formats, and MCP tool usage. Use when working with .contentrain/ directory, content models, or Contentrain MCP tools."
 metadata:
   author: Contentrain
   version: "1.0.0"
@@ -8,7 +8,7 @@ metadata:
 
 # Contentrain Skill
 
-Contentrain is a Git-based, AI-first content management system. Content lives in `.contentrain/` as JSON and Markdown files, managed through MCP tools. This skill covers architecture, content formats, and tool usage.
+Contentrain is a content governance ecosystem for teams and AI agents. Content lives in `.contentrain/` as JSON and Markdown files, managed through MCP tools. This skill covers architecture, content formats, and tool usage.
 
 ## Ecosystem Overview
 
