@@ -1,5 +1,11 @@
 # @contentrain/claude-plugin
 
+## 1.0.9
+
+### Patch Changes
+
+- e0a71c5: The core `contentrain` skill now describes Contentrain as a content governance ecosystem for teams and AI agents, not a content management system. The skill description and the `AGENT_SKILLS` catalog entry drop "CMS".
+
 ## 1.0.8
 
 ### Patch Changes
