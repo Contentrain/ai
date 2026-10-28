@@ -1,5 +1,11 @@
 # @contentrain/claude-plugin
 
+## 1.0.8
+
+### Patch Changes
+
+- b8f901c: The plugin also ships as a Cursor plugin: `.cursor-plugin/plugin.json` (same skills, same MCP server config, logo) and a root `.cursor-plugin/marketplace.json`, version-synced by `pnpm plugin:build`. The manifest keyword `cms` is now `content-governance`.
+
 ## 1.0.7
 
 ### Patch Changes

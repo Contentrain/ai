@@ -1,5 +1,14 @@
 # @contentrain/mcp
 
+## 3.11.18
+
+### Patch Changes
+
+- 9c8b973: `contentrain_merge` is now annotated `destructiveHint: true`. After merging, it deletes the merged branch locally and on the remote, so MCP clients should ask before running it.
+- 9d6c7b2: Ship the MIT `LICENSE` file inside every npm package. `@contentrain/query` also carries the `withastro` and `astro-loader` keywords, since it ships an Astro content layer loader (`@contentrain/query/astro`).
+- Updated dependencies [9d6c7b2]
+  - @contentrain/types@1.78.1
+
 ## 3.11.17
 
 ### Patch Changes
