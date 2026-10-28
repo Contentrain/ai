@@ -1,5 +1,11 @@
 # @contentrain/skills
 
+## 0.9.7
+
+### Patch Changes
+
+- 9d6c7b2: Ship the MIT `LICENSE` file inside every npm package. `@contentrain/query` also carries the `withastro` and `astro-loader` keywords, since it ships an Astro content layer loader (`@contentrain/query/astro`).
+
 ## 0.9.6
 
 ### Patch Changes
