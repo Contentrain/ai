@@ -132,7 +132,9 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   contentrain_merge: {
     title: 'Merge Branch',
     readOnlyHint: false,
-    destructiveHint: false,
+    // Destructive: after the merge it deletes the merged branch, locally and
+    // on the remote when one is configured (mergeBranch → branch -D / push --delete).
+    destructiveHint: true,
     idempotentHint: false,
     openWorldHint: false,
   },
