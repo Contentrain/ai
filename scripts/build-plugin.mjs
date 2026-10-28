@@ -26,7 +26,9 @@ const FRAMEWORKS_SRC = join(ROOT, 'packages/skills/frameworks')
 const PLUGIN_DIR = join(ROOT, 'plugins/contentrain')
 const PLUGIN_PKG = join(PLUGIN_DIR, 'package.json')
 const PLUGIN_MANIFEST = join(PLUGIN_DIR, '.claude-plugin/plugin.json')
+const CURSOR_MANIFEST = join(PLUGIN_DIR, '.cursor-plugin/plugin.json')
 const MARKETPLACE_MANIFEST = join(ROOT, '.claude-plugin/marketplace.json')
+const CURSOR_MARKETPLACE_MANIFEST = join(ROOT, '.cursor-plugin/marketplace.json')
 const PLUGIN_MCP = join(PLUGIN_DIR, '.mcp.json')
 const MCP_PKG = join(ROOT, 'packages/mcp/package.json')
 
@@ -62,7 +64,8 @@ function writeJson(path, value) {
  * pins installed users to the `version` in plugin.json and only offers an
  * update when it changes, so a skills or MCP-pin change that forgets the
  * bump reaches nobody. Deriving both manifests from the package version
- * puts that bump in the release flow instead of a human's memory.
+ * puts that bump in the release flow instead of a human's memory. The Cursor
+ * manifests (.cursor-plugin/) take the same version.
  */
 function syncVersion() {
   const { version } = readJson(PLUGIN_PKG)
@@ -71,13 +74,17 @@ function syncVersion() {
     process.exit(1)
   }
 
-  const manifest = readJson(PLUGIN_MANIFEST)
-  manifest.version = version
-  writeJson(PLUGIN_MANIFEST, manifest)
+  for (const path of [PLUGIN_MANIFEST, CURSOR_MANIFEST]) {
+    const manifest = readJson(path)
+    manifest.version = version
+    writeJson(path, manifest)
+  }
 
-  const marketplace = readJson(MARKETPLACE_MANIFEST)
-  marketplace.metadata = { ...marketplace.metadata, version }
-  writeJson(MARKETPLACE_MANIFEST, marketplace)
+  for (const path of [MARKETPLACE_MANIFEST, CURSOR_MARKETPLACE_MANIFEST]) {
+    const marketplace = readJson(path)
+    marketplace.metadata = { ...marketplace.metadata, version }
+    writeJson(path, marketplace)
+  }
 
   return version
 }

@@ -1,0 +1,29 @@
+{
+  "name": "contentrain",
+  "description": "Content governance for AI agents: turn hardcoded strings into governed, reviewable content in your repository",
+  "version": "1.0.7",
+  "author": {
+    "name": "Contentrain",
+    "url": "https://contentrain.io"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "repository": "https://github.com/Contentrain/ai",
+  "license": "MIT",
+  "keywords": [
+    "content",
+    "content-governance",
+    "i18n",
+    "localization",
+    "hardcoded-strings",
+    "mcp",
+    "git",
+    "vue",
+    "nuxt",
+    "nextjs",
+    "react",
+    "astro",
+    "sveltekit"
+  ],
+  "logo": "assets/logo.svg",
+  "mcpServers": ".mcp.json"
+}
