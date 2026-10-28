@@ -8,7 +8,7 @@
 // ─── Agent Skills Catalog ───
 
 export const AGENT_SKILLS = [
-  { name: 'contentrain', description: 'Contentrain CMS architecture, content formats, and MCP tool usage' },
+  { name: 'contentrain', description: 'Contentrain architecture, content formats, and MCP tool usage' },
   { name: 'contentrain-normalize', description: 'Two-phase normalize: extract hardcoded strings and patch source files' },
   { name: 'contentrain-quality', description: 'Content quality, SEO, accessibility, and media rules' },
   { name: 'contentrain-sdk', description: 'Query SDK usage: #contentrain imports, QueryBuilder, type-safe content access' },

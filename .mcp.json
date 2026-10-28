@@ -1,9 +1,11 @@
 {
   "mcpServers": {
     "contentrain": {
-      "command": "node",
-      "args": ["packages/cli/dist/index.mjs", "serve", "--stdio"],
-      "env": {}
+      "command": "npx",
+      "args": [
+        "-y",
+        "@contentrain/mcp@^3"
+      ]
     }
   }
 }
