@@ -1,0 +1,17 @@
+{
+  "name": "contentrain",
+  "owner": {
+    "name": "Contentrain",
+    "url": "https://contentrain.io"
+  },
+  "metadata": {
+    "description": "Content governance for AI agents",
+    "version": "1.0.7"
+  },
+  "plugins": [
+    {
+      "name": "contentrain",
+      "source": "plugins/contentrain"
+    }
+  ]
+}
