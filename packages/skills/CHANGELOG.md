@@ -1,5 +1,11 @@
 # @contentrain/skills
 
+## 0.9.8
+
+### Patch Changes
+
+- e0a71c5: The core `contentrain` skill now describes Contentrain as a content governance ecosystem for teams and AI agents, not a content management system. The skill description and the `AGENT_SKILLS` catalog entry drop "CMS".
+
 ## 0.9.7
 
 ### Patch Changes

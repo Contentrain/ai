@@ -1,5 +1,12 @@
 # contentrain
 
+## 0.18.19
+
+### Patch Changes
+
+- Updated dependencies [e0a71c5]
+  - @contentrain/skills@0.9.8
+
 ## 0.18.18
 
 ### Patch Changes
