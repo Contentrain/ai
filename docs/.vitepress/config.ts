@@ -104,9 +104,9 @@ function plainText(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/\u200b/g, '').replace(/\s+/g, ' ').trim()
 }
 
-/** FAQPage entities from a rendered page: every `<h3>` is a question, the HTML up to the next heading its answer. */
+/** FAQPage entities from a rendered page: every markdown `<h2>` (sidebar group titles have no id) is a question, the HTML up to the next one or the doc footer its answer. */
 function faqEntities(content: string): object[] {
-  return [...content.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>([\s\S]*?)(?=<h[23][\s>]|$)/g)].map(([, q, a]) => ({
+  return [...content.matchAll(/<h2 id=[^>]*>([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2[\s>]|<footer[\s>]|$)/g)].map(([, q, a]) => ({
     '@type': 'Question',
     'name': plainText(q),
     'acceptedAnswer': { '@type': 'Answer', 'text': plainText(a) },
