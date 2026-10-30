@@ -19,7 +19,7 @@ In your repository, under `.contentrain/`: models in `.contentrain/models/`, con
 
 ### Which AI agents and IDEs work with it?
 
-Any MCP client. `contentrain setup` writes the MCP config for Claude Code, Cursor, VS Code, Windsurf, GitHub Copilot and OpenAI Codex, and Claude Code users can install the [plugin](/packages/plugin) with one command. See [Getting Started](/getting-started).
+Any MCP client. `contentrain setup` writes the MCP config for Claude Code, Cursor, VS Code, Windsurf, GitHub Copilot and OpenAI Codex, and Claude Code users can install the [plugin](/packages/skills#claude-code-plugin) with one command. See [Getting Started](/getting-started).
 
 ### How many MCP tools are there?
 
