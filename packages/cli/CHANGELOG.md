@@ -1,5 +1,15 @@
 # contentrain
 
+## 0.18.20
+
+### Patch Changes
+
+- cc1973e: Positioning wording: Contentrain is described as a content governance ecosystem for teams and AI agents. Changes the identity line of the `common` agent prompt, the CLI `--help` description, and the cli and mcp package descriptions. Behavior is unchanged.
+- Updated dependencies [cc1973e]
+  - @contentrain/rules@0.7.5
+  - @contentrain/mcp@3.11.19
+  - @contentrain/skills@0.9.8
+
 ## 0.18.19
 
 ### Patch Changes
