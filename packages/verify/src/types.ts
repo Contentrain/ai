@@ -109,9 +109,9 @@ export interface VerifyOptions {
    */
   sourceOrigin?: string
   /**
-   * Hosts that may legitimately still be referenced even though they are not
-   * the site's own — a CDN the customer keeps. Applies to
-   * `assets.source-origin-reference` only.
+   * Compared against the source host only: listing the source host itself
+   * turns `assets.source-origin-reference` off. Any other host here has no
+   * effect, since only references to the source host are reported.
    */
   allowHosts?: string[]
 }

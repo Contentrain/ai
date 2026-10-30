@@ -18,7 +18,7 @@ export const USAGE = `contentrain-verify <dist-dir> [options]
   --baseline <dir>      The old site, as a directory of captured pages
   --redirects <file>    JSON: [{ "from": "/a", "to": "/b", "status": 301 }]
   --source-origin <host>  The old host content was migrated away from
-  --allow-host <host>     A host that may still be referenced (repeatable)
+  --allow-host <host>     The source host itself turns the old-host scan off (repeatable)
   --groups <list>       Comma-separated: ${CHECK_GROUPS.join(',')}
   --max-redirect-hops <n>
   --json                Print the report as JSON instead of text

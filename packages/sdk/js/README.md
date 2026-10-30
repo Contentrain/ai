@@ -29,7 +29,7 @@ pnpm add @contentrain/query
 
 Requirements:
 
-- Node.js `22+`
+- Node.js `20+`
 - a Contentrain project with `.contentrain/config.json`
 
 ## ✨ What This Package Provides
