@@ -91,13 +91,14 @@ a page must not fail its own gate.
 | | `international.hreflang-unknown-target` | warning | An alternate pointing at a page that does not exist |
 | structured | `structured.jsonld-invalid` | error | A JSON-LD block that does not parse — consumers discard the whole block |
 | | `structured.type-lost` | warning | A `@type` the old page had is gone. Types inside `@graph` are counted, which is how themes actually ship them |
-| navigation | `navigation.broken-internal-link` | error | An internal link that goes nowhere. A path a redirect rule covers is fine; external, `mailto:`, `tel:` and fragment links are not checked |
+| navigation | `navigation.broken-internal-link` | error | An internal link that goes nowhere. A path a redirect rule covers is fine; external, `mailto:`, `tel:`, `javascript:`, `data:` and fragment links are not checked |
 | | `navigation.pagination-broken` | warning | `rel="next"` / `rel="prev"` pointing at a page the build does not serve |
 | | `navigation.feed-lost` | warning | The old page advertised a feed and this one does not |
 | assets | `assets.broken-image` | error | An internal image that resolves to nothing the build serves. `data:` URIs and third-party hosts are skipped |
 | | `assets.missing-alt` | warning | An `<img>` with no `alt` attribute. `alt=""` is a decision (decorative) and is not reported |
 | | `assets.alt-lost` | warning | Alt text the old page had for the same image is gone |
-| | `assets.source-origin-reference` | error | A reference to `options.sourceOrigin` — the host the content was migrated away from. The new site then works only while the old one stays up. Scans documents, and stylesheets and scripts when `input.files` carries their contents; `options.allowHosts` exempts a CDN the customer kept |
+| | `assets.source-origin-reference` | error | A reference to `options.sourceOrigin` — the host the content was migrated away from. The new site then works only while the old one stays up. Scans documents, and stylesheets and scripts when `input.files` carries their contents; `options.allowHosts` listing the source host itself turns this scan off; a reference to another host whose name contains the source host is still counted |
+| | `assets.source-origin-invalid` | warning | `options.sourceOrigin` is not a host or a URL; the old-host scan did not run |
 
 ## The 404 page
 
@@ -142,7 +143,7 @@ contentrain-verify <dist-dir> [options]
   --baseline <dir>      The old site, as a directory of captured pages
   --redirects <file>    JSON: [{ "from": "/a", "to": "/b", "status": 301 }]
   --source-origin <host>  The old host content was migrated away from
-  --allow-host <host>     A host that may still be referenced (repeatable)
+  --allow-host <host>     The source host itself turns the old-host scan off (repeatable)
   --groups <list>       identity,indexing,status,international,structured,navigation,assets
   --max-redirect-hops <n>
   --json

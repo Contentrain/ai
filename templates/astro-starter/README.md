@@ -18,15 +18,15 @@ pnpm lhci        # Lighthouse CI on the built site
 
 | Where | What |
 |---|---|
-| `.contentrain/models/` | The content models: `site` (singleton), `posts`, `pages`, `categories`, `tags`, `authors`, `media`, `menus`, `menu-items`, and the `ui-strings` dictionary. |
+| `.contentrain/models/` | The content models: `site` (singleton), `posts`, `pages`, `categories`, `tags`, `authors`, `media`, `menus`, `menu-items`, `redirects`, and the `ui-strings` dictionary. |
 | `src/content.config.ts` | One Astro collection per model, loaded with `contentrainLoader` and validated by a schema that mirrors the model. Public builds show published entries only. |
 | `src/site.config.ts` | What is not content: permalink patterns, the front page, posts per page, menu slugs and the Studio binding. |
 | `src/lib/site-routes.ts`, `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. A page with nothing to build (no body, form, cover, child pages or composed view; `src/lib/empty-page.ts`) never fails it: the front page builds as the plain latest-posts home, any other page answers with a 301 to its nearest parent or the home and stays out of the sitemap. |
 | `src/lib/links.ts` | Links to what the public can see: menu targets, body links and section links resolve through the route table; a link to a draft, a private page or the source site's old address is dropped or rewritten. |
 | `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. A migration adds composed pages (`views/composed/`; one that prints the post list it is given is named in `listViews`, any other leaves page 1 of the posts a plain list) and the overlays every page draws after the footer, such as a popup (`views/overlays/`); both are empty by default. |
 | `src/layouts/BaseLayout.astro` | Document shell: SEO head, font, skip link, header, footer. |
-| `src/components/SEO.astro`, `src/lib/seo.ts`, `src/lib/share.ts` | Title, description, canonical, robots, Open Graph, Twitter, RSS discovery and a JSON-LD graph (WebSite, Organization, BlogPosting, BreadcrumbList, CollectionPage). `<title>` follows `titleTemplate`; link previews show the page's own words: `og:title` is `seo.og_title`, else `seo.title`, else the page title without the site suffix; `og:description` is `seo.og_description`, else the meta description. |
-| `src/components/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
+| `src/components/SEO.astro`, `src/lib/seo.ts`, `src/lib/share.ts` | Title, description, canonical, robots, Open Graph, Twitter, RSS discovery and a JSON-LD graph (WebSite, Organization, BlogPosting, BreadcrumbList, CollectionPage, and LocalBusiness on the home page when the site entry has business details). `<title>` follows `titleTemplate`; link previews show the page's own words: `og:title` is `seo.og_title`, else `seo.title`, else the page title without the site suffix; `og:description` is `seo.og_description`, else the meta description. |
+| `src/components/kit/prose/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
 | `src/components/studio/` | Studio forms and comment threads. |
 | `src/styles/global.css` | The one stylesheet. Design tokens are in `@theme`. |
 | `public/_headers` | Response headers (Netlify, Cloudflare Pages): an SVG under `/media/` opened on its own runs no script and loads nothing (CSP `default-src 'none'`, `sandbox`, `nosniff`). |
@@ -95,9 +95,11 @@ preview; a site you publish builds without it.
 - **One stylesheet, tokens first.** Components use color roles
   (`surface`, `ink`, `ink-muted`, `line`, `accent`) and the width tokens, never
   raw values, so a brand is a change to `@theme`.
-- **No JavaScript by default.** The mobile menu is a `<details>` element. The
-  only scripts are search (on `/search/`) and the Studio form and comments
-  mounts (only on pages that render one).
+- **No JavaScript by default.** The mobile menu is a native popover. The only
+  scripts are search (on `/search/`), the Studio form and comments mounts
+  (only on pages that render one), a few lines for menus with submenus, the
+  inline query-address redirect on the home page, and analytics when it is
+  configured (loaded only after the visitor consents).
 - **Interface text is content.** Every label the site prints comes from the
   `ui-strings` dictionary, in the site's language; a missing key shows the key.
   The site's own names are there too, so an editor renames them in Studio: a
@@ -193,7 +195,8 @@ does not report the ones this site does not call.
 ## Fonts and images
 
 Inter (SIL Open Font License, `src/assets/fonts/OFL.txt`) is self-hosted through
-Astro's font API, split into latin and latin-ext subsets. Media entries with
+Astro's font API, split into per-script subsets (latin, latin-ext, cyrillic,
+cyrillic-ext, greek, greek-ext, vietnamese); the latin faces are preloaded. Media entries with
 known dimensions render through `astro:assets`; add remote image hosts to
 `image.domains` in `astro.config.mjs` to have them optimized at build time.
 Entries with neither an SEO description nor an excerpt get a description cut
@@ -204,7 +207,8 @@ page of a list.
 
 ## Gates
 
-`pnpm gates` and `.github/workflows/ci.yml` run the same checks:
+`pnpm gates` runs checks 1–4; `.github/workflows/ci.yml` runs them and then 5
+(`pnpm lhci`):
 
 1. `astro check` — the `strictest` TypeScript preset.
 2. `knip` — no unused files, exports or dependencies.
@@ -214,7 +218,7 @@ page of a list.
    indexable page with a title, meta description, language, absolute canonical
    and valid JSON-LD.
 5. Lighthouse CI (`lighthouserc.json`, three runs per page, the median
-   counts) — accessibility, best practices and SEO at 1 (SEO is not asserted
+   counts for performance) — accessibility, best practices and SEO at 1 (SEO is not asserted
    on the `noindex` 404 and search pages); performance under 0.95 is a
    warning, not a failure: a shared CI runner's timing varies from run to run,
    and a red check should mean the site has a fault.
