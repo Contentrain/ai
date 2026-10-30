@@ -1,4 +1,4 @@
-import type { ContextJson, ContextSource } from '@contentrain/types'
+import { mergeContextJson, type ContextJson, type ContextSource } from '@contentrain/types'
 import { join } from 'node:path'
 import { contentrainDir, readJson, writeJson } from '../util/fs.js'
 import type { FileChange, RepoReader } from './contracts/index.js'
@@ -91,7 +91,9 @@ export async function writeContext(
     },
   }
 
-  await writeJson(join(contentrainDir(projectRoot), 'context.json'), context)
+  const contextPath = join(contentrainDir(projectRoot), 'context.json')
+  const previous = await readJson<unknown>(contextPath)
+  await writeJson(contextPath, mergeContextJson(previous, context))
 }
 
 /**
@@ -160,8 +162,9 @@ export async function buildContextChange(
     },
   }
 
+  const previous = await readContext(reader)
   return {
     path: CONTEXT_PATH,
-    content: canonicalStringify(context),
+    content: canonicalStringify(mergeContextJson(previous, context)),
   }
 }
