@@ -31,7 +31,9 @@ This binds to `localhost:3333` by default, uses the current working directory as
 - `--authToken <token>` (`CONTENTRAIN_AUTH_TOKEN`) — Bearer token required for every request
 - `--root <path>` (`CONTENTRAIN_PROJECT_ROOT`) — project root when not the cwd
 
-MCP tool calls land at `POST <host>:<port>/mcp`. Any other path returns 404.
+MCP tool calls land at `POST <host>:<port>/mcp`; `GET` (server-sent events for an open session) and `DELETE` (close the session) are accepted on the same path. Any other method returns `405 Method Not Allowed`, and a URL that does not start with the mount path returns `404`.
+
+The CLI refuses to start the HTTP MCP server on a non-loopback `--host` without `--authToken` (it exits 1 and prints a token command). Loopback binds (`localhost`, `127.0.0.1`, `::1`) may run without a token.
 
 ## Authentication
 
@@ -71,6 +73,8 @@ const handle = await startHttpMcpServerWith({
 // handle.close() stops the server
 ```
 
+The library entry points (`startHttpMcpServer`, `startHttpMcpServerWith`) bind to `127.0.0.1` when `host` is omitted, mount at `/mcp` unless `path` is set, and expire idle sessions after 15 minutes (`sessionTtlMs`). Unlike the CLI, the library does not refuse a public bind without `authToken` — pass a token yourself whenever `host` is not loopback.
+
 The same pattern works for `createGitLabProvider({ auth, project })` — `project.projectId` (numeric ID or `group/name` path) is required, and self-hosted instances pass `project.host`. Both providers require their respective optional peers (`@octokit/rest`, `@gitbeaker/rest`).
 
 Multi-tenant deployments (`{ resolveProvider }`) should also set `sessionFingerprint` to bind each MCP session to the tenant it was created for — follow-up requests whose fingerprint doesn't match the session's get `404` and the client re-initializes. See the [embedding guide](/guides/embedding-mcp#3a-http--per-request-provider-resolver-multi-tenant) for the full pattern.
@@ -109,7 +113,7 @@ A GitHub Actions job can:
 4. Drive it with an MCP client (Claude, Cursor-headless, or a custom JSON-RPC client)
 5. Let `contentrain_submit` push the review branch
 
-Because `contentrain serve --mcpHttp` uses `LocalProvider`, every tool — including normalize and submit — is available.
+Because `contentrain serve --mcpHttp` uses `LocalProvider`, all 22 core tools — including normalize and submit — are available. The five `contentrain_media_*` tools are not: `LocalProvider` has no media facet.
 
 ### Remote agent
 
