@@ -150,7 +150,7 @@ Checks: `.contentrain/config.json` shape, SDK client freshness (mtime comparison
 
 ```bash
 contentrain validate
-contentrain validate --fix              # Auto-fix and create review branch
+contentrain validate --fix              # Auto-fix on a cr/fix/* branch
 contentrain validate --interactive      # Choose fixes interactively
 contentrain validate --watch            # Re-run on .contentrain/ changes (read-only)
 contentrain validate --model blog-posts
@@ -159,11 +159,13 @@ contentrain validate --json             # CI-friendly JSON
 
 | Flag | Description |
 |------|-------------|
-| `--fix` | Auto-fix and create a `cr/fix/*` review branch |
+| `--fix` | Auto-fix on a `cr/fix/*` branch. In the `auto-merge` workflow the fix is merged into `contentrain` at once; in `review` it stays on the branch for review |
 | `--interactive` | Choose which issues to fix interactively |
 | `--watch` | Re-run when `.contentrain/` content, models, or `config.json` change (read-only) |
 | `--model <id>` | Validate one model instead of all |
 | `--json` | CI-friendly JSON |
+
+`validate` exits 1 when the project is invalid, in both pretty and `--json` mode, so it can gate a CI step or an `&&` chain.
 
 ::: tip Watch mode for development
 Run `contentrain validate --watch` in one terminal alongside your editing workflow. It re-runs on `.contentrain/` changes without creating branches (read-only). Rapid feedback while editing content.
@@ -179,6 +181,7 @@ Generates the typed SDK client from model definitions.
 contentrain generate
 contentrain generate --watch  # Regen on model/content changes
 contentrain generate --json   # CI-friendly JSON
+contentrain generate --published  # Public build: published entries inside their publish window only
 contentrain generate --mediaBaseUrl https://cdn.example.com/api/cdn/v1/<project>  # bake media()/mediaBody() resolvers
 ```
 
@@ -188,6 +191,9 @@ Writes `.contentrain/client/` (ESM, CJS, types + per-model data modules) and add
 |------|-------------|
 | `--watch` | Regenerate on model/content changes. |
 | `--json` | Emit the result as JSON (silences pretty output). |
+| `--published` | Include only published content inside its `publish_at`/`expire_at` window. Without it, generation keeps editorial content (drafts included). |
+| `--at <ISO>` | Fix the publication clock (e.g. `2026-10-01T12:00:00Z`) for a reproducible public build. Implies `--published`. |
+| `--requireStatus` | Also hold back entries with no status in meta. Implies `--published`. |
 | `--mediaBaseUrl <base>` | Public media delivery base. Bakes [`media()`/`mediaBody()`](/packages/sdk#media-mediabody-delivery-urls) resolvers into the client that turn relative `media/...` paths (and `](media/...)` markdown references) into absolute URLs. Overrides `cdn.url` in [`config.json`](/reference/config). `--cdnBaseUrl` still works as a deprecated alias. |
 | `--root <path>` | Project root path. |
 
@@ -333,7 +339,7 @@ Drains already-merged `cr/*` branches: local ones past their retention period pl
 ### `contentrain setup`
 
 ```bash
-contentrain setup claude-code   # or: cursor, vscode, windsurf, copilot
+contentrain setup claude-code   # or: cursor, vscode, windsurf, copilot, codex
 contentrain setup --all         # Configure every detected IDE
 ```
 
@@ -349,7 +355,7 @@ contentrain skills --update  # Force update
 contentrain skills --list    # Show installed status per IDE
 ```
 
-Installs 16 Agent Skills + essential rules across detected IDEs (Claude Code, Cursor, Windsurf, GitHub Copilot).
+Installs 16 Agent Skills + essential rules across detected IDEs (Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex).
 
 ---
 
@@ -361,11 +367,13 @@ Three roles: web UI, MCP stdio, MCP HTTP.
 
 ```bash
 contentrain serve
-contentrain serve --port 8080 --host 0.0.0.0
+contentrain serve --port 8080 --no-open
 contentrain serve --demo  # Temporary demo project, no setup required
 ```
 
 Serves REST endpoints (`/api/status`, `/api/content`, `/api/branches`, `/api/doctor`, `/api/describe-format`, `/api/preview/merge`, `/api/normalize/*`, `/api/capabilities`, `/api/branches/:name/sync-status`, `/api/tree`), a WebSocket stream (`meta:changed`, `file-watch:error`, `sync:warning`, `branch:*` events), and the bundled Vue UI.
+
+Web UI flags: `--port <n>` (`CONTENTRAIN_PORT`, default 3333), `--host <bind>` (`CONTENTRAIN_HOST`, default `localhost`), `--root <path>` (`CONTENTRAIN_PROJECT_ROOT`), `--no-open` (`CONTENTRAIN_NO_OPEN=true`) and `--demo`. The UI refuses to start on a non-loopback host without `--authToken` and exits 1; the UI itself does not check the token yet, so keep it on `localhost`.
 
 #### MCP stdio
 
@@ -450,7 +458,7 @@ contentrain studio submissions --form contact-form
 contentrain studio submissions --form contact-form --status pending
 ```
 
-The monitoring and management commands (`status`, `activity`, `usage`, `branches`, `webhooks`, `submissions`, `cdn-build`, `cdn-init`) accept `--workspace <id>`, `--project <id>`, and `--json` for scripting. The auth commands differ: `login` takes `--url`/`--provider`, `whoami` only `--json`, `logout` none, and `connect` takes `--workspace`/`--json`.
+The monitoring and management commands (`status`, `activity`, `usage`, `branches`, `webhooks`, `submissions`, `cdn-build`) accept `--workspace <id>`, `--project <id>`, and `--json` for scripting; `cdn-init` takes only `--workspace` and `--project`. The auth commands differ: `login` takes `--url`/`--provider`, `whoami` only `--json`, `logout` none, and `connect` takes `--workspace`/`--json`.
 
 ---
 

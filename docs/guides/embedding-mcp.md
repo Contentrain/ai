@@ -302,15 +302,16 @@ Each provider advertises a `ProviderCapabilities` manifest. `createServer` consu
 
 | Capability | Local | GitHub | GitLab | Gated tools |
 |---|---|---|---|---|
-| `localWorktree` | ✓ | — | — | `validate --fix`, `submit`, `merge`, `branch_list`, `branch_delete` |
+| `localWorktree` | ✓ | — | — | `validate --fix`, `submit`, `merge`, `reconcile`, `branch_list`, `branch_delete` |
 | `sourceRead` | ✓ | — | — | `apply` (extract) |
 | `sourceWrite` | ✓ | — | — | `apply` (reuse) |
 | `astScan` | ✓ | — | — | `scan` |
 | `pushRemote` | ✓ | ✓ | ✓ | `submit` |
 | `branchProtection` | — | ✓ | ✓ | merge fallback |
 | `pullRequestFallback` | — | ✓ | ✓ | merge fallback |
+| `mergeCommit` (optional) | ✓ | ✓ | — | two-parent merge commits for reconcile; GitLab falls back to a merge request |
 
-`init`, `scaffold`, `doctor`, and `bulk` additionally require a local `projectRoot` on disk. Input-dependent checks (`validate --fix`, `apply` reuse) stay as call-time guards and return the structured `capability_required` error above.
+Every gated tool also requires a local `projectRoot` on disk; `init`, `scaffold`, `doctor`, and `bulk` require only that. Input-dependent checks (`validate --fix`, `apply` reuse) stay as call-time guards and return the structured `capability_required` error above.
 
 The five `contentrain_media_*` tools gate on the provider's optional **media facet** (`RepoProvider.media` — an object implementing `MediaProvider` from `@contentrain/types`, not a boolean flag). Implement it on a custom provider to get the media tools registered; leave it absent and they never appear.
 

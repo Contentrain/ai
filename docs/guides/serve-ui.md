@@ -38,6 +38,7 @@ The server starts on `http://localhost:3333` by default.
 | `--port` | `3333` | Port number |
 | `--host` | `localhost` | Host address |
 | `--open=false` | `true` | Prevent auto-opening browser (or set `CONTENTRAIN_NO_OPEN=true`) |
+| `--root` | current directory | Project root (or set `CONTENTRAIN_PROJECT_ROOT`) |
 | `--demo` | disabled | Temporary demo project (no setup required) |
 | `--stdio` | disabled | MCP stdio transport for IDE integration (no web UI) |
 | `--mcpHttp` | disabled | MCP HTTP transport at `POST /mcp` (Bearer auth enforced when a token is set) |
