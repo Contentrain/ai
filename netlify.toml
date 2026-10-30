@@ -19,3 +19,10 @@
   for = "/sitemap.xml"
   [headers.values]
     Content-Type = "application/xml"
+
+# Browsers and crawlers still ask for /favicon.ico; the site's icon is the SVG.
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.svg"
+  status = 301
+
