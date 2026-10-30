@@ -16,7 +16,10 @@ This package is the common schema layer used by:
 - `@contentrain/mcp`
 - `contentrain`
 - `@contentrain/query`
-- `@contentrain/rules`
+- `@contentrain/wp-import`
+- `@contentrain/emitter-astro`
+- `@contentrain/astro-kit`
+- `@contentrain/decide`
 
 It defines the stable type vocabulary for models, config, metadata, validation, scanning, context files, and provider contracts (enabling third-party RepoProvider implementations).
 
@@ -186,6 +189,7 @@ const model: ModelDefinition = {
   kind: 'collection',
   domain: 'blog',
   i18n: true,
+  title_field: 'title',
   // Optional. Absent means every locale in config.locales.supported; a subset
   // narrows validation for a partially-translated model.
   locales: ['en', 'tr'],
@@ -275,7 +279,7 @@ Studio (Nuxt 4, web) cannot import `@contentrain/mcp` directly because MCP depen
 
 These require file system I/O or Node.js dependencies:
 
-- `checkRelation()` — validates relation references against actual content files on disk
+- `checkRelationIntegrity()` — validates relation references against actual content files on disk
 - `validateProject()` — full project validation with file reading
 - `writeContent()` / `deleteContent()` — content persistence with git worktree
 - `resolveContentDir()` / `resolveJsonFilePath()` — path resolution with `node:path`
@@ -325,7 +329,10 @@ pnpm --filter @contentrain/types typecheck
 - `@contentrain/mcp`
 - `contentrain`
 - `@contentrain/query`
-- `@contentrain/rules`
+- `@contentrain/wp-import`
+- `@contentrain/emitter-astro`
+- `@contentrain/astro-kit`
+- `@contentrain/decide`
 
 ## Part of the Contentrain ecosystem
 
@@ -380,7 +387,7 @@ approval guarding it would be theatre.
 
 | Contract | Role |
 |---|---|
-| `RiskClass` | What is at stake, as an ordered ladder: `read_only` → `low_risk_content` → `bulk_content` → `destructive_schema` → `external_effect` → `financially_material` → `deployment`. `highestRisk()` rates a plan by its worst step — a survey that ends in a deploy is a deploy. |
+| `RiskClass` | What is at stake, as an ordered ladder: `read_only` → `low_risk_content` → `bulk_content` → `destructive_schema` → `external_effect` → `financially_material` → `deployment`. `highestRisk()` rates a list of steps by the worst one (`effectiveRisk()` does it for a plan) — a survey that ends in a deploy is a deploy. |
 | `ApprovalGate` | The three distinct decision moments: `plan` (before the work, on scope and cost), `change` (on the produced diff), `release` (on production effect). Approving what will be done is not approving what was produced, and neither is permission to publish it. |
 | `ApprovalRule` / `ApprovalPolicyFile` | `.contentrain/approval-policies.json` — which risk needs whose approval, in which mode (`auto` / `single` / `quorum`). In git, beside the content it governs, so the policy in force is the policy on the branch. Rules are additive: a policy file can only ever make a project stricter. |
 | `ApprovalRequirement` / `ApprovalGrant` | An outstanding demand, and a decision actually given. A grant is bound to an exact `plan_hash` (and `commit_sha` for `change`): change the plan and its grants stop applying. An approval of "publish these 12 posts" must not carry over to a plan that publishes 400. |
@@ -411,7 +418,7 @@ decision.rejected_grants  // decisions that did not count, each with a reason
 decision.reasons          // one line per blocker, written for a person
 ```
 
-It replaces a role check. `shouldAutoMerge` asks "is this person an owner?",
+It replaces a role check. Studio's `shouldAutoMerge` asks "is this person an owner?",
 which cannot express "a bulk publish needs a second pair of eyes even from the
 owner" and cannot tell a typo fix from a domain cutover. This asks about the
 action: its risk, its scope, and what the project's policy says about that
@@ -560,7 +567,7 @@ copied**: a plan names fields, and the engine applies it to every entry.
 | `models` | `import` models (wp-import's ids) are referenced; `plan` models carry `name`, `domain`, `i18n`, `title_field`, `fields` and `extract` rules (builder element → entry → `<path>\|<prop>` field paths) |
 | `components` | `kit` (catalog id; the kit's copy planner places it under `src/components/kit/<id>/`) or `site` (props + a brief for the writer) |
 | `routes` | pattern, fact template, `source` (one page per entry), `body` `rich-text` \| `composed`, and placements; `locale` when a route builds a non-default locale's pages |
-| `decisions` | who answered what (rule, cache, jew, haiku, opus, fallback, human) |
+| `decisions` | who answered what (rule, cache, jew, haiku, sonnet, opus, fallback, human) |
 
 A placement binds props with a small closed value set: `field:<name>`,
 `media:<field>` (the kit's `ImageInput`), `ref:<field>.<field>`,
@@ -646,7 +653,7 @@ A document's fields live in YAML frontmatter, and two readers open them: the
 content engine, through `parseMarkdownFrontmatter` (which `@contentrain/mcp`
 re-exports), and `@contentrain/query`'s client generator and Astro loader. The
 property both depend on is that a value written and read back is the same
-value — and for four shapes it did not hold.
+value — and for six shapes it did not hold.
 
 | Value | Came back as |
 |---|---|

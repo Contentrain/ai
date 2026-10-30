@@ -15,7 +15,7 @@
 
 Contentrain is a content governance ecosystem for teams and AI agents. Agent generates. Human approves. Git records every change.
 
-This repository holds its open-source tools (MIT, no account needed): the MCP engine, CLI, query SDK, rules, skills and types. They help teams turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer that lives in Git as structured JSON and Markdown. Agents can extract, create, translate, and update content, while Contentrain enforces schema, Git review, and portable file output.
+This repository holds its open-source tools (MIT, no account needed): the MCP engine, CLI, query SDK, rules, skills and types, plus the open packages of the WordPress migration pipeline (wp-import, emitter-astro, verify, astro-kit, decide). They help teams turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer that lives in Git as structured JSON and Markdown. Agents can extract, create, translate, and update content, while Contentrain enforces schema, Git review, and portable file output.
 
 ```
 Agent extracts or updates content → Contentrain standardizes → Human reviews → Any platform consumes
@@ -143,7 +143,7 @@ const labels  = dictionary('ui-labels').locale('tr').get('auth.login')
 const article = document('docs').locale('en').bySlug('getting-started')
 ```
 
-Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift, Flutter, and 20+ stacks.
+Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Flutter, and 20+ stacks.
 
 ## Why teams use it
 
@@ -211,12 +211,14 @@ Production-ready templates with Contentrain content models, generated SDK client
 
 Each template is a GitHub template repo — click "Use this template" to start.
 
-[`templates/astro-starter`](templates/astro-starter) lives in this repository: the base a WordPress migration starts from — posts, pages, archives and permalinks, SEO, RSS, sitemap, search, Studio forms and comments, Gutenberg block styles — and it passes its own gates (`astro check`, knip, build, built-site checks, Lighthouse) with no content. `node scripts/starter-gates.mjs` runs them on a standalone copy; CI runs them with the SDK at HEAD, empty and with `templates/fixtures/wp-demo`.
+[`templates/astro-starter`](templates/astro-starter) lives in this repository: the base a WordPress migration starts from — posts, pages, archives and permalinks, SEO, RSS, sitemap, search, Studio forms and comments, Gutenberg block styles — and it passes its own gates (`astro check`, knip, build + Pagefind, built-site checks) with no content. `node scripts/starter-gates.mjs` runs them on a standalone copy; CI runs them with the SDK at HEAD, empty and with the fixtures in `templates/fixtures/` (`wp-demo` and others). The starter's own CI, which a delivered site keeps, adds Lighthouse.
 
 ## Quick reference
 
 ```bash
 npx contentrain init         # initialize project
+npx contentrain setup        # configure the MCP server and rules for your IDE
+npx contentrain import <wxr-or-url> # import a WordPress site into .contentrain
 npx contentrain serve        # local review UI (port 3333)
 npx contentrain serve --stdio # MCP over stdio for IDE agents
 npx contentrain validate     # check content health
@@ -243,7 +245,7 @@ Contentrain has four parts. This repository is the first.
 
 | Part | What it does | License |
 |---|---|---|
-| **Open-source tools** ([Contentrain/ai](https://github.com/Contentrain/ai), [docs](https://ai.contentrain.io)) | MCP engine, CLI, query SDK, normalize flow, rules, skills and types. Developers and agents pull content out of code and structure it in their own repository. | MIT |
+| **Open-source tools** ([Contentrain/ai](https://github.com/Contentrain/ai), [docs](https://ai.contentrain.io)) | MCP engine, CLI, query SDK, normalize flow, rules, skills and types, plus the open WordPress migration packages. Developers and agents pull content out of code and structure it in their own repository. | MIT |
 | **Studio** ([Contentrain/studio](https://github.com/Contentrain/studio), [studio.contentrain.io](https://studio.contentrain.io)) | The team operating surface for governed content: structured editing, review, roles and Git-backed operations. Media, CDN delivery, APIs and remote MCP depend on plan and deployment. Managed plans or self-hosted. | AGPL-3.0 core, separately licensed `ee/` |
 | **Migrate** ([migrate.contentrain.io](https://migrate.contentrain.io)) | A paid service that moves WordPress sites to Astro, with their content and template structure. | Hosted service |
 | **Bridge** ([Contentrain/wordpress-bridge](https://github.com/Contentrain/wordpress-bridge), [WordPress.org](https://wordpress.org/plugins/contentrain-bridge/)) | A free WordPress plugin that exports posts, pages, custom fields and interface text as a validated Contentrain store (JSON + Markdown), as a ZIP or to your own GitHub repository. | GPL-2.0-or-later |
@@ -256,7 +258,7 @@ pnpm lint          # oxlint, warnings treated as errors
 pnpm docs:check    # the docs must not state a number the code disagrees with
 ```
 
-`pnpm docs:check` runs two guards, both needing `pnpm build` first:
+`pnpm docs:check` runs three checks, all needing `pnpm build` first:
 
 - **facts** — resolves counts (MCP tools, skills, field types, capability keys)
   from the packages that own them and compares every place the docs, this
@@ -264,8 +266,10 @@ pnpm docs:check    # the docs must not state a number the code disagrees with
 - **examples** — every `@contentrain/*` import in a documented example must
   name a real export, and no example may mix CommonJS with a top-level `await`
   (a shape that runs in no module system at all).
+- **server.json** — `packages/mcp/server.json` (the MCP Registry manifest)
+  must name the current `@contentrain/mcp` version.
 
-Both self-test against real defects from this repo's history before they run,
+The facts and examples checks self-test against real defects from this repo's history before they run,
 so a check that stops catching fails loudly instead of passing silently.
 
 See [`RELEASING.md`](RELEASING.md) for the versioning and publish workflow.

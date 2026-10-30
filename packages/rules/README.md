@@ -77,7 +77,8 @@ The package root exports constants for tooling:
 - `MODEL_KINDS` — `singleton`, `collection`, `document`, `dictionary`
 - `MCP_TOOLS` — 27 MCP tool names: 22 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
 - `ESSENTIAL_RULES_FILE` — path to essential guardrails markdown
-- `STACKS` — supported framework stacks
+- `STACKS` — framework stacks: `nuxt`, `next`, `astro`, `sveltekit`, `react`, `node`
+- `MODEL_PROPERTIES` — the `ModelDefinition` properties; parity tests check it against MCP's `MODEL_FIELD_ORDER` and the rule docs
 
 ## Quick Example
 

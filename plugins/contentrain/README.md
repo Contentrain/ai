@@ -42,6 +42,9 @@ translatable without touching a single source file.
 | `contentrain-review` | Review content changes before publishing |
 | `contentrain-serve` | Local review UI |
 
+These are 7 of the 16 Contentrain skills; the full set ships in
+[`@contentrain/skills`](https://ai.contentrain.io/packages/skills).
+
 Framework guidance for Vue, Nuxt, Next.js, React, Astro, SvelteKit, Node,
 Expo, and React Native loads on demand during source patching, so it costs
 nothing until the stack is detected.
