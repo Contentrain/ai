@@ -15,7 +15,7 @@ import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getRedirects, getSite, getStrings, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
 import { scrollingTables, tableLabel } from './body-tables'
-import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
+import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById, type Taxonomy } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 import { defaultLocale, feedPath, multilingual, sharedIn, siteLocales } from './locales'
@@ -308,16 +308,20 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
           return href ? link(href) : undefined
         }
         const taxonomy = type.taxonomies?.find(candidate => candidate.collection === collection)
-        if (taxonomy) {
-          // A nested term's address carries its parents: the taxonomy's terms are read for the chain.
-          const terms = taxonomy.pattern.includes(':path') ? termsById(collection, await entriesOf(collection)) : undefined
-          const found = await Promise.all(ids.map(async id => terms?.get(`${collection}:${id}`) ?? entryById(collection, id)))
-          const term = found.find(entry => entry !== undefined)
-          return term ? link(customTermHref(taxonomy, term, terms)) : undefined
-        }
+        if (taxonomy) return termLink(taxonomy, collection, ids)
       }
-      return undefined
+      // A custom taxonomy over posts (`postTaxonomies`): its term's post list.
+      const taxonomy = siteConfig.postTaxonomies?.find(candidate => candidate.collection === collection)
+      return taxonomy ? termLink(taxonomy, collection, ids) : undefined
     }
+  }
+
+  async function termLink(taxonomy: Taxonomy, collection: string, termIds: readonly string[]): Promise<string | undefined> {
+    // A nested term's address carries its parents: the taxonomy's terms are read for the chain.
+    const terms = taxonomy.pattern.includes(':path') ? termsById(collection, await entriesOf(collection)) : undefined
+    const found = await Promise.all(termIds.map(async id => terms?.get(`${collection}:${id}`) ?? entryById(collection, id)))
+    const term = found.find(entry => entry !== undefined)
+    return term ? link(customTermHref(taxonomy, term, terms)) : undefined
   }
 }
 

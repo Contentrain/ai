@@ -1,0 +1,12 @@
+{
+  "fc0000000001": {
+    "source": "import",
+    "status": "published",
+    "updated_by": "wp-import"
+  },
+  "fc0000000002": {
+    "source": "import",
+    "status": "published",
+    "updated_by": "wp-import"
+  }
+}
