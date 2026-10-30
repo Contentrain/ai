@@ -404,7 +404,11 @@ export interface MigrateAccountStateRequest {
   jti: string
   iat: number
   exp: number
-  github_user_id: string
+  /**
+   * The customer's GitHub user id (decimal string) from the Migrate sign-in. Absent before sign-in: the offer then asks
+   * for the sized plan's list price, and Studio answers `none` (what a GitHub account with no Studio plan gets).
+   */
+  github_user_id?: string
   /** The plan discovery sized (`MigrateStudioPlan`). */
   plan: MigrateStudioPlan
 }
@@ -453,7 +457,7 @@ export function validateMigrateAccountStateRequest(input: unknown, options: { no
       if (x.iat > options.now + MIGRATE_STUDIO_CLAIM_CLOCK_SKEW_SECONDS) errors.push('iat: in the future')
     }
   }
-  if (typeof x.github_user_id !== 'string' || !/^[1-9]\d{0,18}$/.test(x.github_user_id)) errors.push('github_user_id: invalid')
+  if (x.github_user_id !== undefined && (typeof x.github_user_id !== 'string' || !/^[1-9]\d{0,18}$/.test(x.github_user_id))) errors.push('github_user_id: invalid')
   if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(x.plan)) errors.push('plan: unknown plan')
   return errors.length === 0 ? { ok: true, request: x as unknown as MigrateAccountStateRequest } : { ok: false, errors }
 }
