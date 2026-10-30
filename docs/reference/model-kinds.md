@@ -66,7 +66,7 @@ Collections store **multiple typed entries** as a JSON object-map keyed by auto-
   "kind": "collection",
   "domain": "blog",
   "i18n": true,
-  "title_field": "name",
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true },
     "slug": { "type": "slug", "required": true, "unique": true },
@@ -132,7 +132,7 @@ On disk, collections use **object-map** format (keys = IDs) for git-friendly mer
 ```
 
 ::: tip
-The `id` field is auto-generated when omitted. You can provide your own ID if needed, but it must be unique within the collection.
+The `id` field is auto-generated when omitted. You can provide your own ID; saving with an ID that already exists updates that entry (the result says `updated`), so reuse an ID only when you mean to overwrite it.
 :::
 
 ## Singleton
@@ -166,7 +166,7 @@ Singletons store a **single entry** per locale — ideal for one-off content lik
   "kind": "singleton",
   "domain": "system",
   "i18n": true,
-  "title_field": "title",
+  "title_field": "site_name",
   "fields": {
     "site_name": { "type": "string", "required": true },
     "tagline": { "type": "string" },
@@ -370,8 +370,8 @@ The `frontmatter` object contains all fields defined in the model schema. The `b
 
 | Scenario | Path |
 |---|---|
-| i18n: true | `.contentrain/content/{domain}/{slug}/{locale}.md` |
-| i18n: false | `.contentrain/content/{domain}/{slug}.md` |
+| i18n: true | `.contentrain/content/{domain}/{modelId}/{slug}/{locale}.md` |
+| i18n: false | `.contentrain/content/{domain}/{modelId}/{slug}.md` |
 | Meta (i18n: true) | `.contentrain/meta/{model-id}/{slug}/{locale}.json` |
 | Meta (i18n: false) | `.contentrain/meta/{model-id}/{slug}/{default-locale}.json` |
 
@@ -415,7 +415,7 @@ type LocaleStrategy = 'file' | 'suffix' | 'directory' | 'none'
 | `file` (default) | `{dir}/{locale}.json` | `{dir}/{slug}/{locale}.md` | Most projects |
 | `suffix` | `{dir}/{model}.{locale}.json` | `{dir}/{slug}.{locale}.md` | Nuxt Content style |
 | `directory` | `{dir}/{locale}/{model}.json` | `{dir}/{locale}/{slug}.md` | Directory-first projects |
-| `none` | `{dir}/{model}.json` | `{dir}/{slug}.md` | Single-language projects |
+| `none` | `{dir}/data.json` | `{dir}/{slug}.md` | Single-language projects (requires `i18n: false`) |
 
 ### When i18n is Disabled
 
@@ -473,7 +473,7 @@ Severity separates a translation that was never written from a locale that is no
 |---|---|
 | An entry of a `collection`, or a `document`, that one locale has and another lacks (`Entry parity`, `Missing translation`) | **warning** |
 | A locale with no content file (`Locale file missing`) | **error** |
-| A `dictionary` key that one locale has and another lacks (`Key parity`) | **error** |
+| A `dictionary` key that one locale has and another lacks (`Key parity`) | **warning** |
 
 A partly translated site — the usual state of a WordPress site imported from WPML or Polylang — therefore validates, with one warning per untranslated entry.
 
@@ -514,7 +514,7 @@ The `locale_strategy` applies to the overridden path too:
 | `file` (default) | `locales/{locale}.json` | `locales/en.json`, `locales/tr.json` |
 | `suffix` | `locales/ui-labels.{locale}.json` | `locales/ui-labels.en.json` |
 | `directory` | `locales/{locale}/ui-labels.json` | `locales/en/ui-labels.json` |
-| `none` | `locales/ui-labels.json` | Single file (no locale) |
+| `none` | `locales/data.json` | Single file (no locale; requires `i18n: false`) |
 
 ### Common content_path Patterns
 

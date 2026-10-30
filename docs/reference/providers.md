@@ -42,8 +42,16 @@ interface ApplyPlanInput {
   message: string
   author: CommitAuthor
   base?: string     // Defaults to CONTENTRAIN_BRANCH ('contentrain')
+  context?: { tool: string; model: string; locale?: string; entries?: string[] }
+  workflowOverride?: 'auto-merge' | 'review'
 }
 ```
+
+| Field | Meaning |
+|---|---|
+| `base` | Base branch. Defaults to the content-tracking branch (`CONTENTRAIN_BRANCH`), not the repository default branch. The GitHub provider also takes a full 40-hex commit SHA (see below) |
+| `context` | Describes the operation that produced the changes. A provider that regenerates `.contentrain/context.json` itself (the local worktree flow does, after merge) uses it; others ignore it. It is never committed on the feature branch, because `context.json` embeds timestamps and two branches forked from one commit would always conflict on it |
+| `workflowOverride` | Overrides the project's configured workflow for this write |
 
 `changes` entries are `{ path, content }`; `content: null` means delete. Providers are responsible for resolving paths against their backing store and translating the change set into whatever commit primitive the backend supports.
 
@@ -87,6 +95,16 @@ interface RepoProvider extends RepoReader, RepoWriter {
   // tools, which are not registered when this is absent.
   readonly media?: MediaProvider
 
+  // Optional. Whether the provider will accept a write right now. A local
+  // worktree accumulates unmerged `cr/*` branches and eventually refuses new
+  // ones; a hosted provider manages that server-side. Omitted = always ready.
+  checkWriteReadiness?(): Promise<WriteReadiness>
+
+  // Optional. Where this provider's `.contentrain/` reads come from right now.
+  // A local provider on a checked-out feature branch reads content from the
+  // `contentrain` ref rather than the working tree. Omitted = one fixed source.
+  contentSource?(): Promise<ContentReadSource>
+
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>
   deleteBranch(name: string): Promise<void>
@@ -110,6 +128,8 @@ interface RepoProvider extends RepoReader, RepoWriter {
   }): Promise<Commit>
 }
 ```
+
+`WriteReadiness` is `{ blocked: boolean; message?: string }` (`message` is a human-readable reason, present when `blocked`). `ContentReadSource` is `{ source: 'working_tree' }` or `{ source: 'ref', ref, commit, checked_out }`: the second form means content is read from the content branch at `commit`, because `checked_out` is a branch that content writes do not update.
 
 `MergeResult` is `{ merged, sha, pullRequestUrl, sync?, remote? }`. GitHubProvider fills `sha` on direct merges; GitLabProvider fills both `sha` and `pullRequestUrl` (merges via MR). LocalProvider populates `sync: SyncResult` to describe file syncing to the working tree. When branch protection blocks a direct merge, any provider may return `merged: false` with a `pullRequestUrl` fallback. `remote` reports the outcome of the optional post-merge source-branch cleanup (`deleted`, plus `skipped` for an expected no-op or `warning` for a non-fatal failure).
 
@@ -217,7 +237,30 @@ interface Commit {
   message: string
   author: CommitAuthor
   timestamp: string     // ISO 8601
+  workflowAction?: 'auto-merged' | 'pending-review'
+  sync?: SyncResult
+  warning?: string
+  base_advance?: BaseAdvance
+  remote_push?: RemotePush
+  base_branch?: string
 }
+
+type BaseAdvance = 'advanced' | 'blocked_diverged'
+type RemotePush = 'pushed' | 'rejected' | 'no-remote' | 'disabled'
+```
+
+The optional `Commit` fields:
+
+| Field | Meaning |
+|---|---|
+| `workflowAction` | What the provider did with the branch. Set by providers that own the merge decision (a local worktree honouring the project's `workflow`); providers that hand the branch to an external orchestrator leave it undefined, and callers treat that as `pending-review` |
+| `sync` | Selective-sync bookkeeping: files copied into the working tree and files skipped because of local edits. Only local-worktree providers populate it |
+| `warning` | Non-fatal problem encountered while completing the write |
+| `base_advance` | Whether the base branch advanced to the contentrain tip after an auto-merge. `blocked_diverged` is a partial success: the content is on the contentrain branch and only the fast-forward is pending. A pull request is an attachment (`pullRequestUrl`), never a third state |
+| `remote_push` | Outcome of pushing the contentrain branch: `pushed` (possibly after one fetch-merge-retry), `rejected` (failed after the retry; local and remote diverged), `no-remote` (nothing attempted), `disabled` (`git.push: false` or `CONTENTRAIN_NO_PUSH=1`; committed locally only) |
+| `base_branch` | The resolved base branch the write lands on (local worktree providers). Not necessarily the checked-out branch |
+
+```ts
 
 interface Branch { name: string; sha: string; protected?: boolean }
 
@@ -246,6 +289,16 @@ interface SyncResult {
   warning?: string     // Human-readable warning if files were skipped
 }
 ```
+
+## Reconcile types
+
+The three-way reconcile planner reports what it could not merge mechanically as `ConflictItem[]`; `getMergeBase` and `createMergeCommit` are the provider side of that flow.
+
+| Type | Meaning |
+|---|---|
+| `ConflictItem` | One surviving conflict: `id`, `path`, optional `model`, `kind` (`collection`, `singleton`, `document`, `dictionary`, `vocabulary`, `model`, `meta`, `file`), optional `key`, `field`, `locale`, the three values (`base`, `ours`, `theirs`; omitted for `kind: 'file'`), `code`, an English `message`, and an optional `suggested` side (`ours` or `theirs`, never auto-applied). `id` is derived from the position and the three values, so a resolution made against a stale dry-run no longer matches once any side changes |
+| `ConflictCode` | Closed union: `field_value_conflict`, `dictionary_value_conflict`, `vocabulary_value_conflict`, `model_key_conflict`, `meta_status_conflict`, `document_body_conflict`, `frontmatter_value_conflict`, `delete_edit_conflict`, `file_conflict`. Adding a value is a minor bump with a changelog entry; renaming or removing one is breaking |
+| `ConflictResolution` | A decision keyed by `ConflictItem.id`: `{ id, choose: 'ours' \| 'theirs' }` (absence on that side means deletion) or `{ id, value }` for a hand-authored replacement. A resolution whose `id` no longer matches a live conflict is dropped and the conflict re-reported with a fresh id |
 
 ## Implementing a custom provider
 
