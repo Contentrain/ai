@@ -9,6 +9,11 @@ slug: migration
 
 Moving a WordPress site to a static build is four separate problems, and Contentrain ships three of them as MIT packages.
 
+<DocDiagram name="wp-migration-chain" />
+
+<details>
+<summary>Text version</summary>
+
 ```
 WordPress site
      │
@@ -28,6 +33,8 @@ WordPress site
      ▼
   pass / fail
 ```
+
+</details>
 
 ## Read this before anything else
 

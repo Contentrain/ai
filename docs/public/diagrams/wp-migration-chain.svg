@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 534" width="680" height="534" role="img" aria-labelledby="wp-migration-chain-t wp-migration-chain-d">
+<title id="wp-migration-chain-t">The WordPress to Astro migration chain</title>
+<desc id="wp-migration-chain-d">WordPress site, through @contentrain/wp-import (MIT, in this repo), to RawIR: what the source said. Through the migration engine (closed source, Contentrain Migrate), to ProjectIR: what the new site should be. Through @contentrain/emitter-astro (MIT, in this repo), to an Astro project. Through @contentrain/verify (MIT, in this repo), to pass or fail.</desc>
+<style>
+.dg-t{fill:var(--vp-c-text-1,#1e293b);font:600 14px Inter,system-ui,sans-serif}
+.dg-s{fill:var(--vp-c-text-2,#64748b);font:11.5px "SF Mono",Menlo,Consolas,monospace}
+.dg-c{fill:var(--vp-c-text-1,#1e293b);font:12px "SF Mono",Menlo,Consolas,monospace}
+.dg-n{fill:var(--vp-c-bg-soft,#f6f6f7);stroke:#a1a1aa;stroke-width:1.6}
+.dg-h{stroke:#3b5bf0;stroke-width:2}
+.dg-a{fill:none;stroke:var(--vp-c-text-2,#6b7280);stroke-width:1.6;stroke-dasharray:5 5;stroke-linecap:round}
+.dg-ah{fill:none;stroke:var(--vp-c-text-2,#6b7280);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.dg-g{fill:none;stroke:var(--vp-c-divider,#d4d4d8);stroke-width:1.4;stroke-dasharray:3 5}
+</style>
+<defs>
+<filter id="wp-migration-chain-f" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="18"/><feDisplacementMap in="SourceGraphic" scale="2"/></filter>
+<marker id="wp-migration-chain-m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-ah" d="M1 1 L8 5 L1 9"/></marker>
+</defs>
+<g>
+<rect class="dg-n" x="30" y="10" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
+
+<text x="165" y="41" text-anchor="middle" class="dg-t">WordPress site</text>
+
+</g>
+<g>
+<rect class="dg-n" x="30" y="128" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
+
+<text x="165" y="150" text-anchor="middle" class="dg-t">RawIR</text>
+<text x="165" y="167" text-anchor="middle" class="dg-s">what the source said</text>
+</g>
+<g>
+<rect class="dg-n dg-h" x="30" y="246" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
+
+<text x="165" y="268" text-anchor="middle" class="dg-t">ProjectIR</text>
+<text x="165" y="285" text-anchor="middle" class="dg-s">what the new site should be</text>
+</g>
+<g>
+<rect class="dg-n" x="30" y="364" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
+
+<text x="165" y="395" text-anchor="middle" class="dg-t">Astro project</text>
+
+</g>
+<g>
+<rect class="dg-n" x="30" y="482" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
+
+<text x="165" y="513" text-anchor="middle" class="dg-t">pass / fail</text>
+
+</g>
+<path class="dg-a" d="M165 68 V122" marker-end="url(#wp-migration-chain-m)"/>
+<text x="196" y="91" text-anchor="start" class="dg-c">@contentrain/wp-import</text>
+<g><rect x="196" y="100" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="264.5" y="113" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
+<path class="dg-a" d="M165 186 V240" marker-end="url(#wp-migration-chain-m)"/>
+<text x="196" y="209" text-anchor="start" class="dg-c">migration engine</text>
+<g><rect x="196" y="218" width="249" height="19" rx="9.5" fill="#7c4dff" fill-opacity=".12" stroke="#7c4dff" stroke-width="1.2"/><text x="320.5" y="231" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#7c4dff">closed source · Contentrain Migrate</text></g>
+<path class="dg-a" d="M165 304 V358" marker-end="url(#wp-migration-chain-m)"/>
+<text x="196" y="327" text-anchor="start" class="dg-c">@contentrain/emitter-astro</text>
+<g><rect x="196" y="336" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="264.5" y="349" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
+<path class="dg-a" d="M165 422 V476" marker-end="url(#wp-migration-chain-m)"/>
+<text x="196" y="445" text-anchor="start" class="dg-c">@contentrain/verify</text>
+<g><rect x="196" y="454" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="264.5" y="467" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
+</svg>

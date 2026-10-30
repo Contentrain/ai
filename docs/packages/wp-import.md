@@ -15,11 +15,18 @@ Current version: 0.17.5.
 
 It was ported from a corpus-measured import chain rather than written fresh. The identity formulas, the PHP-serialized meta decoding, and the reference-resolution passes carried over intact, which is why a WXR import and a REST import of the same site agree on every entry id.
 
+<DocDiagram name="wp-import-outputs" />
+
+<details>
+<summary>Text version</summary>
+
 ```
 WXR file or REST API  ──►  RawIR (source-faithful, provenance-stamped)
 RawIR                 ──►  .contentrain content store + EntrySourceMap
 RawIR + EntrySourceMap ─►  CommentsExport (live-service intake payload)
 ```
+
+</details>
 
 ## Install
 
@@ -149,10 +156,17 @@ The function only plans. `contentrain delta --dry-run` prints the same plan from
 
 This package covers the first leg only. The full chain — and the part of it that is **not** open source — is laid out in the [WordPress Migration guide](/guides/migration).
 
+<DocDiagram name="wp-import-chain" />
+
+<details>
+<summary>Text version</summary>
+
 ```
 wp-import ──► RawIR ──► [migration engine: ProjectIR] ──► emitter-astro ──► verify
    MIT                       closed source                    MIT            MIT
 ```
+
+</details>
 
 ## Related Pages
 
