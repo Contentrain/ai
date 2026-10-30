@@ -176,14 +176,24 @@ export default defineConfig({
   // The hero image is the home page's LCP element. A preload ahead of the font preload starts its request with the
   // CSS; transformHead output lands after the module preloads, where it measured no gain.
   transformHtml(html, _id, { pageData }) {
-    // A light/dark pair preloads the light file; dark-mode visitors fetch theirs when the theme applies.
     const image = pageData.frontmatter.hero?.image
-    const hero = image?.src ?? image?.light
-    if (typeof hero !== 'string') return
-    const tag = `<link rel="preload" href="${hero}" as="image" fetchpriority="high">`
-    const font = html.search(/<link rel="preload" [^>]*as="font"/)
-    const at = font === -1 ? html.indexOf('</head>') : font
-    return `${html.slice(0, at)}${tag}\n    ${html.slice(at)}`
+    if (typeof image?.src === 'string') {
+      const tag = `<link rel="preload" href="${image.src}" as="image" fetchpriority="high">`
+      const font = html.search(/<link rel="preload" [^>]*as="font"/)
+      const at = font === -1 ? html.indexOf('</head>') : font
+      return `${html.slice(0, at)}${tag}\n    ${html.slice(at)}`
+    }
+    // A light/dark pair renders as two <img>, one hidden by the `.dark` class. A hidden img still downloads, and the
+    // class follows the toggle as well as the OS, so neither a static preload nor a media query can pick the file.
+    // Preload the shown one right after VitePress sets the class, and make both lazy: the hidden twin is never
+    // fetched, the shown one comes from the preload (measured: one download in every OS × toggle case, LCP down).
+    if (typeof image?.light !== 'string' || typeof image?.dark !== 'string') return
+    const marker = html.indexOf('<script id="check-dark-mode">')
+    if (marker === -1) return
+    const at = html.indexOf('</script>', marker) + '</script>'.length
+    const pick = `<script>(()=>{const l=document.createElement("link");l.rel="preload";l.as="image";l.fetchPriority="high";l.href=document.documentElement.classList.contains("dark")?${JSON.stringify(image.dark)}:${JSON.stringify(image.light)};document.head.append(l)})()</script>`
+    return `${html.slice(0, at)}${pick}${html.slice(at)}`
+      .replace(/<img class="VPImage (?:light|dark) image-src"/g, img => `${img} loading="lazy"`)
   },
 
   head: [
