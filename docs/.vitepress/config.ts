@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-import { defineConfig } from 'vitepress'
+import { defineConfig, type HeadConfig } from 'vitepress'
 
 /**
  * Preferred order for /llms-full.txt — mirrors the sidebar. Pages not listed
@@ -14,6 +14,7 @@ const LLMS_PAGE_ORDER = [
   'ecosystem',
   'concepts',
   'studio',
+  'faq',
   'packages/mcp',
   'packages/cli',
   'packages/sdk',
@@ -80,29 +81,101 @@ function buildLlmsFull(srcDir: string, outDir: string): void {
   writeFileSync(join(outDir, 'llms-full.txt'), header + sections.join('\n---\n\n'))
 }
 
+const SITE = 'https://ai.contentrain.io'
+const SITE_TITLE = 'Contentrain AI'
+const SITE_DESCRIPTION = 'Extract, govern, and ship structured content from your codebase.'
+
+/** `packages/mcp.md` → `https://ai.contentrain.io/packages/mcp`; `index.md` → the site root. */
+function pageUrl(relativePath: string): string {
+  const path = relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')
+  return `${SITE}/${path}`
+}
+
+/** The sidebar group a page sits in, for the breadcrumb ("Packages", "Guides", …). */
+function sectionOf(relativePath: string): string | undefined {
+  const top = relativePath.split('/')[0]
+  return { packages: 'Packages', guides: 'Guides', reference: 'Reference' }[top]
+}
+
+/** Strip tags and decode the few entities VitePress emits, for JSON-LD text. */
+function plainText(html: string): string {
+  return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/\u200b/g, '').replace(/\s+/g, ' ').trim()
+}
+
+/** FAQPage entities from a rendered page: every `<h3>` is a question, the HTML up to the next heading its answer. */
+function faqEntities(content: string): object[] {
+  return [...content.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>([\s\S]*?)(?=<h[23][\s>]|$)/g)].map(([, q, a]) => ({
+    '@type': 'Question',
+    'name': plainText(q),
+    'acceptedAnswer': { '@type': 'Answer', 'text': plainText(a) },
+  }))
+}
+
+/**
+ * Per-page head: one canonical address (the clean URL, which the sitemap lists too), the page's own Open Graph and
+ * Twitter title/description/url, and JSON-LD — the WebSite on the home page, a TechArticle with its breadcrumb on
+ * every other page.
+ */
+function pageHead(relativePath: string, title: string, description: string, content = ''): HeadConfig[] {
+  const url = pageUrl(relativePath)
+  const home = url === `${SITE}/`
+  const fullTitle = home ? SITE_TITLE : `${title} | ${SITE_TITLE}`
+  const publisher = { '@type': 'Organization', 'name': 'Contentrain', 'url': 'https://contentrain.io', 'logo': `${SITE}/og-image.png` }
+  const section = sectionOf(relativePath)
+  const graph = home
+    ? [{ '@type': 'WebSite', 'name': SITE_TITLE, url, description, publisher }]
+    : [
+        { '@type': 'TechArticle', 'headline': title, description, url, 'inLanguage': 'en', 'isPartOf': { '@type': 'WebSite', 'name': SITE_TITLE, 'url': `${SITE}/` }, publisher },
+        {
+          '@type': 'BreadcrumbList',
+          'itemListElement': [
+            { '@type': 'ListItem', 'position': 1, 'name': SITE_TITLE, 'item': `${SITE}/` },
+            { '@type': 'ListItem', 'position': 2, 'name': section ? `${section}: ${title}` : title, 'item': url },
+          ],
+        },
+        ...(relativePath === 'faq.md' ? [{ '@type': 'FAQPage', url, 'mainEntity': faqEntities(content) }] : []),
+      ]
+  return [
+    ['link', { rel: 'canonical', href: url }],
+    ['meta', { property: 'og:title', content: fullTitle }],
+    ['meta', { property: 'og:description', content: description }],
+    ['meta', { property: 'og:url', content: url }],
+    ['meta', { name: 'twitter:title', content: fullTitle }],
+    ['meta', { name: 'twitter:description', content: description }],
+    ['script', { type: 'application/ld+json' }, JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })],
+  ]
+}
+
 export default defineConfig({
   buildEnd(siteConfig) {
     buildLlmsFull(siteConfig.srcDir, siteConfig.outDir)
   },
 
-  title: 'Contentrain AI',
-  description: 'Extract, govern, and ship structured content from your codebase.',
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+
+  // One address per page: `/packages/mcp`, not also `/packages/mcp.html` (the sitemap listed the .html form while
+  // every link and llms-full.txt use the clean one).
+  cleanUrls: true,
 
   ignoreDeadLinks: [
     /localhost/,
   ],
 
   sitemap: {
-    hostname: 'https://ai.contentrain.io',
+    hostname: SITE,
+  },
+
+  transformHead({ pageData, title, description, content }) {
+    if (pageData.isNotFound) return []
+    return pageHead(pageData.relativePath, pageData.frontmatter.title ?? pageData.title ?? title, description || SITE_DESCRIPTION, content)
   },
 
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['meta', { name: 'theme-color', content: '#3b5afc' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Contentrain AI' }],
-    ['meta', { property: 'og:description', content: 'Extract, govern, and ship structured content from your codebase.' }],
-    ['meta', { property: 'og:url', content: 'https://ai.contentrain.io' }],
+    ['meta', { property: 'og:site_name', content: SITE_TITLE }],
     ['meta', { property: 'og:image', content: 'https://ai.contentrain.io/og-image.png' }],
     ['meta', { property: 'og:image:width', content: '1200' }],
     ['meta', { property: 'og:image:height', content: '630' }],
@@ -168,6 +241,7 @@ export default defineConfig({
             { text: 'Ecosystem Map', link: '/ecosystem' },
             { text: 'Core Concepts', link: '/concepts' },
             { text: 'Contentrain Studio', link: '/studio' },
+            { text: 'FAQ', link: '/faq' },
           ],
         },
         {
