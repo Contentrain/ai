@@ -1,97 +1,74 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="560" height="480" viewBox="0 0 560 480" role="img" aria-labelledby="t d">
-  <title id="t">How a Contentrain write reaches your repository</title>
-  <desc id="d">An agent calls an MCP write tool. MCP validates the change and commits it on an isolated cr/* branch. With the review workflow a person approves the branch; with auto-merge it goes straight in. The branch merges into the contentrain branch, the base branch fast-forwards, and the result is plain JSON and Markdown in .contentrain/.</desc>
-  <defs>
-    <filter id="sk" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/>
-      <feDisplacementMap in="SourceGraphic" scale="1.6"/>
-    </filter>
-    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" stroke-width="1"/>
-    </pattern>
-    <linearGradient id="fb" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2f56ff"/><stop offset="1" stop-color="#0331fc"/>
-    </linearGradient>
-  </defs>
-
-  <!-- card: keeps slate ink readable on the dark theme too -->
-  <rect x="2" y="2" width="556" height="476" rx="18" fill="#f8fafd" stroke="#e2e8f0" stroke-width="2"/>
-
-  <!-- blueprint guide lines -->
-  <g stroke="#c7d2fe" stroke-width="1" fill="none" opacity=".8">
-    <path d="M18 200 H542" stroke-dasharray="2 6"/>
-    <path d="M280 18 V190" stroke-dasharray="2 6"/>
-    <path d="M60 478 L130 404"/><path d="M220 478 L250 410"/><path d="M380 478 L370 412"/>
-  </g>
-
-  <!-- agent bubble -->
-  <g filter="url(#sk)" transform="rotate(-4 116 84)">
-    <path d="M44 46 h144 a10 10 0 0 1 10 10 v52 a10 10 0 0 1 -10 10 h-96 l-22 20 l4 -20 h-30 a10 10 0 0 1 -10 -10 v-52 a10 10 0 0 1 10 -10z" fill="#fff" stroke="#0331fc" stroke-width="2.4"/>
-    <path d="M62 66 l4 9 l9 4 l-9 4 l-4 9 l-4 -9 l-9 -4 l9 -4z" fill="none" stroke="#0331fc" stroke-width="2.2" stroke-linejoin="round"/>
-    <g stroke="#0331fc" stroke-width="3" stroke-linecap="round"><path d="M88 70 H176"/><path d="M88 86 H156"/><path d="M60 102 H170"/></g>
-  </g>
-  <text x="48" y="166" font-family="SF Mono,Menlo,Consolas,monospace" font-size="15" fill="#334155">agent</text>
-
-  <!-- call arrow -->
-  <path d="M206 84 H286" fill="none" stroke="#0331fc" stroke-width="2.4" stroke-dasharray="7 7" stroke-linecap="round"/>
-  <path d="M280 77 l9 7 l-9 7" fill="none" stroke="#0331fc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="208" y="70" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#64748b">content_save</text>
-
-  <!-- MCP window: validate before commit -->
-  <g filter="url(#sk)">
-    <rect x="300" y="34" width="226" height="124" rx="10" fill="#fff" stroke="#334155" stroke-width="2.2"/>
-    <path d="M300 62 H526" stroke="#334155" stroke-width="2"/>
-    <circle cx="316" cy="48" r="4.5" fill="none" stroke="#334155" stroke-width="1.6"/>
-    <circle cx="331" cy="48" r="4.5" fill="none" stroke="#334155" stroke-width="1.6"/>
-    <circle cx="346" cy="48" r="4.5" fill="none" stroke="#334155" stroke-width="1.6"/>
-    <rect x="300" y="62" width="40" height="96" fill="url(#hatch)" stroke="#334155" stroke-width="1.4"/>
-    <g fill="none" stroke="#0331fc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M354 82 l5 5 l9 -10"/><path d="M354 108 l5 5 l9 -10"/><path d="M354 134 l5 5 l9 -10"/>
-    </g>
-    <g stroke="#64748b" stroke-width="3" stroke-linecap="round">
-      <path d="M380 82 H492"/><path d="M380 108 H470"/><path d="M380 134 H504"/>
-    </g>
-  </g>
-  <text x="364" y="53" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#64748b">MCP · validate</text>
-
-  <!-- MCP commits onto the branch -->
-  <path d="M318 166 C 300 210, 200 214, 162 246" fill="none" stroke="#0331fc" stroke-width="2.4" stroke-dasharray="7 7" stroke-linecap="round"/>
-
-  <!-- git graph: contentrain rail + cr/* lane -->
-  <g fill="none" stroke-linecap="round" filter="url(#sk)">
-    <path d="M40 368 H400" stroke="#0331fc" stroke-width="5"/>
-    <path d="M72 368 C 92 368, 92 262, 124 262 H318 C 350 262, 350 368, 372 368" stroke="#334155" stroke-width="3"/>
-    <path d="M40 432 H400" stroke="#94a3b8" stroke-width="3"/>
-  </g>
-  <circle cx="150" cy="262" r="10" fill="#0331fc" stroke="#0226c4" stroke-width="2"/>
-  <circle cx="150" cy="262" r="4" fill="#fff"/>
-  <circle cx="372" cy="368" r="9" fill="#fff" stroke="#0331fc" stroke-width="3"/>
-  <text x="114" y="292" font-family="SF Mono,Menlo,Consolas,monospace" font-size="13" fill="#334155">cr/content/hero/…</text>
-
-  <!-- workflow gate on the branch -->
-  <g filter="url(#sk)" transform="rotate(-10 272 262)">
-    <circle cx="272" cy="262" r="27" fill="#fff" stroke="#0331fc" stroke-width="2.6"/>
-    <circle cx="272" cy="262" r="20" fill="none" stroke="#0331fc" stroke-width="1.4" stroke-dasharray="3 4"/>
-    <path d="M261 262 l8 8 l14 -16" stroke="#0331fc" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  <text x="200" y="318" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#334155">review: you approve</text>
-  <text x="200" y="336" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#64748b">auto-merge: no stop</text>
-
-  <!-- base branch fast-forwards to the contentrain tip -->
-  <path d="M384 376 C 400 396, 400 412, 390 426" fill="none" stroke="#0331fc" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
-  <path d="M383 418 l6 9 l9 -5" fill="none" stroke="#0331fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="44" y="394" font-family="SF Mono,Menlo,Consolas,monospace" font-size="13" fill="#0331fc">contentrain</text>
-  <text x="44" y="458" font-family="SF Mono,Menlo,Consolas,monospace" font-size="13" fill="#64748b">main · fast-forward</text>
-
-  <!-- output: plain files in .contentrain/ -->
-  <path d="M404 368 H420" fill="none" stroke="#0331fc" stroke-width="2.4" stroke-dasharray="5 5" stroke-linecap="round"/>
-  <g filter="url(#sk)">
-    <path d="M432 298 h36 l10 12 h50 a6 6 0 0 1 6 6 v114 a6 6 0 0 1 -6 6 H432 a6 6 0 0 1 -6 -6 V304 a6 6 0 0 1 6 -6z" fill="#1d44fd" stroke="#0226c4" stroke-width="2"/>
-    <rect x="436" y="314" width="94" height="58" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.4" transform="rotate(-4 483 343)"/>
-    <rect x="440" y="320" width="94" height="58" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.4"/>
-    <path d="M426 384 H534 V430 a6 6 0 0 1 -6 6 H432 a6 6 0 0 1 -6 -6z" fill="url(#fb)" stroke="#0226c4" stroke-width="2"/>
-  </g>
-  <text x="450" y="342" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#0331fc">{ json }</text>
-  <text x="450" y="362" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#334155"># md</text>
-  <text x="432" y="416" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#fff">.contentrain/</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="480" viewBox="0 0 600 480" role="img" aria-labelledby="t d">
+<title id="t">How a Contentrain write reaches your repository</title>
+<desc id="d">An agent calls an MCP write tool. MCP validates the change and commits it on an isolated cr/* branch. With the review workflow a person approves the branch; with auto-merge (the default) it goes straight in. The branch merges into the contentrain branch, the base branch fast-forwards, and the result is plain JSON and Markdown in .contentrain/.</desc>
+<defs>
+  <radialGradient id="wash" cx=".82" cy=".96" r="1">
+    <stop offset="0" stop-color="#d8d3ff"/><stop offset=".5" stop-color="#efedff"/><stop offset="1" stop-color="#fff"/>
+  </radialGradient>
+  <filter id="hand" x="-4%" y="-4%" width="108%" height="108%">
+    <feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="3"/>
+    <feDisplacementMap in="SourceGraphic" scale="2.2"/>
+  </filter>
+  <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M1 1 L8 5 L1 9" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<rect width="600" height="480" rx="24" fill="url(#wash)"/>
+<g transform="translate(36 56)">
+  <rect x="1" y="1" width="138" height="138" rx="24" fill="#fff" fill-opacity=".72" stroke="#a1a1aa" stroke-width="1.7" filter="url(#hand)"/>
+  <path d="M70 21 V13 q0-6 5.5-6 q5 0 5 5" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+  <rect x="45" y="33" width="7" height="14" rx="3" fill="#7c4dff"/><rect x="88" y="33" width="7" height="14" rx="3" fill="#7c4dff"/>
+  <circle cx="70" cy="41" r="20" fill="#3b5bf0"/>
+  <rect x="54" y="34" width="32" height="13" rx="6.5" fill="#fff"/>
+  <circle cx="63" cy="40.5" r="2.6" fill="#0f172a"/><circle cx="77" cy="40.5" r="2.6" fill="#0f172a"/>
+  <rect x="63" y="60" width="14" height="5" rx="1.5" fill="#7c4dff"/>
+  <rect x="55" y="64" width="30" height="11" rx="4" fill="#3b5bf0"/>
+  <rect x="47" y="76" width="46" height="13" rx="5" fill="#3b5bf0"/>
+  <text x="70" y="108" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600" fill="#1e293b">agent</text>
+  <text x="70" y="126" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#64748b">content_save</text>
+</g>
+<g transform="translate(230 56)">
+  <rect x="1" y="1" width="138" height="138" rx="24" fill="#fff" fill-opacity=".72" stroke="#3b5bf0" stroke-width="2" filter="url(#hand)"/>
+  <g fill="#3b5bf0"><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(0 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(45 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(90 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(135 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(180 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(225 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(270 70 48)"/><rect x="64.5" y="22" width="11" height="11" rx="2" transform="rotate(315 70 48)"/><circle cx="70" cy="48" r="19"/></g><circle cx="70" cy="48" r="8" fill="#fff"/>
+  <rect x="38" y="18" width="10" height="10" rx="2" fill="#3b5bf0"/><rect x="94" y="16" width="12" height="12" rx="2" fill="#7c4dff"/>
+  <rect x="38" y="70" width="9" height="9" rx="2" fill="#7c4dff"/><rect x="94" y="68" width="12" height="12" rx="2" fill="#7c4dff"/>
+  <path d="M100 28 V68" stroke="#3b5bf0" stroke-width="5"/>
+  <text x="70" y="108" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600" fill="#1e293b">MCP</text>
+  <text x="70" y="126" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#64748b">validate + commit</text>
+</g>
+<g transform="translate(424 56)">
+  <rect x="1" y="1" width="138" height="138" rx="24" fill="#fff" fill-opacity=".72" stroke="#a1a1aa" stroke-width="1.7" filter="url(#hand)"/>
+  <g fill="none" stroke="#3b5bf0" stroke-width="5" stroke-linecap="round"><path d="M56 26 V74"/><path d="M86 44 C86 62 56 56 56 70"/></g>
+  <circle cx="56" cy="24" r="8" fill="#3b5bf0"/><circle cx="56" cy="78" r="8" fill="#3b5bf0"/><circle cx="86" cy="38" r="8" fill="#7c4dff"/>
+  <text x="70" y="108" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600" fill="#1e293b">cr/* branch</text>
+  <text x="70" y="126" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#64748b">isolated</text>
+</g>
+<g transform="translate(424 290)">
+  <rect x="1" y="1" width="138" height="138" rx="24" fill="#fff" fill-opacity=".72" stroke="#a1a1aa" stroke-width="1.7" filter="url(#hand)"/>
+  <circle cx="60" cy="33" r="14" fill="#3b5bf0"/><path d="M33 88 Q33 54 60 54 Q87 54 87 88 Z" fill="#3b5bf0"/>
+  <circle cx="95" cy="64" r="15" fill="#7c4dff" stroke="#fff" stroke-width="3"/><path d="M88 64 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="70" y="108" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600" fill="#1e293b">review</text>
+  <text x="70" y="126" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#64748b">you approve</text>
+</g>
+<g transform="translate(230 290)">
+  <rect x="1" y="1" width="138" height="138" rx="24" fill="#fff" fill-opacity=".72" stroke="#a1a1aa" stroke-width="1.7" filter="url(#hand)"/>
+  <g transform="translate(35 25) scale(.333)"><path fill="#3b5bf0" d="m165.32,43.3c-2.52-10.31-8.26-19.64-16.45-26.75-8.19-7.12-18.45-11.68-29.42-13.09s-22.12.41-31.99,5.21c-9.87,4.8-17.97,12.36-23.23,21.67-2.86-.44-5.74-.65-8.64-.64C26.58,29.7,3,50.62,3,76.35c0,23.65,19.96,43.53,46.54,46.3,1.83.19,3.67-.32,5.1-1.43s2.35-2.71,2.55-4.46-.34-3.51-1.49-4.88c-1.15-1.37-2.83-2.25-4.66-2.44-8.94-.52-17.36-4.19-23.64-10.3-6.28-6.11-9.96-14.23-10.34-22.79,0-18.35,17.37-33.34,38.68-33.34,3.65.02,7.28.48,10.81,1.39,1.64.42,3.38.25,4.9-.48,1.52-.73,2.7-1.97,3.32-3.47,3.41-7.93,9.46-14.57,17.22-18.86,7.76-4.3,16.79-6.01,25.68-4.88s17.13,5.04,23.45,11.13c6.32,6.09,10.35,14,11.47,22.51.22,1.74,1.14,3.33,2.57,4.43,1.43,1.1,3.25,1.62,5.08,1.45,18.1,0,32.78,12.02,32.78,26.66s-14.84,26.66-33.1,26.66c-.93,0-1.86.17-2.72.51-.86.34-1.64.85-2.29,1.48-.65.64-1.16,1.39-1.5,2.22s-.5,1.72-.47,2.61c.03,1.77.78,3.45,2.1,4.69,1.32,1.24,3.09,1.94,4.94,1.94,25.86,0,47.01-17.91,47.01-39.97-.21-20.63-18.36-37.4-41.68-39.72h0Z"/><path fill="#3b5bf0" d="m115.59,94.04c1.93-7.2,9.33-11.48,16.53-9.55s11.48,9.33,9.55,16.53l-8.54,31.88c-1.93,7.2-9.33,11.48-16.53,9.55s-11.48-9.33-9.55-16.53c0,0,8.54-31.88,8.54-31.88Z"/><path fill="#7c4dff" d="m76.38,103.04c1.93-7.2,9.33-11.48,16.53-9.55s11.48,9.33,9.55,16.53l-3.88,14.49c-1.93,7.2-9.33,11.48-16.53,9.55s-11.48-9.33-9.55-16.53l3.88-14.49Z"/></g>
+  <text x="70" y="108" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600" fill="#1e293b">contentrain</text>
+  <text x="70" y="126" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#64748b">main fast-forwards</text>
+</g>
+<g transform="translate(36 290)">
+  <rect x="1" y="1" width="138" height="138" rx="24" fill="#fff" fill-opacity=".72" stroke="#a1a1aa" stroke-width="1.7" filter="url(#hand)"/>
+  <text x="70" y="68" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="54" font-weight="700" fill="#3b5bf0">{ }</text>
+  <rect x="60" y="38" width="20" height="24" rx="4" fill="#7c4dff"/><path d="M65 46 H75 M65 53 H72" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="70" y="108" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600" fill="#1e293b">.contentrain/</text>
+  <text x="70" y="126" text-anchor="middle" font-family="SF Mono,Menlo,Consolas,monospace" font-size="11" fill="#64748b">JSON · Markdown</text>
+</g>
+<path d="M186 126 H220" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="5 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M380 126 H414" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="5 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M494 206 V280" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="5 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<text x="506" y="248" text-anchor="start" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#64748b">review</text>
+<path d="M440 206 C 420 250, 392 256, 376 282" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="5 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<text x="408" y="238" text-anchor="end" font-family="SF Mono,Menlo,Consolas,monospace" font-size="12" fill="#64748b">auto-merge</text>
+<path d="M414 360 H380" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="5 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M220 360 H186" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="5 5" stroke-linecap="round" marker-end="url(#ah)"/>
 </svg>
