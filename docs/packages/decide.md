@@ -7,6 +7,8 @@ slug: decide
 
 # Decide
 
+Current version: 0.2.61.
+
 Small typed decisions for migration and governance pipelines. A decision is a
 pick from a closed set (a *choice*) or a place on a fixed rubric (a *score*),
 never generated text. The chain that answers it:
@@ -75,7 +77,7 @@ const decider = createDecider({
 The key comes only from `ANTHROPIC_API_KEY` and is handled like Jev's token.
 Requests go only to `https://api.anthropic.com/v1/messages`. Haiku receives
 the same shaped state and questions as Jev and answers through one forced tool
-call. `punch_item` sends the exact prompt AO-9 measured. Other kinds get a
+call. `punch_item` sends the exact prompt the calibration measured. Other kinds get a
 generic prompt built from their questions.
 
 Haiku's answers go into the same cache, under the same key, as Jev's. An input
@@ -103,9 +105,13 @@ records themselves. The audit log keeps hashes, never inputs.
 |---|---|---|
 | `punch_item` | root-cause class + severity 0–3 for a Migrate run-report punch item: advisory, never a gate | always: the rule suggests a class for phrasings it recognises, and only as the fallback |
 | `eligibility_band` | `eligible` · `access_blocked` · `page_only` · `custom_type`, or `needs_human` below 0.5 confidence | the undecided band of Migrate's `judgeEligibility`: posts and custom entries within 2× of each other, or one sampled post |
+| `field_type` | the field type that stores a repeated component value: `string`, `text`, `markdown`, `richtext`, `relation`, `url` or `select`, limited to the options the item offers | final when the item offers one option, or `string`/`text` by length (100 or fewer, 200 or more), or `select`/`string` for a value that repeats often with at most 3 distinct values; the rest is tentative or goes to a provider |
+| `region_name` | what a top-level page section is: `header`, `nav`, `hero`, `main`, `footer`, `sidebar`, `cta`, `card-grid`, `features`, `faq`, `pricing`, `testimonials`, `logos`, `gallery`, `contact`, `newsletter`, `content` or `other` | never final: the rule only suggests a name from class names, child shapes and position, as the fallback |
+| `unmapped_element` | which astro-kit component a page-builder element becomes (for example `hero`, `faq`, `tabs`, `contact-form`), `prose` for plain content, or `site-specific` when none fits; `site-specific` below 0.5 confidence | final when the element name matches a known pattern; otherwise a tentative `site-specific` |
 
-`needs_human` is derived from low confidence. It is never offered to a
-provider as an option.
+`needs_human` (for `eligibility_band`) is derived from low confidence. It is
+never offered to a provider as an option. `unmapped_element` works the same way
+with `site-specific`.
 
 ## Budget, breaker, cache, audit
 

@@ -9,6 +9,8 @@ slug: sdk
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/query)](https://www.npmjs.com/package/@contentrain/query) [![npm downloads](https://img.shields.io/npm/dm/@contentrain/query)](https://www.npmjs.com/package/@contentrain/query)
 
+Current version: 7.6.61.
+
 `@contentrain/query` is an **optional** TypeScript convenience layer for consuming Contentrain content. It generates a fully typed client from your model definitions — think Prisma, but for content.
 
 ::: tip SDK is optional
@@ -753,7 +755,24 @@ The skill and its references are available via the `@contentrain/query/skills/*`
 
 | Export Path | Description |
 |-------------|-------------|
-| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` + `ConversationClient` |
-| `@contentrain/query/cdn` | CDN transport: `HttpTransport`, async queries, `MediaAccessor`, `FormsClient`, `ConversationClient` |
+| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` + `CommentsClient` + `ConversationClient` |
+| `@contentrain/query/cdn` | CDN transport: `HttpTransport`, `TransportConfig`, async queries (`CdnCollectionQuery`, `CdnSingletonAccessor`, `CdnDictionaryAccessor`, `CdnDocumentQuery`), `MediaAccessor`, `FormsClient`, `CommentsClient`, `ConversationClient` |
+| `@contentrain/query/astro` | `contentrainLoader()`, the Astro content-layer loader |
 | `@contentrain/query/generate` | Programmatic generation API |
 | `@contentrain/query/skills/*` | Embedded Agent Skill (SKILL.md + references/) |
+
+## Command line
+
+The package ships one binary, `contentrain-query`, with one command. It does the same job as `contentrain generate` without the full CLI:
+
+```bash
+npx contentrain-query generate [--root <path>] [--watch] [--published] [--at <ISO timestamp>] [--require-status]
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--root` | Project root directory (default: current directory) |
+| `--watch` | Regenerate when content changes |
+| `--published` | Include only published content within its publication window |
+| `--at` | Reproducible publication timestamp (implies `--published`) |
+| `--require-status` | Also hold back entries with no status in `meta` (implies `--published`) |

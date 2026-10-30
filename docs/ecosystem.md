@@ -10,7 +10,7 @@ slug: ecosystem
 
 Contentrain has two product surfaces operating on the same `.contentrain/` contract:
 
-- **Contentrain AI** — the open-source, local-first operating core: MCP, CLI, SDK, rules, skills, and the open ends of the migration pipeline
+- **Contentrain AI** — the open-source, local-first operating core: MCP, CLI, SDK, shared types, rules, skills, and the open ends of the migration pipeline
 - **Contentrain Studio** — the open-core team web surface: chat, review, media, forms, APIs, and CDN delivery
 
 The format does not change. The operating surface does.
@@ -22,8 +22,8 @@ Use **Contentrain AI** when you need:
 - local-first agent workflows
 - hardcoded-string rescue through normalize
 - direct Git-native content operations from an IDE or terminal
-- package-level adoption through `@contentrain/mcp`, `contentrain`, `@contentrain/query`, `@contentrain/rules`, and `@contentrain/skills`
-- the open ends of a WordPress migration — `@contentrain/wp-import`, `@contentrain/emitter-astro`, `@contentrain/verify`
+- package-level adoption through `@contentrain/mcp`, `contentrain`, `@contentrain/query`, `@contentrain/types`, `@contentrain/rules`, and `@contentrain/skills`
+- the open ends of a WordPress migration — `@contentrain/wp-import`, `@contentrain/emitter-astro`, `@contentrain/astro-kit`, `@contentrain/decide`, `@contentrain/verify`
 
 Use **Contentrain Studio** when you need:
 
@@ -40,10 +40,12 @@ Use **Contentrain Studio** when you need:
 | `@contentrain/mcp` | Deterministic local content operations and normalize | Studio applies the same `.contentrain/` contract through governed web workflows and review surfaces | [MCP Tools](/packages/mcp), [Studio AI Chat](https://docs.contentrain.io/guide/ai-chat) |
 | `contentrain` CLI | Bootstrap, validate, diff, generate, serve, and local review | Studio takes over when teams need authenticated review, roles, and project management | [CLI](/packages/cli), [Studio Quickstart](https://docs.contentrain.io/guide/quickstart) |
 | `@contentrain/query` | Local typed consumption and CDN client transport | Studio adds remote delivery, API keys, and CDN publishing on top of the same content | [Query SDK](/packages/sdk), [Studio CDN](https://docs.contentrain.io/guide/cdn) |
+| `@contentrain/types` | The shared TypeScript type vocabulary every package imports | Studio speaks the same contract types, so content, config and API shapes agree on both sides | [Types](/packages/types) |
 | `@contentrain/rules` | Quality standard and schema/content guardrails | Studio should match the same quality standard in chat, review, and content validation | [Rules](/packages/rules), [Studio Architecture](https://docs.contentrain.io/developer/architecture) |
 | `@contentrain/skills` | Agent playbooks, workflow hints, and normalize/review procedures | Studio mirrors these workflows in chat-led operations, onboarding, and promotion moments | [Skills](/packages/skills), [Studio AI Chat](https://docs.contentrain.io/guide/ai-chat) |
 | `@contentrain/wp-import` | Reads a WordPress site into source-faithful `RawIR`, then a `.contentrain` store | Studio receives the finished migration as a `MigrationHandoff` and hosts the comments the import exported | [WordPress Import](/packages/wp-import) |
 | `@contentrain/emitter-astro` | Renders a `ProjectIR` into a complete Astro project | Studio supplies the runtime binding that turns emitted form and comment placeholders into working components | [Astro Emitter](/packages/emitter-astro), [Forms & Comments](/guides/forms-comments) |
+| `@contentrain/astro-kit` | Copy-in Astro components, a machine-readable catalog and tables that map page-builder elements to those components | The migrated site owns the copied source; no Studio runtime is needed for it | [Astro Kit](/packages/astro-kit) |
 | `@contentrain/verify` | Offline SEO/indexing/link/asset gates over documents you already have | Studio (or any producer holding a safe fetcher) supplies the pages; this package never makes a network request | [Verify](/packages/verify) |
 | `@contentrain/decide` | Typed decisions (a choice or a score) for the band a rule cannot settle: rule, then Jev, then Claude Haiku (opt-in) when Jev does not answer | Migrate and Studio pass inputs; the package shapes them, caches, caps and audits, and never fails the call | [Decide](/packages/decide) |
 
@@ -54,7 +56,7 @@ Use **Contentrain Studio** when you need:
 | MCP Registry | `io.github.Contentrain/contentrain` | Discover and install the local `@contentrain/mcp` server from MCP-compatible clients |
 | OpenAI Codex | `contentrain setup codex` writes `.codex/config.toml`; `codex mcp add` by hand | Developers who want Contentrain tools inside Codex CLI, desktop, or IDE workflows |
 | Claude Desktop | `claude_desktop_config.json` | Local desktop users who want a checkout-scoped Contentrain server |
-| Claude Code plugin | `/plugin marketplace add Contentrain/ai` | One-command install that bundles the MCP server plus the normalize skills — the shortest path for Claude Code users |
+| [Claude Code plugin](/packages/plugin) | `/plugin marketplace add Contentrain/ai` | One-command install that bundles the MCP server plus the normalize skills — the shortest path for Claude Code users |
 | Claude Code (manual) | `claude mcp add`, `.mcp.json` | Coding-agent workflows that want project-scoped MCP approval without the plugin |
 | Studio MCP Cloud | Hosted Streamable HTTP endpoint + API key | Teams that want external agents to operate a Studio project without sharing a local checkout |
 

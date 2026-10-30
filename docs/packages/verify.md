@@ -15,6 +15,8 @@ have, with no network and no dependencies.
 npx @contentrain/verify dist --site https://example.com
 ```
 
+Current version: 0.3.2.
+
 ## Why it does not fetch
 
 A hardened crawler is a security surface of its own — SSRF, DNS rebinding,
@@ -76,6 +78,7 @@ must not fail its own gate.
 | `identity.canonical-missing` | warning | No canonical link |
 | `identity.canonical-duplicate` | error | Two canonicals: the page says two different things about itself |
 | `identity.canonical-mismatch` | error | A page carrying another page's canonical. `info` when the baseline page declared the same target |
+| `identity.lang-missing` | warning | No `lang` attribute on `<html>` — screen readers pick a voice from it |
 | `identity.description-missing` | warning | No meta description |
 | `identity.open-graph-incomplete` | warning | Missing `og:title` / `og:type` / `og:url` — shares render without a card |
 | `identity.twitter-card-missing` | info | No `twitter:card` |
@@ -107,6 +110,7 @@ on the page looks wrong.
 |---|---|---|
 | `status.mismatch` | error | The status changed against the baseline |
 | `status.baseline-page-missing` | error | A page the baseline answered with 2xx that the build does not serve and no redirect covers. `status.mismatch` only compares pages present on both sides, so a page the migration never produced would otherwise go unreported. Build only (`input.build`); the old site's 404 page is not counted |
+| `status.not-found-page-missing` | error | The build has no `404.html` (or `404/index.html`), so a wrong path lands on the host's page instead of the site's. Build only (`input.build`) |
 | `status.soft-404` | error | A "not found" page answering 200 |
 | `status.redirect-chain` | warning | More hops than `maxRedirectHops` (default 1) |
 | `status.redirect-loop` | error | A chain that returns to itself |
@@ -159,9 +163,19 @@ element.
 | `assets.missing-alt` | warning | An `<img>` with no `alt` attribute |
 | `assets.alt-lost` | warning | Alt text the old page had for the same image is gone |
 
+| `assets.source-origin-reference` | error | A page, stylesheet or script that still mentions the host the content was migrated away from. Runs only when `options.sourceOrigin` is set |
+| `assets.source-origin-invalid` | warning | `sourceOrigin` is not a host or a URL, so the scan did not run |
+
 `alt=""` is a decision (the image is decorative) and is not reported; no `alt`
 attribute at all is an omission and is. `data:` URIs and third-party hosts are
 skipped.
+
+The old-host scan reads raw text, so it also counts the host written in a comment
+or in visible prose. It covers stylesheets and scripts only when their contents
+are supplied in `input.files`; `loadSiteDirectory` supplies them. Listing the
+source host itself in `options.allowHosts` turns the scan off; any other host
+there has no effect. Without `sourceOrigin`, `report.skipped` says the scan did
+not run.
 
 ## Address identity
 
@@ -178,6 +192,21 @@ a correct site fails its gate, too loose and a broken one passes.
 Without `site`, relative links still resolve (against a reserved origin) and
 absolute links to real hosts count as external. Supplying `site` is better: it is
 what makes `canonical-mismatch` and the cross-origin checks exact.
+
+## Input and options
+
+`verify(input)` takes these fields beyond the ones shown in Usage:
+
+| Field | What it does |
+|---|---|
+| `files` | `{ path, content }[]`: stylesheets and scripts as text. Only the old-host scan reads them |
+| `build` | `true` when `documents` are a static build rather than captured pages. Build-level checks (`status.not-found-page-missing`, `status.baseline-page-missing`) run only then. `loadSiteDirectory` sets it |
+| `groups` | Which check groups to run; defaults to all of `CHECK_GROUPS` |
+| `options.sourceOrigin` | The host the content was migrated away from; turns on the old-host scan |
+| `options.allowHosts` | Listing the source host here turns the scan off |
+| `options.internalHosts` | Extra hosts to treat as internal besides `site`'s own |
+| `options.maxRedirectHops` | Default 1 |
+| `options.soft404MaxTextLength` | Default 600 characters |
 
 ## Missing inputs are reported, not skipped silently
 
@@ -198,9 +227,12 @@ contentrain-verify <dist-dir> [options]
   --site <url>          Canonical origin
   --baseline <dir>      The old site, as a directory of captured pages
   --redirects <file>    JSON: [{ "from": "/a", "to": "/b", "status": 301 }]
+  --source-origin <host>  The old host content was migrated away from
+  --allow-host <host>     The source host itself turns the old-host scan off (repeatable)
   --groups <list>       identity,indexing,status,international,structured,navigation,assets
   --max-redirect-hops <n>
-  --json
+  --json                Print the report as JSON
+  -h, --help
 ```
 
 Exits 1 when any finding is an error, 2 on a usage error. Unknown options and
