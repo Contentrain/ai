@@ -14,8 +14,8 @@ They read its design tokens and pass its gates: `astro check` with the
 
 | id | What it is | JavaScript |
 |---|---|---|
-| `header` | Brand, navigation, optional call to action | none |
-| `nav` | Inline menu with submenus; popover drawer or `<details>` on phones | none |
+| `header` | Brand, navigation, optional call to action | none; renders `nav` |
+| `nav` | Inline menu with submenus; popover drawer or `<details>` on phones | none; a few lines when the menu has submenus |
 | `footer` | Brand, link columns or a link row, social links, copyright | none |
 | `hero` | Page opener: heading, text, points, actions, image | none |
 | `card-grid` | Grid of cards (features, services, team) | none |
@@ -24,7 +24,7 @@ They read its design tokens and pass its gates: `astro check` with the
 | `faq` | Questions as `<details>`, optional FAQPage JSON-LD | none |
 | `tabs` | Tabbed panels; readable as headed sections without JavaScript | Zag.js |
 | `testimonial` | Quotes with author and role | none |
-| `gallery` | Image grid with a popover lightbox | none |
+| `gallery` | Image grid; a click opens a native popover or a lightbox viewer | none; the `lightbox` option adds a few lines, no dependency |
 | `slider` | Carousel on a scroll-snap row: image, video (a file played only on request, or a YouTube/Vimeo link loaded only on click) or text-card slides | Embla |
 | `contact-form` | Contentrain Studio form in a section | Studio runtime |
 | `newsletter` | Sign-up posting straight to the list provider (Mailchimp, Kit, MailerLite, Brevo, Buttondown) | none |
@@ -34,6 +34,21 @@ They read its design tokens and pass its gates: `astro check` with the
 | `band` | The styled fallback section: heading, lead, image, a grid of items (figure, title, detail, text, points, link) and buttons, in the measured frame | none |
 | `dialog` | A popup the visitor opens: a button and a modal `<dialog>` with text, buttons and a `form` slot; never opens by itself | a few lines, no dependency |
 | `behavior` | A behavior island: a source widget no component carries (slider, tabs, accordion, counter, toggle, filter, in-page dialog, anchor links, image lightbox, a video player kept as a poster link that plays in place on click), kept as its own markup and wired by one vanilla module; static and readable without it | `_shared/behaviors.ts`, no dependency |
+| `announcement` | A one-line notice above the header with an optional link; closed through a `<details>` | none |
+| `consent` | Cookie consent bar with accept and decline; consent is denied until the visitor accepts | a few lines, no dependency |
+| `contact-details` | Email, phone, postal address, opening hours and a map link, without a form | none |
+| `feature-list` | Short features, each a title and a line of text with an icon or a check | none |
+| `language-switcher` | Links to the same page in the site's other languages, as a list or a `<details>` menu | none |
+| `logo-cloud` | Client or partner logos as a grid, a row or an endless strip | none |
+| `post-list` | A list of posts as cards: a grid, stacked rows, a featured first post or a compact list | none |
+| `pricing` | Price plans side by side, with a featured plan | none |
+| `prose` | A rich-text body as the editor wrote it, styled by Tailwind Typography; the fallback for unmapped elements | none |
+| `search-box` | A search field that sends the visitor to `/search?q=…` | none |
+| `social-links` | Links to the site's profiles on other networks | none |
+| `split` | An image beside a block of text and buttons | none |
+| `stats` | A row of figures with a label each; optionally counts up once in view | a few lines for the count-up, no dependency |
+| `steps` | An ordered sequence of steps, as a list or a row | none |
+| `team` | Portrait, name, role and bio of each person | none |
 
 Each component lives in `components/<id>/`:
 
@@ -51,9 +66,10 @@ A migration can hand a section the style it measured on the source page:
 `@contentrain/types`): the frame's width (`containerPx`), padding (`padY`,
 `padX`), the background (`bg.color`, `bg.image` with `overlay`, `size`,
 `position`), item columns at 390, 768 and 1280 px (the kit's base, `md` and
-`lg`; a missing width follows the narrower one), the item `gap`, the text
+`lg`; a missing 768 takes the smaller of 2 and the 1280 value, else the 390 value; a missing 1280 takes the 768 value, else the 390 value; a missing 390 is 1), the item `gap`, the text
 `tone` (`dark` = light text on a dark band; without it a fill's own lightness
-decides), the card `radius` and a `minHeight`.
+decides), where the heading and lead sit (`align`: `start`, `center`,
+`end`), the card `radius` and a `minHeight`.
 
 Absent, a section takes the site's tokens as before. Present, it wins over
 the `tone` and `columns` variants. `Section` turns it into inline custom
@@ -62,7 +78,8 @@ properties (`--kit-cols-390/768/1280`, `--kit-gap`, `--radius-card`,
 height and fill; a component's item grid reads them through
 `measuredGrid(measured)`. Every value is checked first
 (`components/_shared/measured.ts`): a number out of range, a colour that is
-not hex, rgb(a) or hsl(a), an image address that is not http(s) or
+not hex, rgb(a), hsl(a), `transparent`, `white` or `black` (an overlay may
+also be a linear or radial gradient of such colours), an image address that is not http(s) or
 root-relative, or a position outside its keywords is dropped, never written
 into a style attribute.
 
@@ -111,8 +128,8 @@ unchanged:
 The theme's type scale and rhythm are not read by components. The site's
 theme applies them to the kit's markers, and only when the site sets them:
 - `--text-heading-1` to `--text-heading-3`: headings inside `main`.
-- `--text-body`: `[data-kit-text]`, the lead and body paragraphs of hero, CTA
-  and card grid.
+- `--text-body`: `[data-kit-text]`, the lead and body paragraphs of the
+  section components.
 - `--text-nav`: the header navigation, `[data-cr-part="nav-header"]`.
 - `--text-footer`: the footer's text and links, `[data-kit-footer]` (the kit's
   own size is `text-sm`).
@@ -135,7 +152,7 @@ pnpm add -D @contentrain/astro-kit
 import { copyComponents, KIT_COMPONENTS_DIR, loadCatalog, loadMapping, planCopy, rulesFor } from '@contentrain/astro-kit'
 
 const catalog = await loadCatalog()
-const plan = planCopy(catalog, ['header', 'card-grid']) // adds nav, the shared files, and the npm packages needed
+const plan = planCopy(catalog, ['header', 'card-grid']) // adds the components they render (nav, search-box), the shared files and the npm packages needed
 await copyComponents(plan, KIT_COMPONENTS_DIR, '/path/to/site') // → src/components/kit/<id>/…
 // install plan.dependencies in the site
 

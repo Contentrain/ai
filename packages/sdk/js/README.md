@@ -73,6 +73,12 @@ It also updates your `package.json` with:
       "import": "./.contentrain/client/index.mjs",
       "require": "./.contentrain/client/index.cjs",
       "default": "./.contentrain/client/index.mjs"
+    },
+    "#contentrain/*": {
+      "types": "./.contentrain/client/*.d.ts",
+      "import": "./.contentrain/client/*.mjs",
+      "require": "./.contentrain/client/*.cjs",
+      "default": "./.contentrain/client/*.mjs"
     }
   }
 }
@@ -96,7 +102,7 @@ const article = document('blog-article').locale('en').bySlug('welcome-post')
 
 ## 📦 Generated Client API
 
-The generated client exposes four entry points:
+The generated client exposes four entry points, plus `media()`/`mediaBody()` when a media base is configured:
 
 ### `query(model)`
 
@@ -143,6 +149,7 @@ Supported methods:
 - `locale(lang)`
 - `get()`
 - `get(key)`
+- `get(key, params)` — replaces `{name}` placeholders in the value with `params`
 
 ### `document(model)`
 
@@ -153,6 +160,7 @@ Supported methods:
 - `locale(lang)`
 - `where(field, value)` — equality shorthand
 - `where(field, op, value)` — same operators as `query()`
+- `sort(field, order?)`
 - `include(...fields)`
 - `bySlug(slug)`
 - `count()`
@@ -161,7 +169,7 @@ Supported methods:
 
 ### `media(value, baseOverride?)` / `mediaBody(markdown, baseOverride?)`
 
-Resolve a stored `media/...` path — `media()` for a single field value, `mediaBody()` for every `](media/...)` link and image embed inside a markdown string — to an absolute delivery URL. Emitted **only** when a media base is configured at generate time — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). With no base configured, these are not emitted at all — not a pass-through, an absent export — so code that imports them from `#contentrain` without generating with a base will fail to resolve at build time:
+Resolve a stored `media/...` path — `media()` for a single field value, `mediaBody()` for every untitled `](media/...)` link or image target inside a markdown string (a titled embed or an inline HTML `src`/`href` is left as is; `resolveMediaRefsInBody()` rewrites those too) — to an absolute delivery URL. Emitted **only** when a media base is configured at generate time — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). With no base configured, these are not emitted at all — not a pass-through, an absent export — so code that imports them from `#contentrain` without generating with a base will fail to resolve at build time:
 
 ```ts
 import { media, mediaBody } from '#contentrain'
@@ -238,9 +246,10 @@ Public root exports:
 - `MediaAccessor` — CDN media manifest reader
 - `FormsClient` — CDN forms API client
 - `ConversationClient` — Conversation API client
-- `ContentrainError` — HTTP error class for CDN mode
+- `CommentsClient` — CDN comments API client
+- `ContentrainError`, `isPaymentRequired` — HTTP error class and 402 check for CDN mode
 - `applyWhere` — shared where filter helper
-- `resolveMediaUrl`, `resolveMediaRefsInBody` — the media resolver behind `media()`/`mediaBody()`/`contentrainLoader`'s `mediaBaseUrl`, usable standalone with a base sourced from anywhere (a framework's own runtime config, an env var)
+- `resolveMediaUrl`, `resolveMediaRefsInBody` — the media resolver behind `contentrainLoader`'s `mediaBaseUrl`, usable standalone with a base sourced from anywhere (a framework's own runtime config, an env var)
 
 ## CDN Transport
 
@@ -532,7 +541,7 @@ no entries, and the loader logs a warning naming the model and the file.
 
 This loader reads `.contentrain` directly, so nothing upstream has rewritten a
 stored `media/...` reference into an absolute URL yet — pass `mediaBaseUrl` to
-resolve it here, the same opt-in resolver `media()`/`mediaBody()` use:
+resolve it here (the same resolver as `resolveMediaUrl`/`resolveMediaRefsInBody`):
 
 ```ts
 contentrainLoader({ model: 'blog-post', locale: 'en', mediaBaseUrl: 'https://cdn.example.com' })
@@ -597,7 +606,7 @@ Generator entry:
 
 CDN transport:
 
-- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`, `ConversationClient`
+- `@contentrain/query/cdn` — `createContentrain()` with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`, `CommentsClient`, `ConversationClient`, `ContentrainError`, `isPaymentRequired`
 
 Astro content layer:
 

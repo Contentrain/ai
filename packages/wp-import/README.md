@@ -15,7 +15,7 @@ SourceDeltaPlan + store (+ incoming export) ──► placed SourceDeltaPlan
 pnpm add @contentrain/wp-import
 ```
 
-The `contentrain import` command in the [CLI](../cli) wraps this package.
+The `contentrain import` and `contentrain delta` commands in the [CLI](../cli) wrap this package.
 
 ```ts
 import { parseWxr, fetchRestRawIR, rawToContentrain, buildCommentsExport } from '@contentrain/wp-import'
@@ -135,7 +135,8 @@ and get negative ids; the store claims no `wp_id` for them.
 
 A navigation block in a template part that carries its own links (an inline
 navigation, as in Twenty Twenty-Five's footer columns) is a menu of that part's
-area: `Footer navigation 1`, `2`, … (its `ariaLabel` names it when set), links
+area: `Footer navigation`, or `Footer navigation 1`, `2`, … when the part has
+several (its `ariaLabel` names it when set), links
 in order and nested. Only template parts a template uses count — a theme ships
 alternatives (`footer-columns`, `header-large-title`) that no page shows; without
 the templates, the part named after its area (`header`, `footer`). A `#` link
@@ -191,8 +192,8 @@ slug.
 
 ACF / Secure Custom Fields values arrive on a post's `acf` key — only for field
 groups set to "Show in REST API" (off by default). Each field is typed by one
-versioned table (`ACF_MAPPING_VERSION`, exported with `ACF_SCALAR_TYPES` and
-`ACF_REFERENCE_TYPES`): the ACF type is read from SCF's `<name>_source.type`
+versioned table (`ACF_MAPPING_VERSION` in `src/acf.ts`, with `ACF_SCALAR_TYPES`
+and `ACF_REFERENCE_TYPES`; not part of the package's exports): the ACF type is read from SCF's `<name>_source.type`
 where the site states it, and inferred from the value's shape only when nothing
 states it (the field description then says so).
 
@@ -204,8 +205,8 @@ states it (the field description then says so).
 | email / url, oembed / number, range / true false | `email` / `url` / `number` / `boolean` |
 | date picker / date time picker | `date` / `datetime` (ISO, with the site's offset) |
 | color picker / icon picker | `color` / `icon` |
-| select, radio, button group | `select` (its choices) |
-| checkbox, multiple select | `array` of `select` |
+| select, radio, button group | `select` (its choices); `string` when the source states no choices |
+| checkbox, multiple select | `array` of `select`; `array` of `string` when the source states no choices |
 | image / file | `image` / `file` (the URL) |
 | link | `object { url, title, target }` |
 | google map | `object { address, lat, lng, zoom }` |
@@ -213,7 +214,8 @@ states it (the field description then says so).
 | repeater | `array` of `object` (nested repeaters nest) |
 | flexible content | `array` of `object`: a required `layout` select plus the union of the layouts' fields |
 | post object, relationship | `relation` / `relations` to the entries' models |
-| taxonomy / user / gallery | `relations` to the term model / `authors` / media |
+| taxonomy / user | `relation`, or `relations` when the value is a list, to the term model / `authors` |
+| gallery | `relations` to media |
 | page link | `url`: the target's address, only when the target is published and unprotected |
 | tab, accordion, message | nothing (layout only) |
 | password | nothing, ever |
