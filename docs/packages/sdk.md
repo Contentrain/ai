@@ -40,7 +40,7 @@ pnpm add @contentrain/query
 ```
 
 Requirements:
-- Node.js 22+
+- Node.js 20+ (it uses `Array.prototype.toSorted` and recursive `fs.watch`; Node 18 fails)
 - A Contentrain project with `.contentrain/config.json`
 
 ## Quick Start
@@ -317,7 +317,7 @@ The window is evaluated when the site is built. A scheduled entry goes live at t
 
 ## Framework Setup
 
-The `#contentrain` subpath import works natively in Node.js 22+. For browser bundlers, you need an alias.
+The `#contentrain` subpath import works natively in Node.js 20+. For browser bundlers, you need an alias.
 
 ::: code-group
 
@@ -384,7 +384,7 @@ module.exports = {
 
 ```bash [Node.js / SSR-only]
 # No alias needed!
-# Node.js 22+ resolves #contentrain from package.json imports natively.
+# Node.js 20+ resolves #contentrain from package.json imports natively.
 ```
 
 :::
