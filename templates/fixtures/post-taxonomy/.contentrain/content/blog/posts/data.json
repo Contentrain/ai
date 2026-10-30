@@ -1,0 +1,21 @@
+{
+  "b1a000000001": {
+    "body": "<p>A picked post.</p>",
+    "excerpt": "A picked post.",
+    "featured-category": [
+      "fc0000000002"
+    ],
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "picked-post",
+    "title": "A picked post",
+    "wp_id": 301
+  },
+  "b1a000000002": {
+    "body": "<p>A plain post.</p>",
+    "excerpt": "A plain post.",
+    "published_at": "2026-09-02T09:00:00Z",
+    "slug": "plain-post",
+    "title": "A plain post",
+    "wp_id": 302
+  }
+}

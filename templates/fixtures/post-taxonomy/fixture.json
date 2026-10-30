@@ -1,0 +1,54 @@
+{
+  "contentConfig": [
+    {
+      "from": "      categories: z.array(reference('categories')).default([]),",
+      "to": "      categories: z.array(reference('categories')).default([]),\n      'featured-category': z.array(reference('featuredCategory')).default([]),"
+    },
+    {
+      "from": "export const collections = {\n",
+      "to": "export const collections = {\n  featuredCategory: defineCollection({\n    loader: loader('featured-category'),\n    schema: z.object({\n      id: z.string(),\n      description: z.string().optional(),\n      name: z.string(),\n      parent: reference('featuredCategory').optional(),\n      path: z.string().optional(),\n      slug: z.string(),\n      wp_id: z.number().int().optional(),\n    }),\n  }),\n"
+    }
+  ],
+  "distFiles": {
+    "featured-category/featured/editors-picks/index.html": {
+      "contains": [
+        "Editors picks",
+        "Featured category",
+        "A picked post",
+        "href=\"/blog/picked-post/\"",
+        "<link rel=\"canonical\" href=\"https://example.com/featured-category/featured/editors-picks/\">"
+      ],
+      "excludes": [
+        "A plain post"
+      ]
+    },
+    "featured-category/featured/index.html": {
+      "contains": [
+        "Featured",
+        "The featured posts."
+      ],
+      "excludes": [
+        "A picked post",
+        "A plain post"
+      ]
+    },
+    "index.html": {
+      "contains": [
+        "href=\"/featured-category/featured/editors-picks/\"",
+        "Picks in the menu"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/featured-category/featured/editors-picks/",
+        "https://example.com/featured-category/featured/"
+      ]
+    }
+  },
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  postTaxonomies: [{ collection: 'featuredCategory', pattern: '/featured-category/:path/', field: 'featured-category', title: 'Featured category' }],\n  sourceHosts: [],"
+    }
+  ]
+}

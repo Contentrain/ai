@@ -250,7 +250,7 @@ export async function getStrings(locale = defaultLocale): Promise<(key: string) 
  * The site's own words for what `site.config.ts` names (a custom type's archive heading, a field's label): the
  * `ui-strings` entry when the store has one — an editor renames it in Studio —, else the config's value. Never the key.
  * Keys: `types.<collection>.archive_title`, `types.<collection>.archive_label`, `types.<collection>.<taxonomy>.title`,
- * `types.<collection>.fields.<field>` (a nested field: `fields.<group>.<field>`).
+ * `types.<collection>.fields.<field>` (a nested field: `fields.<group>.<field>`), `posts.<taxonomy>.title` (`postTaxonomies`).
  */
 export async function getTextOr(locale = defaultLocale): Promise<(key: string, fallback: string) => string> {
   const text = await stringMap(locale)

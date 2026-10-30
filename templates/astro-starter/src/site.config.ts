@@ -195,6 +195,11 @@ export interface SiteConfig {
   /** Custom post types: each gets its single pages, archive and term lists. */
   types?: readonly CustomType[]
   /**
+   * Custom taxonomies over posts (a theme's "featured category"): a post list per term at `pattern`, of the posts whose
+   * `field` (a `relations` field) holds the term, paginated as a category's. Same shape as a custom type's `taxonomies`.
+   */
+  postTaxonomies?: ReadonlyArray<{ collection: string, pattern: string, field: string, title: string }>
+  /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
    * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at
    * build time, so moving the site to a new domain in Studio does not turn the old links external.
