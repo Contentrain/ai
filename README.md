@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/cover.png" alt="Contentrain — content governance for teams and AI agents" width="100%"></p>
+
 # Contentrain AI
 
 [![npm: @contentrain/mcp](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
@@ -11,7 +13,9 @@
 
 **Extract, govern, and ship structured content from your codebase.**
 
-Contentrain helps teams turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer. Agents can extract, create, translate, and update content, while Contentrain enforces schema, Git review, and portable file output.
+Contentrain is a content governance ecosystem for teams and AI agents. Agent generates. Human approves. Git records every change.
+
+This repository holds its open-source tools (MIT, no account needed): the MCP engine, CLI, query SDK, rules, skills and types. They help teams turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer that lives in Git as structured JSON and Markdown. Agents can extract, create, translate, and update content, while Contentrain enforces schema, Git review, and portable file output.
 
 ```
 Agent extracts or updates content → Contentrain standardizes → Human reviews → Any platform consumes
@@ -232,6 +236,17 @@ npx contentrain studio connect # connect repo to Studio project
 - **[Ecosystem Map](https://ai.contentrain.io/ecosystem)** — package-to-product bridges across AI and Studio
 - **[Contentrain Studio](https://ai.contentrain.io/studio)** — open-core team operations for Git-native structured content, self-hostable or available as managed plans (Starter/Pro/Enterprise)
 - **[Full Docs](https://ai.contentrain.io)** — guides, package reference, and framework integration
+
+## The Contentrain ecosystem
+
+Contentrain has four parts. This repository is the first.
+
+| Part | What it does | License |
+|---|---|---|
+| **Open-source tools** ([Contentrain/ai](https://github.com/Contentrain/ai), [docs](https://ai.contentrain.io)) | MCP engine, CLI, query SDK, normalize flow, rules, skills and types. Developers and agents pull content out of code and structure it in their own repository. | MIT |
+| **Studio** ([Contentrain/studio](https://github.com/Contentrain/studio), [studio.contentrain.io](https://studio.contentrain.io)) | The team operating surface for governed content: structured editing, review, roles and Git-backed operations. Media, CDN delivery, APIs and remote MCP depend on plan and deployment. Managed plans or self-hosted. | AGPL-3.0 core, separately licensed `ee/` |
+| **Migrate** ([migrate.contentrain.io](https://migrate.contentrain.io)) | A paid service that moves WordPress sites to Astro, with their content and template structure. | Hosted service |
+| **Bridge** ([Contentrain/wordpress-bridge](https://github.com/Contentrain/wordpress-bridge), [WordPress.org](https://wordpress.org/plugins/contentrain-bridge/)) | A free WordPress plugin that exports posts, pages, custom fields and interface text as a validated Contentrain store (JSON + Markdown), as a ZIP or to your own GitHub repository. | GPL-2.0-or-later |
 
 ## Development
 

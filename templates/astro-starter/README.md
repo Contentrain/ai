@@ -218,3 +218,13 @@ page of a list.
    on the `noindex` 404 and search pages); performance under 0.95 is a
    warning, not a failure: a shared CI runner's timing varies from run to run,
    and a red check should mean the site has a fault.
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This
+starter is built on its [open-source tools](https://github.com/Contentrain/ai)
+([docs](https://ai.contentrain.io)) and edited in
+[Studio](https://github.com/Contentrain/studio). [Migrate](https://migrate.contentrain.io)
+moves WordPress sites to Astro on top of it, and
+[Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress
+plugin that exports a site as a Contentrain store.

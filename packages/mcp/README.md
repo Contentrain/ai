@@ -12,7 +12,7 @@ Start here:
 - [MCP package docs](https://ai.contentrain.io/packages/mcp)
 - [Normalize guide](https://ai.contentrain.io/guides/normalize)
 
-Contentrain is AI-generated content governance infrastructure:
+Contentrain is a content governance ecosystem for teams and AI agents. In it, this engine works like this:
 
 - agent produces content decisions
 - MCP applies deterministic filesystem and git workflow
@@ -260,9 +260,9 @@ const server = createServer({ provider })
 
 Capabilities: `sourceRead`, `sourceWrite`, `astScan`, `localWorktree` are all `false`; `pushRemote`, `branchProtection`, `pullRequestFallback` are `true`. Normalize / scan / apply reject with a capability error on GitLabProvider — fall back to a local transport for those flows.
 
-### Bitbucket — coming soon
+### Bitbucket
 
-Bitbucket Cloud + Data Center support is on the roadmap. Until the provider ships, use the `contentrain_describe_format` tool to drive Contentrain content operations manually from a Bitbucket checkout via the LocalProvider path.
+There is no Bitbucket provider. A Bitbucket checkout works through the LocalProvider path like any other local Git repository.
 
 ## Core Exports
 
@@ -388,6 +388,10 @@ pnpm exec oxlint packages/mcp/src packages/mcp/tests
 ## Documentation
 
 Full documentation at **[ai.contentrain.io/packages/mcp](https://ai.contentrain.io/packages/mcp)**.
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles; it drives this engine over the HTTP transport, and the `contentrain_media_*` tools need a provider with a media stack such as Studio's. [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 
