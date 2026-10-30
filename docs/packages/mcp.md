@@ -36,6 +36,18 @@ Requirements:
 - Node.js 22+
 - Git available on the machine
 
+Environment variables for the local provider (stdio and `contentrain serve`):
+
+| Variable | Default | Effect |
+|---|---|---|
+| `CONTENTRAIN_PROJECT_ROOT` | current directory | Project root |
+| `CONTENTRAIN_BRANCH` | unset | Base branch the `contentrain` branch advances. Wins over `repository.default_branch`, then remote HEAD → `main` → `master` → the checked-out branch. Per process; never written to config |
+| `CONTENTRAIN_REMOTE` | `origin` | Remote used for every fetch and push |
+| `CONTENTRAIN_NO_PUSH` | unset | `1`/`true` turns local mode on (no pushes); `0`/`false` turns it off over `git.push: false` |
+| `CONTENTRAIN_AUTHOR_NAME` / `CONTENTRAIN_AUTHOR_EMAIL` | `Contentrain` / `ai@contentrain.io` | Author identity on Contentrain's commits |
+| `CONTENTRAIN_GIT_BINARY` | unset | Absolute path of the `git` binary to use |
+| `CONTENTRAIN_VERIFY` | unset | `1`/`true` runs the repository's commit hooks on Contentrain's commits; wins over `git.verify` |
+
 Optional parser support for higher-quality source scanning:
 - `@vue/compiler-sfc` — Vue SFC parsing
 - `@astrojs/compiler` — Astro component parsing
@@ -71,14 +83,14 @@ The MCP server exposes **27 tools** — 22 core + 5 media — organized by funct
 | `contentrain_scaffold` | Scaffold Template | — | — |
 | `contentrain_model_save` | Save Model | — | — |
 | `contentrain_model_delete` | Delete Model | — | **Yes** |
+| `contentrain_vocabulary_save` | Save Vocabulary Terms | — | — |
+| `contentrain_vocabulary_delete` | Delete Vocabulary Terms | — | **Yes** |
 | `contentrain_content_save` | Save Content | — | — |
 | `contentrain_content_delete` | Delete Content | — | **Yes** |
 | `contentrain_content_list` | List Content | Yes | — |
-| `contentrain_vocabulary_save` | Save Vocabulary Terms | No | — |
-| `contentrain_vocabulary_delete` | Delete Vocabulary Terms | No | Yes |
 | `contentrain_validate` | Validate Project | — | — |
 | `contentrain_submit` | Submit Branches | — | — |
-| `contentrain_merge` | Merge Branch | — | — |
+| `contentrain_merge` | Merge Branch | — | **Yes** |
 | `contentrain_reconcile` | Reconcile Diverged Branches | — | — |
 | `contentrain_branch_list` | List Branches | Yes | — |
 | `contentrain_branch_delete` | Delete Branch | — | **Yes** |
@@ -102,8 +114,6 @@ The MCP server exposes **27 tools** — 22 core + 5 media — organized by funct
 | `contentrain_describe_format` | Format reference | File structure, JSON formats, markdown conventions, locale strategies |
 | `contentrain_doctor` | Health diagnostics | Setup validation, SDK freshness, orphan content, local branch limits, remote `cr/*` count, unused keys, missing translations |
 | `contentrain_content_list` | Read content | List entries with `filter`, optional relation resolution (`resolve`), and `limit`/`offset` pagination |
-| `contentrain_vocabulary_save` | Write vocabulary | Add or update canonical terms — `{ "term-slug": { "en": "…" } }`, merges with what exists |
-| `contentrain_vocabulary_delete` | Write vocabulary | Remove canonical terms by slug (`confirm: true`) |
 
 ### Write Tools (Git-Backed, Branch-Isolated)
 
@@ -115,6 +125,8 @@ The MCP server exposes **27 tools** — 22 core + 5 media — organized by funct
 | `contentrain_model_delete` | Remove models | Delete a model definition and its content |
 | `contentrain_content_save` | Write content | Save entries for any model kind (collection, singleton, dictionary, document) |
 | `contentrain_content_delete` | Remove content | Delete specific content entries |
+| `contentrain_vocabulary_save` | Write vocabulary | Add or update canonical terms — `{ "term-slug": { "en": "…" } }`, merges with what exists |
+| `contentrain_vocabulary_delete` | Write vocabulary | Remove canonical terms by slug (`confirm: true`) |
 | `contentrain_validate` | Check & fix | Validate content against schemas, optionally auto-fix structural issues |
 | `contentrain_submit` | Push branches | Push `cr/*` review branches to remote, then lazily prune merged local + remote leftovers |
 | `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (by exact branch or model; no external platform needed); deletes the branch's remote copy |
@@ -128,7 +140,7 @@ The MCP server exposes **27 tools** — 22 core + 5 media — organized by funct
 |------|---------|-------------|
 | `contentrain_scan` | Find hardcoded strings | Graph-based component scan with candidate detection |
 | `contentrain_apply` | Extract or reuse | Two-phase normalize: extract content or patch source files |
-| `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes |
+| `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes; `dry_run: true` runs the operation in a throwaway worktree and commits nothing (default `false`) |
 
 ### Field constraints
 
@@ -239,13 +251,21 @@ MCP is infrastructure, not intelligence. It does not decide what content to writ
 
 ### 2. Preview Where It Counts
 
-`dry_run` belongs to `contentrain_apply` — the one tool that can modify your source files. The normalize pattern is always:
+Three tools take a `dry_run` parameter:
+
+| Tool | Default | What the preview does |
+|------|---------|-----------------------|
+| `contentrain_apply` | `true` | Plans the extraction or reuse patch without touching source files |
+| `contentrain_reconcile` | `true` | Reports what would merge and which conflicts need a decision — touches nothing |
+| `contentrain_bulk` | `false` | Runs the operation in a throwaway worktree and reports what would change, committing nothing |
+
+`contentrain_apply` is the one tool that can modify your source files, so its pattern is always:
 
 1. Run `contentrain_apply` with `dry_run: true` (the default) to preview the plan
 2. Review the output
 3. Run with `dry_run: false` to commit
 
-The other write tools do not take a `dry_run` parameter. They are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `branch_delete`, `merge`, `bulk delete_entries`) require an explicit `confirm: true`.
+The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`.
 
 ::: warning Never Skip the Apply Preview
 Always call `contentrain_apply` with `dry_run: true` first and review the plan. It is the only tool that can touch source code — skipping the preview risks unreviewed source patches.
@@ -513,10 +533,10 @@ claude mcp add --transport http contentrain \
 | Trust Level | Tools | Risk | Notes |
 |-------------|-------|------|-------|
 | **HIGH** (read-only) | `status`, `describe`, `describe_format`, `doctor`, `content_list`, `branch_list`, `scan`, `media_list`, `media_get` | None | Safe to call anytime, no side effects — `scan` reads source but never writes |
-| **MEDIUM** (git-isolated writes) | `init`, `scaffold`, `model_save`, `model_delete`, `content_save`, `content_delete`, `validate`, `bulk` | Low | Writes go through git transactions on isolated `cr/*` branches; destructive tools require `confirm: true` |
-| **MEDIUM** (branch lifecycle) | `submit`, `merge`, `branch_delete` | Medium | `submit` pushes to the remote (requires network); `merge` and `branch_delete` are local git operations — network is used only for best-effort remote-copy cleanup |
+| **MEDIUM** (git-isolated writes) | `init`, `scaffold`, `model_save`, `model_delete`, `content_save`, `content_delete`, `vocabulary_save`, `vocabulary_delete`, `validate`, `bulk` | Low | Writes go through git transactions on isolated `cr/*` branches; destructive tools require `confirm: true` |
+| **MEDIUM** (branch lifecycle) | `submit`, `merge`, `reconcile`, `branch_delete` | Medium | `submit` pushes to the remote (requires network); `reconcile` defaults to `dry_run: true`; `merge` and `branch_delete` are local git operations — network is used only for best-effort remote-copy cleanup |
 | **MEDIUM** (provider media) | `media_ingest`, `media_update`, `media_delete` | Medium | Provider-side media stack; `media_delete` is destructive and does not rewrite content references |
-| **LOW** (source modification) | `apply` | Medium | `mode: "reuse"` patches source files — always run `dry_run: true` first |
+| **LOW** (source modification) | `apply` | High | `mode: "reuse"` patches source files — always run `dry_run: true` first |
 
 ::: danger Source Modifications
 The `contentrain_apply` tool with `mode: "reuse"` modifies your source code files. Always run with `dry_run: true` first, review the patches carefully, and use the review workflow before merging.
@@ -564,15 +584,19 @@ Available subpath exports:
 - `@contentrain/mcp/core/doctor` — Health check engine
 - `@contentrain/mcp/core/contracts` — RepoProvider interface types
 - `@contentrain/mcp/core/ops` — Plan APIs (`planContentSave`, `planReconcile`, `bindRef`, …) and path helpers
+- `@contentrain/mcp/core/migration` — Allowlisted writer for whole-project migrations (`createMigrationWriter`, `decide`): writes only paths on a user-approved, fail-closed pattern list, to `MIGRATION_BRANCH_PREFIX` branches
 - `@contentrain/mcp/core/overlay-reader` — Overlay file reading
 - `@contentrain/mcp/core/scan-config` — Scan configuration
 - `@contentrain/mcp/git/transaction` — Git transaction flow
+- `@contentrain/mcp/git/identity` — Guard-safe `simple-git` construction (`createGit`, `gitBinary`, `authorConfig`); honours `CONTENTRAIN_GIT_BINARY` and `CONTENTRAIN_AUTHOR_*`
+- `@contentrain/mcp/git/base-branch` — Base-branch resolution (`resolveBaseBranch`, `resolveBaseBranchSource`): `CONTENTRAIN_BRANCH` → `repository.default_branch` → remote HEAD → `main` → `master` → checked-out branch
 - `@contentrain/mcp/git/branch-lifecycle` — Branch health tracking
 - `@contentrain/mcp/git/errors` — Structured operation-error normalizer
 - `@contentrain/mcp/git/reconcile` — Local reconcile executor (`reconcileBranches`)
 - `@contentrain/mcp/templates` — Scaffold templates
 - `@contentrain/mcp/tools/annotations` — Tool metadata (TOOL_NAMES, TOOL_ANNOTATIONS)
 - `@contentrain/mcp/tools/availability` — Per-tool capability requirements (TOOL_REQUIREMENTS)
+- `@contentrain/mcp/testing/memory` — In-memory `MemoryProvider` (records commits) for tests
 - `@contentrain/mcp/testing/conformance` — Provider conformance test harness
 - `@contentrain/mcp/util/detect` — Framework detection
 - `@contentrain/mcp/util/fs` — File system utilities

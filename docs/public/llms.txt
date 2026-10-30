@@ -16,6 +16,12 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 - @contentrain/wp-import — WordPress WXR/REST importers → RawIR → .contentrain content store
 - @contentrain/emitter-astro — ProjectIR → a complete Astro project, returned as a pure file map
 - @contentrain/verify — offline SEO/indexing/link/asset gates for a built site; takes documents, never makes a network request
+- @contentrain/astro-kit — copy-in Astro components for Contentrain sites, with a machine-readable catalog
+- @contentrain/decide — small typed decisions (a choice or a score): rule first, then a model, cached, budgeted and audited
+
+## Claude Code plugin
+
+- contentrain (marketplace Contentrain/ai, not npm) — the MCP server, 7 core skills and 9 framework guides in one install: /plugin marketplace add Contentrain/ai
 
 ## Key Facts
 
@@ -24,7 +30,7 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 - 27 field types; content is validated before every write — an error on any entry in a contentrain_content_save call means nothing is committed
 - The MCP tool registry holds 27 tools, but `tools/list` is filtered per session: a tool whose requirements (local project root, provider capabilities, a media stack) cannot be met is never registered. A local stdio server lists the 22 core tools; media tools appear only on media-capable providers such as Studio MCP Cloud
 - Every write lands on an isolated cr/* git branch; workflow is auto-merge or review (config.json)
-- dry_run preview belongs to contentrain_apply (the normalize tool that can patch source); destructive tools require confirm: true
+- dry_run previews: contentrain_apply and contentrain_reconcile default to dry_run: true, contentrain_bulk takes an optional dry_run; destructive tools (content/model/media/vocabulary delete, merge, branch delete, bulk delete_entries) require confirm: true
 - Locale strategies: file / suffix / directory / none; entry status and scheduling live in .contentrain/meta/, not in content
 - When a change lands on the base branch directly, the branches diverge: writes still succeed but report base_advance "blocked_diverged". contentrain_reconcile / `contentrain reconcile` is a content-aware three-way merge (field, dictionary key, term+locale granularity) with a closed 9-value conflict code set
 - WordPress migration chain: wp-import → RawIR → [migration engine, CLOSED SOURCE] → ProjectIR → emitter-astro → verify. The MIT packages are the two ends and the contracts; the analysis that produces a ProjectIR is not in this repository and these packages do not convert a site on their own
@@ -37,6 +43,7 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 - Ecosystem Map: /ecosystem
 - Core Concepts: /concepts
 - Contentrain Studio: /studio
+- FAQ: /faq
 - MCP Tools: /packages/mcp
 - CLI: /packages/cli
 - Query SDK: /packages/sdk
@@ -46,6 +53,9 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 - WordPress Import: /packages/wp-import
 - Astro Emitter: /packages/emitter-astro
 - Verify: /packages/verify
+- Astro Kit: /packages/astro-kit
+- Decide: /packages/decide
+- Claude Code Plugin: /packages/plugin
 - Your First Model (guided walkthrough): /guides/first-model
 - Providers & Transports: /guides/providers
 - HTTP Transport: /guides/http-transport

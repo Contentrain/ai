@@ -9,6 +9,8 @@ slug: wp-import
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/wp-import)](https://www.npmjs.com/package/@contentrain/wp-import)
 
+Current version: 0.17.5.
+
 `@contentrain/wp-import` reads a WordPress site and produces two things: **`RawIR`** — what the source actually said, before anyone interpreted it — and, from that, a `.contentrain/` content store.
 
 It was ported from a corpus-measured import chain rather than written fresh. The identity formulas, the PHP-serialized meta decoding, and the reference-resolution passes carried over intact, which is why a WXR import and a REST import of the same site agree on every entry id.

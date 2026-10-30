@@ -92,6 +92,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture page-prefix
           node scripts/starter-gates.mjs --local-sdk --fixture post-path
           node scripts/starter-gates.mjs --local-sdk --fixture entry-path
+          node scripts/starter-gates.mjs --local-sdk --fixture post-taxonomy
           node scripts/starter-gates.mjs --local-sdk --fixture og-fields
           node scripts/starter-gates.mjs --local-sdk --fixture ar-site
           node scripts/starter-gates.mjs --local-sdk --fixture i18n-site

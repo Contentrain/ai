@@ -47,13 +47,14 @@ Contentrain AI inverts the traditional CMS workflow:
 
 - **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_doctor`, `contentrain_content_list`
 - **Project setup:** `contentrain_init`, `contentrain_scaffold`
-- **Content and schema writes:** `contentrain_model_save`, `contentrain_model_delete`, `contentrain_content_save`, `contentrain_content_delete`
+- **Content and schema writes:** `contentrain_model_save`, `contentrain_model_delete`, `contentrain_content_save`, `contentrain_content_delete`, `contentrain_vocabulary_save`, `contentrain_vocabulary_delete`
 - **Normalize:** `contentrain_scan`, `contentrain_apply`
 - **Workflow and operations:** `contentrain_validate`, `contentrain_submit`, `contentrain_merge`, `contentrain_reconcile`, `contentrain_branch_list`, `contentrain_branch_delete`, `contentrain_bulk`
+- **Media** (only where the provider has a media facet, e.g. Studio MCP Cloud): `contentrain_media_list`, `contentrain_media_get`, `contentrain_media_ingest`, `contentrain_media_update`, `contentrain_media_delete`
 
 MCP is **deterministic infrastructure** — it doesn't make content decisions. The agent decides what to create; MCP executes it.
 
-MCP runs over two transports (stdio for IDE agents, HTTP for Studio / CI / remote drivers) and three provider backends: **Local** (simple-git + worktree), **GitHub** (Octokit over the Git Data API), and **GitLab** (gitbeaker over the REST API). The tool surface is identical across all three; some tools require `LocalProvider` — see [Providers and transports](/guides/providers) for the capability matrix.
+MCP runs over two transports (stdio for IDE agents, HTTP for Studio / CI / remote drivers) and three provider backends: **Local** (simple-git + worktree), **GitHub** (Octokit over the Git Data API), and **GitLab** (gitbeaker over the REST API). The tool list depends on the provider: tools whose capabilities the provider lacks are not registered, so a GitHub or GitLab session without a local project root lists 11 of the 22 core tools — see [Providers and transports](/guides/providers) for the capability matrix.
 
 ### 2. Agent (Intelligence)
 
@@ -215,7 +216,7 @@ Contentrain stores everything as plain JSON and Markdown files in your Git repo.
 
 Web projects deploy content with `git push` — no extra infrastructure needed. But non-web platforms (iOS, Android, React Native, Flutter, desktop apps, game engines, IoT) can't read from a git repo at runtime.
 
-For these use cases, [Contentrain Studio](/studio)'s managed CDN publishes merged content over HTTP (`GET /api/cdn/v1/{projectId}/{path}` on the Studio host), delivering the same structured JSON your SDK queries — just over HTTP instead of the filesystem. The CDN is a Studio delivery feature (Cloudflare R2-backed), not part of the MIT core; the SDK's CDN client points at it via `cdn.url` in `config.json`.
+For these use cases, [Contentrain Studio](/studio)'s managed CDN publishes merged content over HTTP (`GET /api/cdn/v1/{projectId}/{path}` on the Studio host), delivering the same structured JSON your SDK queries — just over HTTP instead of the filesystem. The CDN is a Studio delivery feature (Cloudflare R2-backed), not part of the MIT core; the SDK's CDN client (`createContentrain` from `@contentrain/query/cdn`) takes a `projectId`, an `apiKey` and an optional `baseUrl` (default `https://studio.contentrain.io/api/cdn/v1`). `cdn.url` in `config.json` is separate: it is the media delivery base that `contentrain generate` bakes into the local client's `media()` resolvers.
 
 ```
 Git repo → merge → CDN publish → iOS/Android/Flutter fetch → typed response

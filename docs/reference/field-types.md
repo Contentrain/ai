@@ -41,6 +41,8 @@ interface FieldDef {
   accept?: string          // MIME types for media fields
   maxSize?: number         // Max file size in bytes for media fields
   description?: string     // Human-readable field description
+  label?: string | Record<string, string> // Display label, plain or per locale
+  order?: number           // Display position in an editing UI, ascending (fractions allowed)
 }
 ```
 

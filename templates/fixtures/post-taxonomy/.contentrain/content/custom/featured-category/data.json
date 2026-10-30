@@ -1,0 +1,14 @@
+{
+  "fc0000000001": {
+    "description": "The featured posts.",
+    "name": "Featured",
+    "slug": "featured",
+    "wp_id": 61
+  },
+  "fc0000000002": {
+    "name": "Editors picks",
+    "parent": "fc0000000001",
+    "slug": "editors-picks",
+    "wp_id": 62
+  }
+}

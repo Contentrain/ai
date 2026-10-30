@@ -156,6 +156,21 @@ async function buildLocale(locale: string, add: Add): Promise<void> {
     const own = posts.filter(post => post.data.author?.id === author.id)
     if (own.length > 0) paginate(`authors:${author.data.id}`, authorHref(author, locale), own, { title: author.data.name, eyebrow: t('archive.author'), ...(author.data.bio ? { description: author.data.bio } : {}) })
   }
+  // A custom taxonomy over posts (a theme's "featured category"): a post list per term, as a category's. A nested
+  // pattern reads the parent chain from the taxonomy's terms; the key is the entry id, which its translations share.
+  const postTaxonomies = siteConfig.postTaxonomies ?? []
+  if (postTaxonomies.length) {
+    const [lists, textOr] = await Promise.all([Promise.all(postTaxonomies.map(async taxonomy => inLocale(await entriesOf(taxonomy.collection), locale))), getTextOr(locale)])
+    const terms = new Map(postTaxonomies.flatMap((taxonomy, at) => lists[at]!.map(term => [`${taxonomy.collection}:${term.id}`, term] as const)))
+    postTaxonomies.forEach((taxonomy, at) => {
+      for (const term of lists[at]!) {
+        const description = text(term.data.description)
+        paginate(`${taxonomy.collection}:${text(term.data.id) ?? term.id}`, customTermHref(taxonomy, term, terms), posts.filter(post => refIds((post.data as Record<string, unknown>)[taxonomy.field]).includes(term.id)), {
+          title: text(term.data.name) ?? term.id, eyebrow: textOr(`posts.${taxonomy.collection}.title`, taxonomy.title), ...(description ? { description } : {}),
+        })
+      }
+    })
+  }
 
   await addTypeRoutes(locale, add, root)
 }

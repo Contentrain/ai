@@ -9,6 +9,8 @@ slug: emitter-astro
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/emitter-astro)](https://www.npmjs.com/package/@contentrain/emitter-astro)
 
+Current version: 0.18.63.
+
 `@contentrain/emitter-astro` takes a **`ProjectIR`** — route model, layout families, component variants, query bindings, design tokens — plus prepared content, and returns a complete Astro project as a pure file map.
 
 ## Why this half is open
@@ -47,6 +49,16 @@ await writeEmit(result, './out/site')
 
 The emitter returns a file map and a warning list. **Read the warnings** — they are where it tells you that a component had no mount point, that a lifted region did not close its tags, or that a runtime component stayed a placeholder.
 
+Some options worth knowing up front (all under `options`, all optional):
+
+| Option | Effect |
+|---|---|
+| `projectName` | The generated project's package name. Default `migrated-site` |
+| `tailwind` | Include Tailwind 4 as the evolution layer. Default `true` |
+| `uiStrings` | `{ dir?, locales? }`: where the site's `ui-strings` dictionary lives (a project-relative directory) and which locales it covers. A page language with no declared dictionary gets a warning, because comments and forms on it would show English text |
+| `now` | The moment `publish_at` is compared with (ISO 8601). Default: the time of the emit |
+| `requireStatus` | Hold back entries that carry no `status`. Default `false` |
+
 ## The one rule
 
 > Everything content-shaped flows through JSON data files, never through generated template source.
@@ -82,6 +94,20 @@ Rendering order is repeats → conditionals → marks.
 ### The balance check
 
 A lifted region must close what it opens. A split fragment is something a browser silently repairs, so it survives every visual check — and costs a page its layout anyway. Measured on 2026-09-03 with emitter 0.6.1: a page whose chrome was split mid-element scored **36** on layout, against **100** for the same page kept whole. The emitter checks header, footer and body chrome and names the dangling tags in a warning rather than trusting the producer.
+
+## Unpublished entries
+
+Only published entries are built. An entry is held back from its pages, the sitemap, the feed, `llms.txt` links and list cards when:
+
+| Reason | Condition |
+|---|---|
+| `visibility` | `EmitPost.visibility` is anything but `public` (password-protected or private), whatever its status says |
+| `status` | `EmitPost.status` is set and is not `published` (draft, in review) |
+| `status_missing` | No status, and `options.requireStatus` is on |
+| `scheduled` | `publish_at` is later than `options.now` (default: the time of the emit). The first emit after that time builds the entry |
+| `publish_at_invalid` | `publish_at` is not a date |
+
+Without `requireStatus`, an entry with no status is treated as published. A link on a published page to a held-back entry is kept as its text, and a redirect that points at one is not written; it is listed in `redirects.manual` instead. `EmitResult.withheld` names every held-back entry (`entries`) and every link that was unwrapped (`links`), and the same facts appear in `warnings`. `publishedContent` and `holdReason` are exported if you need the same filter outside the emit.
 
 ## Images
 
@@ -221,7 +247,7 @@ A theme's "recent posts" block, cloned, freezes on the day of the migration. `Co
 
 **Runtime components** (`comments`, `form`) get real implementations when you supply `input.runtime`. They are covered in the [Forms & Comments guide](/guides/forms-comments).
 
-What those components say to a visitor comes from the site's `ui-strings` dictionary (`.contentrain/content/site/ui-strings/{locale}.json`), read at build time for the page's language — see [What the thread and the form say](/guides/forms-comments#what-the-thread-and-the-form-say). `UI_STRINGS_MODEL` and `UI_STRING_DEFAULTS` are exported so a producer creates the dictionary the site reads.
+What those components say to a visitor comes from the site's `ui-strings` dictionary (`.contentrain/content/site/ui-strings/{locale}.json`), read at build time for the page's language — see [What the thread and the form say](/guides/forms-comments#what-the-thread-and-the-form-say). `UI_STRINGS_MODEL` and `UI_STRING_DEFAULTS` are exported so a producer creates the dictionary the site reads. `options.uiStrings.dir` changes where the dictionary is read from, and `options.uiStrings.locales` declares which languages it covers.
 
 ## Redirects
 
