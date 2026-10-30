@@ -451,6 +451,26 @@ describe('what the importer writes passes its own models', () => {
     expect(violations).toEqual([])
   })
 
+  it('media width/height stored as strings (video uploads) are written as whole numbers', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const first = raw.attachments[0]!
+    const sized = (id: number, width: unknown, height: unknown) => ({ ...first, id, slug: `v-${id}`, image_meta: { width, height } })
+    const result = rawToContentrain({
+      ...raw,
+      attachments: [...raw.attachments, sized(9001, '596', '336'), sized(9002, '640.6', 360), sized(9003, 'auto', ''), sized(9004, '-1', null)],
+    })
+    const media = JSON.parse(result.files[MEDIA]!) as Record<string, { width?: unknown; height?: unknown }>
+    expect(media[hexId('media:9001')]).toMatchObject({ width: 596, height: 336 })
+    expect(media[hexId('media:9002')]).toMatchObject({ width: 641, height: 360 })
+    for (const id of [9003, 9004]) {
+      expect(media[hexId(`media:${id}`)]).not.toHaveProperty('width')
+      expect(media[hexId(`media:${id}`)]).not.toHaveProperty('height')
+    }
+    const { checked, violations } = storeViolations(result.files)
+    expect(checked['media.width']).toBeGreaterThan(0)
+    expect(violations).toEqual([])
+  })
+
   it('with a single content type, media parent is a single-target relation holding the id', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const result = rawToContentrain({ ...raw, posts: raw.posts.filter((p) => p.type === 'post') })

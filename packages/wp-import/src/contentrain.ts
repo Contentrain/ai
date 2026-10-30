@@ -113,6 +113,15 @@ type Meta = { status: string; source: string; updated_by: string; publish_at?: s
 
 const pick = (o: Record<string, unknown>, keys: Set<string>): Entry =>
   Object.fromEntries(Object.entries(o).filter(([k, v]) => keys.has(k) && v !== undefined && v !== null && v !== ''))
+/**
+ * A media width/height as the model's integer: WordPress stores a video's size
+ * in `_wp_attachment_metadata` as strings ("596"). A numeric value rounds to a
+ * whole number; anything else (empty, "auto", negative) is left out.
+ */
+const wholeSize = (v: unknown): number | undefined => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : undefined
+}
 const typeModelId = (t: string): string => (t === 'post' ? 'posts' : t === 'page' ? 'pages' : t.replace(/_/g, '-'))
 const domainOf = (t: string): string => (t === 'post' ? 'blog' : t === 'page' ? 'site' : 'custom')
 
@@ -578,7 +587,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
     const target = a.parent ? postEntry.get(a.parent) : undefined
     if (a.parent && !target) report.dropped_relations++
     const parent = target ? toContent.ref(target) : null
-    const im = (a.image_meta ?? null) as { width?: number; height?: number } | null
+    const im = (a.image_meta ?? null) as { width?: unknown; height?: unknown } | null
     contents.media![id] = pick(
       {
         title: strip(a.title) || slug,
@@ -588,8 +597,8 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         caption: strip(a.caption),
         description: strip(a.description),
         mime: a.mime,
-        width: im?.width,
-        height: im?.height,
+        width: wholeSize(im?.width),
+        height: wholeSize(im?.height),
         file: a.file,
         parent,
         wp_id: a.id,
