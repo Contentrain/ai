@@ -673,7 +673,7 @@ const source = commentsExportSource(handoff.comments?.export)
 
 ## Migrate → Studio claim
 
-A paid Migrate order includes a Studio trial (the v1 claim; the v2 claim is described [below](#v2-migrate-with-studio)). At delivery, Migrate hands the customer to Studio with a signed claim token: a compact JWS, `alg: "EdDSA"` (Ed25519), signed with Migrate's private key and verified with its public key (no shared secret; optional `kid` for rotation). `MigrateStudioClaim` is the payload both apps bind to.
+The v1 claim is the "Open in Studio" link of a delivered Migrate order that includes Studio. At delivery, Migrate hands the customer to Studio with a signed claim token: a compact JWS, `alg: "EdDSA"` (Ed25519), signed with Migrate's private key and verified with its public key (no shared secret; optional `kid` for rotation). `MigrateStudioClaim` is the payload both apps bind to. Studio attaches the delivered repository to the grant the order already has, which the order's checkout set up through the [v2 claim](#v2-migrate-with-studio).
 
 | Claim | Meaning |
 |---|---|
@@ -684,7 +684,7 @@ A paid Migrate order includes a Studio trial (the v1 claim; the v2 claim is desc
 | `order_id` | Migrate order; Studio grants once per order |
 | `email` | verified at Migrate; shown, not required to match the GitHub login |
 | `plan`, `plan_evidence` | `starter` \| `pro`, and the measurements it was sized on (`limit_key`, `measured`, `limit`, optional `capability`) |
-| `trial_days` | v1 only: 1..90 (v1 grants 60), never taken from the client |
+| `trial_days` | v1 only: required, 1..90, never taken from the client. Studio uses it only for an order that has no grant yet; on a grant the order's checkout set up it is ignored |
 | `repo` | `{ provider: 'github', owner, name }` of the delivered site |
 | `capabilities` | optional discovery summary for the claim screen |
 | `origin` | optional migrated site as a bare origin (`https://host`; `http:` only for localhost). Studio stores it on the grant and fetches migrated media from it alone |
@@ -698,11 +698,11 @@ const result = validateMigrateStudioClaim(payload, { now: Math.floor(Date.now() 
 if (!result.ok) throw new Error(result.errors.join('; '))
 ```
 
-`validateMigrateStudioClaim` checks shape, ranges and — with `now` — the validity window (60 s skew). It does no cryptography: the signature, `jti` replay and `order_id` uniqueness are the consumer's job. `isMigrateStudioClaim` is the shape-only type guard. A malformed `comments_export` does not fail the claim: it is dropped from `result.claim` and reported in `result.warnings` (`comments_export.*: …`), and the trial opens without the export. The guard is stricter: it returns `false` for such a claim, since it narrows the input itself, malformed export included. Read `result.claim` instead.
+`validateMigrateStudioClaim` checks shape, ranges and — with `now` — the validity window (60 s skew). It does no cryptography: the signature, `jti` replay and `order_id` uniqueness are the consumer's job. `isMigrateStudioClaim` is the shape-only type guard. A malformed `comments_export` does not fail the claim: it is dropped from `result.claim` and reported in `result.warnings` (`comments_export.*: …`), and the claim goes through without the export. The guard is stricter: it returns `false` for such a claim, since it narrows the input itself, malformed export included. Read `result.claim` instead.
 
 ### v2: Migrate with Studio
 
-`MigrateStudioClaimV2` (`v: 2`, `MIGRATE_STUDIO_CLAIM_VERSION_2`) is the claim for "Migrate with Studio". It has no trial: the Studio year is part of the order's first invoice, which Studio creates itself, server to server. The claim names the customer's GitHub account so Studio can find or create the user without a sign-in. v1 stays valid for the claim-link flow.
+`MigrateStudioClaimV2` (`v: 2`, `MIGRATE_STUDIO_CLAIM_VERSION_2`) is the claim for "Migrate with Studio". It has no trial. Before the customer pays, Migrate sends it to Studio server to server (a provision request). Studio sets no price on this path: it opens one checkout whose first invoice is the total Migrate quoted (Migrate's fee plus Studio's first year), or none when a plan the account already has covers the site. The claim names the customer's GitHub account so Studio can find or create the user without a sign-in. v1 stays valid for the claim link at delivery.
 
 A v2 claim is a v1 claim without `trial_days`, with these changes:
 
@@ -712,9 +712,9 @@ A v2 claim is a v1 claim without `trial_days`, with these changes:
 | `trial_days` | not part of v2; a v2 claim that carries one is refused |
 | `repo` | optional. A provision request is signed before payment, when the delivery repository does not exist yet; when present it must be valid, never a placeholder |
 | `github_user_id` | the customer's GitHub user id (decimal string) from the Migrate sign-in; Studio finds or creates the user by it |
-| `email_verified` | whether Migrate verified `email`; Studio binds by email only when `true` |
+| `email_verified` | whether Migrate verified `email`; Studio refuses a provision request when it is `false` (an unverified email never creates or links an account) |
 | `return_url` | where Studio sends the customer after paying: `https:` (`http:` for localhost), no credentials or fragment, and accepted only for hosts on Studio's own Migrate allowlist |
-| `billing` | `{ migrate_fee_cents, quoted_total_cents, currency: 'usd' }`: what the customer was quoted, so Studio can refuse a checkout whose price would differ |
+| `billing` | `{ migrate_fee_cents, quoted_total_cents, currency: 'usd' }`: what the customer was quoted. Studio refuses the request when the Migrate fee plus its own line for the account is not `quoted_total_cents`, and Migrate quotes again |
 
 ```ts
 import { validateMigrateStudioClaimAny } from '@contentrain/types'
