@@ -9,7 +9,7 @@ slug: types
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/types)](https://www.npmjs.com/package/@contentrain/types) [![npm downloads](https://img.shields.io/npm/dm/@contentrain/types)](https://www.npmjs.com/package/@contentrain/types)
 
-`@contentrain/types` is the shared type contract for the Contentrain ecosystem. Every package — MCP, CLI, SDK, Rules — imports its domain types from here instead of redefining them. If you are building tooling on top of Contentrain or authoring a framework integration, this is the package you depend on.
+`@contentrain/types` is the shared type contract for the Contentrain ecosystem. Every package — MCP, CLI, SDK, Rules — imports its domain types from here instead of redefining them. If you are building tooling on top of Contentrain or authoring a framework integration, this is the package you depend on. This page describes version 1.79.0.
 
 ## Why a Shared Types Package?
 
@@ -122,13 +122,15 @@ Third-party developers can implement custom providers by implementing these inte
 
 | Interface / Type | Purpose |
 |-----------|---------|
-| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations, plus optional `media?: MediaProvider`, `getMergeBase?` and `createMergeCommit?` (reconcile) members |
+| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations, plus optional `mediaBaseUrl?`, `media?: MediaProvider`, `checkWriteReadiness?`, `contentSource?`, `getMergeBase?` and `createMergeCommit?` (reconcile) members |
+| `WriteReadiness` | Result of `checkWriteReadiness`: `{ blocked, message? }` |
+| `ContentReadSource` | Result of `contentSource`: `{ source: 'working_tree' }` or `{ source: 'ref', ref, commit, checked_out }` |
 | `RepoReader` | Read-only interface (readFile, listDirectory, fileExists) |
 | `RepoWriter` | Write interface (applyPlan for atomic commits) |
 | `ProviderCapabilities` | Capability flags (localWorktree, sourceRead, sourceWrite, pushRemote, branchProtection, pullRequestFallback, astScan, optional mergeCommit) |
 | `FileChange` | A single file addition, modification, or deletion (`{ path, content: string \| null }`) |
-| `ApplyPlanInput` | Input for a single atomic commit (branch, changes, message, author, optional base) |
-| `Commit` | Result of a commit operation (sha, message, author, timestamp) |
+| `ApplyPlanInput` | Input for a single atomic commit (branch, changes, message, author, optional `base`, `context` and `workflowOverride`) |
+| `Commit` | Result of a commit operation (sha, message, author, timestamp, plus optional `workflowAction`, `sync`, `warning`, `base_advance`, `remote_push`, `base_branch`) |
 | `Branch` | Git branch metadata (name, sha, protected) |
 | `FileDiff` | File change within a plan (path, status, before, after) |
 | `MergeResult` | Merge outcome (merged flag, sha, pullRequestUrl, optional `sync?: SyncResult` for LocalProvider, optional `remote?` source-branch cleanup outcome) |
@@ -216,7 +218,7 @@ import {
   CONTENTRAIN_DIR,       // '.contentrain'
   CONTENTRAIN_BRANCH,    // 'contentrain'
   PATH_PATTERNS,         // Canonical file path patterns
-  SLUG_PATTERN,          // /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+  SLUG_PATTERN,          // Unicode: lowercase letters, digits and marks of any script, joined by single hyphens
   ENTRY_ID_PATTERN,      // /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/
   LOCALE_PATTERN,        // /^[a-z]{2}(?:-[A-Z]{2})?$/
   CANONICAL_JSON,        // { indent: 2, encoding: 'utf-8', ... }
@@ -228,7 +230,7 @@ import {
 | `CONTENTRAIN_DIR` | `'.contentrain'` | Root directory name |
 | `CONTENTRAIN_BRANCH` | `'contentrain'` | Dedicated content branch name |
 | `PATH_PATTERNS` | Object | Canonical paths for config, models, content, meta |
-| `SLUG_PATTERN` | RegExp | Validates slug format |
+| `SLUG_PATTERN` | RegExp | Slug format: `/^[\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+(?:-[\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+)*$/u`. Lowercase letters and digits of any script, joined by single hyphens; a letter's combining marks belong to it. ASCII slugs match as before; a slug is kept as written, not transliterated |
 | `ENTRY_ID_PATTERN` | RegExp | Validates entry IDs |
 | `LOCALE_PATTERN` | RegExp | Validates ISO locale codes |
 | `CANONICAL_JSON` | Object | Deterministic serialization rules |
@@ -241,7 +243,7 @@ Validate functions (pure, dependency-free):
 
 | Function | Purpose |
 |----------|---------|
-| `validateSlug(slug)` | Kebab-case slug validation |
+| `validateSlug(slug)` | Slug validation: matches `SLUG_PATTERN`, is Unicode NFC (one address, one spelling), is at most 200 bytes (a slug is also a file name), and does not start with `.` or contain `..`. Returns an error message or `null` |
 | `validateEntryId(id)` | Entry ID format validation |
 | `validateLocale(locale, config)` | Locale format + config support check |
 | `resolveModelLocales(model, config)` | The locales a model's content is expected to cover — `model.locales` when it declares one, otherwise `config.locales.supported` (or the default locale alone when `i18n: false`). Returns `{ locales, source }` |
@@ -291,6 +293,111 @@ Unique constraints and relation references need external state (all entries / ta
 | `SyncResult` | Result of selective file sync (synced files, skipped files, warning) |
 | `ContentrainError` | Structured error with code, message, agent hint, and developer action |
 | `ScaffoldTemplate` | Template definition for project scaffolding |
+
+## Exports by Source Module
+
+The sections above cover the core contract. The package also exports the contracts below, grouped by the source module they live in. The tables list the main exports; every name is exported from the package root. Source files are under `packages/types/src/`.
+
+### `project-plan` — project plan
+
+The one holistic decision of a migration, between the fact pack and the writer: a plan names where content comes from and never copies it. It is written once per site and applied deterministically. Format: `PROJECT_PLAN_FORMAT` (`contentrain-project-plan@1`).
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `ProjectPlan` | interface | The plan: `source`, `site`, `layout` (header, footer, overlays), `models`, `components`, `routes`, optional `behaviors` and `decisions` |
+| `PlanSource`, `PlanSite`, `PlanLocales`, `PlanTokens` | interface | Source description, site settings (mirrors the starter's site config), language prefixes and tags, design tokens |
+| `PLAN_TOKEN_ROLES` / `PlanTokenRole` | const / type | Semantic design roles the kit reads (the starter's `@theme` names without the `--` prefix) |
+| `PlanModel`, `PlanExtraction`, `PlanFormConfig` | interface | A model the plan uses or adds, how fields are extracted from an element, form handling |
+| `PlanComponent` | interface | A component the plan places |
+| `PlanRoute`, `PlanRouteKind`, `PlanPermalink` | interface / type | A route (`home`, `post`, `page`, `blog`, `category`, `tag`, `author`, `custom`) and WordPress-style address patterns such as `/blog/:slug/` |
+| `PlanPlacement`, `PlanBinding`, `PlanValue` | interface / type | A component placed on a route, where its props come from, and the value forms (`field:`, `media:`, `ref:`, `href:`, `term:`, `ui:`, `site:`, `menu:`, `page:`, `const:`) |
+| `PLAN_VALUE_PATTERN`, `PLAN_SECTION_RULE`, `PLAN_BEHAVIOR_REASON`, `CSS_LENGTH` | const | Patterns the validator applies to values, section rules, behavior reasons and CSS sizes. `CSS_LENGTH` is exported so a producer refuses the same values the validator does |
+| `PlanBehavior`, `PlanBehaviorOutcome`, `PLAN_STARTER_FEATURES` | interface / type / const | What becomes of each recorded behavior: `component`, `starter`, `prose`, `drop` or `needs_review` |
+| `PlanDecisionRecord` | interface | A decision the plan rests on, with who made it |
+| `ChromeFrameStep`, `ChromeColumnStep`, `PostMeta`, `PostMetaToken` | type | Responsive frame and column steps; post meta line tokens |
+| `validateProjectPlan(plan)` | function | Returns a `ProjectPlanReport` (`{ errors, warnings }`) |
+| `footerMenusOf`, `fieldDepth`, `sectionFieldName` | function | Helpers: the footer's menus as a list, how many object levels a field nests, a prop name as a section field name |
+
+### `understand` — understand contract
+
+The render-first contract: a template is rendered at three widths, cut into bands by geometry, and each band is read once by a vision model that says what it is and which outline nodes hold its content. A `RegionSpec` holds node ids, never content, and nothing in the contract names a source system or a target framework.
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `UNDERSTAND_WIDTHS`, `Width`, `UNDERSTAND_REFERENCE_WIDTH` | const / type | Render widths (390, 768, 1280) and the reference width whose outline numbers the nodes |
+| `Box`, `MeasuredStyle` | interface | Document-coordinate box and the measured style of a band (every field optional: absent means not measured) |
+| `Band`, `BAND_LANDMARKS`, `BandLandmark`, `SETTLED_STATES`, `SettledState` | interface / const | A horizontal band found by geometry, its landmark, and the page states settled before measuring |
+| `RegionSpec`, `regionId` | interface / function | What one region is and where its content lives; its run-unique id |
+| `ARCHETYPES`, `Archetype`, `ITEM_ARCHETYPES`, `SLOTLESS_ARCHETYPES` | const / type | What a region is, as a shape the kit can build (`other` = the styled fallback) |
+| `SlotRef`, `RegionSlots`, `RegionItem`, `RegionGroup`, `RegionSlotKind`, `RegionSlotDef` | interface / type | Node references the engine reads text, image, link or icon from |
+| `REGION_SLOT_DEFS`, `REGION_ITEM_SLOT_DEFS`, `REGION_GROUP_SLOT_DEFS` | const | The slot vocabulary as data, so prompt, schema and validator cannot drift apart |
+| `DYNAMIC_STATES`, `DynamicState` | const / type | What a still capture cannot hold (slider, tabs, accordion, ...) |
+| `FIDELITIES`, `Fidelity` | const / type | `modern`, `middle`, `faithful`: how close the rebuilt page stays to the source layout |
+| `UNDERSTAND_MIN_CONFIDENCE`, `needsFallback(spec)` | const / function | Below this confidence a region is built as the styled fallback section |
+| `UnderstandCall`, `UnderstandRun` | interface | One model reading (real or replayed) and the run record |
+| `UNDERSTAND_ISSUE_CODES`, `UnderstandIssueCode`, `UnderstandIssue` | const / type / interface | Validation issues |
+| `validateBands(bands)`, `validateRegionSpecs(specs, bands, options?)`, `ValidateRegionSpecsOptions`, `forEachSlot` | function | Check the facts side and the understanding side; an empty result means safe to hand on. `forEachSlot` visits every ref with its kind and path |
+
+### `provider` — provider contract
+
+`RepoProvider` and its supporting types are listed under [Provider Contract Types](#provider-contract-types), with the full definitions in the [RepoProvider Reference](/reference/providers). `WriteReadiness` and `ContentReadSource` are the return types of the optional `checkWriteReadiness` and `contentSource` members.
+
+### `index` — context, titles and frontmatter
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `ContextProject`, `ContextContent`, `ContextNormalize`, `ContextConventions` | interface | The `project`, `content`, `normalize` and `conventions` blocks of `ContextJson`: project intelligence that MCP keeps across writes and never writes itself |
+| `MODEL_FIELD_ORDER`, `MODEL_EXTENSION_KEYS` | const | Canonical top-level key order of a model file; model keys carried verbatim for the runtime provider (`form`, `comments`) |
+| `DICTIONARY_TITLE_FIELD`, `TITLE_FIELD_TYPES`, `TitleFieldTarget`, `titleFieldTarget(fields, path)`, `isTitleFieldType` | const / type / function | The `title_field` contract: a dictionary's only legal value is `'key'`; other kinds name a field whose type can render as text; a dotted path reaches at most one object deep |
+| `conflictId(conflict)` | function | Derives a reconcile conflict id from its position and its three values |
+| `FrontmatterPreserved`, `FrontmatterPreservedBlock`, `preservedKeyConflicts` | interface / function | Frontmatter lines the reader cannot turn into fields (and the file layout) that `parseMarkdownFrontmatter` returns and `serializeMarkdownFrontmatter` writes back, so a save does not erase them |
+| `frontmatterCommentKeys(content)` | function | Top-level keys whose value line ends in a `# comment`, which the readers drop |
+
+### `execution` and `approval` — constants
+
+The plan, receipt and evaluator types are described in [Execution & Approval Contracts](#execution-approval-contracts). Their constants:
+
+| Export | Values |
+|---|---|
+| `EXECUTION_CONTRACT_VERSION` | `1` |
+| `RISK_CLASSES` | `read_only`, `low_risk_content`, `bulk_content`, `destructive_schema`, `external_effect`, `financially_material`, `deployment` |
+| `APPROVAL_GATES` | `plan`, `change`, `release` |
+| `APPROVAL_MODES` | `auto`, `single`, `quorum` |
+| `RUN_STATUSES` | `draft`, `planned`, `awaiting_approval`, `approved`, `scheduled`, `queued`, `running`, `verifying`, `completed`, `paused`, `needs_attention`, `retrying`, `failed`, `cancelled`, `expired`, `rolled_back` |
+| `TERMINAL_RUN_STATUSES` | `completed`, `failed`, `cancelled`, `expired`, `rolled_back` |
+| `SCHEDULE_KINDS` | `once`, `recurring`, `content_event`, `git_event`, `runtime_event`, `external_webhook`, `manual` |
+| `SOURCE_DELTA_OPS` | `created`, `updated`, `deleted`, `moved` |
+| `DEFAULT_APPROVAL_POLICY` | One rule: `low_risk_content` at the `change` gate needs a single approver |
+
+Related types: `ApprovalMode`, `ScheduleKind`, `MisfirePolicy` (`skip`, `run_once`, `run_all`), `AutomationSchedule`, `Checkpoint`, `VerificationCheck`, `ProjectRef`, `SourceCursor`, `SourceDeltaEntry`, `SourceDeltaOp`, `ApprovalDecision`, `ApprovalEvaluation`, `ApprovalStatus`, `RejectedGrant`.
+
+### `migration` — migration contracts
+
+Plain-JSON shapes for the WordPress to static-site pipeline, shared by producers (the bridge plugin, REST and WXR importers) and consumers (the migration engine, Studio, the Astro emitter).
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `RawIR` and the `Raw*` family (`RawSite`, `RawPost`, `RawTerm`, `RawMenu`, `RawComment`, `RawRedirect`, `RawSeo`, `RawRouting`, `RawHardcodedText`, `RawIntegration`, `RawLanguages`, ...) | interface | What a source holds, as exported |
+| `CAPABILITY_KEYS`, `CapabilityKey`, `CapabilityDetection`, `CapabilityManifest` | const / interface | The capabilities discovery can detect and report |
+| `ProjectIR`, `RouteModel`, `ComponentDef`, `LayoutFamily`, `DesignTokens`, `QueryBinding` | interface | The intermediate representation the emitter consumes |
+| `MigrationHandoff`, `HandoffOffer`, `HandoffCapability`, `CostEstimate`, `CostComparison` | interface | The document a delivery writes for readers such as Studio |
+| `CommentsExport`, `COMMENTS_EXPORT_FORMAT`, `EntrySourceRef`, `HandoffCommentsExport`, `commentsExportSource`, `validateHandoffCommentsExport`, `isRepoRelativePath` | interface / function | The comments export and how a handoff references it (see below) |
+| `CHROME_*` markers, `LIST_ITEMS_SLOT`, `RAW_MARK_SUFFIX`, `componentSlot` | const / function | Placeholder markers in chrome templates |
+| `MIGRATION_CONTRACT_VERSION`, `SOURCE_ACCESS_LADDER`, `SourceAccessKind` | const / type | Contract version and the ways a source can be reached |
+| `MIGRATION_HANDOFF_GOLDEN` | const | A golden `MigrationHandoff` document published so producer and reader test against the same bytes. Treat it as read-only |
+
+### `migrate-claim` — claim and Studio exchange
+
+The claim payload and its validators are described in [Migrate → Studio claim](#migrate-studio-claim).
+
+### `media` and `canonical`
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `isStoredMediaPath(value)` | function | Whether a value is a relative stored `media/...` path rather than an external link |
+| `toDeliveryUrl(base, path)` | function | Joins a relative media path onto the per-project delivery base |
+| `rewriteMediaUrl`, `rewriteFieldMedia`, `rewriteEntryMedia`, `rewriteMarkdownMedia` | function | Rewrite stored media references to delivery URLs in a value, a field, an entry (shallow copy, input untouched) or a markdown body. External URLs and non-strings pass through |
+| `sortKeys`, `canonicalStringify` | function | Deterministic serialization; they live in their own module so `plan_hash` can use them without an import cycle |
 
 ## Frontmatter Round Trip
 

@@ -9,6 +9,8 @@ slug: skills
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/skills)](https://www.npmjs.com/package/@contentrain/skills)
 
+Current version: 0.9.9.
+
 `@contentrain/skills` is the **procedural** layer: step-by-step workflows an agent loads when it needs them. Its counterpart, [`@contentrain/rules`](/packages/rules), is the policy layer — the constraints that hold whatever the agent is doing.
 
 The split is the difference between a driving manual and a traffic law. An agent needs both.
@@ -121,6 +123,7 @@ console.log(WORKFLOW_SKILLS.length) // 12 — the flat legacy list
 | Cursor | `.cursor/rules/` | `.cursor/skills/` |
 | Windsurf | `.windsurf/rules/` | `.windsurf/skills/` |
 | GitHub Copilot | `.github/` | `.agents/skills/` |
+| OpenAI Codex | project root (`AGENTS.md`) | `.agents/skills/` |
 
 ```bash
 contentrain skills --update   # refresh after upgrading packages
@@ -133,7 +136,7 @@ Existing rule files are never overwritten. Granular rule files from older versio
 
 ## Claude Code plugin
 
-Claude Code users can skip the per-skill install entirely:
+Claude Code users can skip the per-skill install entirely (see the [plugin page](/packages/plugin)):
 
 ```
 /plugin marketplace add Contentrain/ai

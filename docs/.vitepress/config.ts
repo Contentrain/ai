@@ -25,6 +25,7 @@ const LLMS_PAGE_ORDER = [
   'packages/verify',
   'packages/astro-kit',
   'packages/decide',
+  'packages/plugin',
   'guides/first-model',
   'guides/providers',
   'guides/http-transport',
@@ -135,6 +136,7 @@ export default defineConfig({
         { text: 'Verify', link: '/packages/verify' },
         { text: 'Astro Kit', link: '/packages/astro-kit' },
         { text: 'Decide', link: '/packages/decide' },
+        { text: 'Claude Code Plugin', link: '/packages/plugin' },
       ]},
       { text: 'Guides', items: [
         { text: 'Your First Model', link: '/guides/first-model' },
@@ -184,6 +186,7 @@ export default defineConfig({
             { text: 'Verify', link: '/packages/verify' },
             { text: 'Astro Kit', link: '/packages/astro-kit' },
             { text: 'Decide', link: '/packages/decide' },
+            { text: 'Claude Code Plugin', link: '/packages/plugin' },
           ],
         },
         {

@@ -9,6 +9,8 @@ slug: rules
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/rules)](https://www.npmjs.com/package/@contentrain/rules)
 
+Current version: 0.7.6.
+
 `@contentrain/rules` is the **policy** layer: what is allowed and what is not, loaded for every conversation regardless of the task. Its counterpart, [`@contentrain/skills`](/packages/skills), is the procedural layer — the step-by-step workflows an agent loads on demand.
 
 Together they mean any agent — Claude, GPT, or a custom model — holds the same quality standards and operational patterns when it touches Contentrain content.
@@ -117,6 +119,7 @@ The two packages ship and version separately, and an agent can load either witho
 | Cursor | `.cursor/rules/` | `.cursor/skills/` | `.mdc` with `alwaysApply: true` |
 | Windsurf | `.windsurf/rules/` | `.windsurf/skills/` | `trigger: always_on` frontmatter |
 | GitHub Copilot | `.github/` | `.agents/skills/` | `copilot-instructions.md` |
+| OpenAI Codex | project root | `.agents/skills/` | `AGENTS.md` (shared with other tools; MCP config in `.codex/config.toml`) |
 
 ::: info Non-Destructive Installation
 Existing rule files are not overwritten. Old granular rule files from previous versions are automatically cleaned up.
