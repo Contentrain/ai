@@ -73,10 +73,10 @@ export function registerWorkflowTools(
   // ─── contentrain_validate ───
   server.tool(
     'contentrain_validate',
-    'Validate project content against model schemas. Detects required field violations, type mismatches, broken relations, secret leaks, i18n parity issues, and more. If fix:true, auto-fixes structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, scheduling keys an older content_save leaked into document frontmatter) and backfills a missing model title_field — do NOT manually edit .contentrain/ files.',
+    'Validate project content against model schemas. Detects required field violations, type mismatches, broken relations, secret leaks, i18n parity issues, and more. If fix:true, auto-fixes structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, scheduling keys an older content_save leaked into document frontmatter) and backfills a missing model title_field — do NOT manually edit .contentrain/ files. Content without meta gets meta with status published, matching what delivery already serves. A fix that would change whether an entry is delivered is listed in visibility_changes and left on its branch for review instead of auto-merged.',
     {
       model: z.string().optional().describe('Model ID to validate (omit for all models)'),
-      fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, publish_at/expire_at copies an older content_save left in document frontmatter when meta holds the same key) and backfill a missing model title_field. Each backfilled title_field is reported as a notice naming the rule that chose it. Default: false'),
+      fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, publish_at/expire_at copies an older content_save left in document frontmatter when meta holds the same key) and backfill a missing model title_field. Each backfilled title_field is reported as a notice naming the rule that chose it. Meta backfilled for content without meta is status published (delivery already serves such entries); a fix that changes whether an entry is delivered is listed in visibility_changes and held for review. Default: false'),
     },
     TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {
@@ -116,7 +116,8 @@ export function registerWorkflowTools(
           // Use git transaction for fixes. Force auto-merge: structural fixes
           // (canonical sort, orphan meta, missing locale files) are cosmetic
           // infra repairs and should land directly on contentrain rather than
-          // spawn a pending cr/fix/validate review branch.
+          // spawn a pending cr/fix/validate review branch — unless a fix
+          // changed what delivery serves, which is held for review below.
           const branch = buildBranchName('fix', 'validate')
           const tx = await createTransaction(projectRoot, branch, { workflowOverride: 'auto-merge' })
 
@@ -130,9 +131,15 @@ export function registerWorkflowTools(
                 tool: 'contentrain_validate',
                 model: input.model ?? '*',
               })
-              const gitResult = await tx.complete()
+              // A fix that publishes or unpublishes an entry is a content
+              // decision, not a repair: keep it on its branch for a human.
+              const changes = result!.visibility_changes ?? []
+              const gitResult = await tx.complete({ review: changes.length > 0 })
 
               const nextSteps: string[] = [...divergenceNextSteps(gitResult)]
+              if (changes.length > 0) {
+                nextSteps.push(`Review the ${changes.length} entr${changes.length === 1 ? 'y' : 'ies'} in visibility_changes, then merge ${branch} with contentrain_merge, or restore a status with contentrain_bulk update_status`)
+              }
               if (result!.summary.errors > 0) nextSteps.push('Fix remaining errors manually')
               if (result!.summary.warnings > 0) nextSteps.push('Review warnings')
               nextSteps.push('Run contentrain_validate again to verify')
@@ -140,7 +147,9 @@ export function registerWorkflowTools(
               return {
                 content: [{ type: 'text' as const, text: JSON.stringify({
                   status: 'committed',
-                  message: `Validation complete. ${result!.fixed} issue(s) auto-fixed and committed to git. Do NOT manually edit .contentrain/ files.`,
+                  message: changes.length > 0
+                    ? `Validation complete. ${result!.fixed} issue(s) fixed and committed to ${branch}, NOT merged: the fixes change whether ${changes.length} entr${changes.length === 1 ? 'y is' : 'ies are'} delivered (see visibility_changes). Do NOT manually edit .contentrain/ files.`
+                    : `Validation complete. ${result!.fixed} issue(s) auto-fixed and committed to git. Do NOT manually edit .contentrain/ files.`,
                   ...result!,
                   git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push, base_branch: gitResult.base_branch }),
                   ...(gitResult.warning ? { warning: gitResult.warning } : {}),

@@ -32,6 +32,24 @@ export interface ValidateResult {
   }
   issues: ValidationError[]
   fixed: number
+  /**
+   * Under `fix` only: every entry whose delivery a fix changed. Empty when the
+   * fixes kept every entry as visible, or as hidden, as it was. See {@link VisibilityChange}.
+   */
+  visibility_changes?: VisibilityChange[]
+}
+
+/**
+ * An entry a fix moved across the delivery line: served before and not after,
+ * or the reverse. A structural fix should never do this silently — the tool
+ * lists the entry and holds the fix for review instead of merging it.
+ */
+export interface VisibilityChange {
+  model: string
+  locale: string
+  entry: string
+  before: 'visible' | 'hidden'
+  after: 'visible' | 'hidden'
 }
 
 // ─── Reader-backed IO helpers ───
@@ -50,6 +68,60 @@ async function readTextViaReader(reader: RepoReader, path: string): Promise<stri
   } catch {
     return null
   }
+}
+
+// ─── Delivery visibility ───
+
+/**
+ * Delivery's rule for one entry's meta, as `@contentrain/query` applies it
+ * (`isPublishedAt`, default contract) and Studio's CDN serves it: no meta is
+ * visible (content that predates meta), a status other than `published`
+ * hides, and `publish_at`/`expire_at` gate the rest.
+ */
+function deliveredAt(meta: unknown, at: number): boolean {
+  if (meta === undefined) return true
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return false
+  const value = meta as Record<string, unknown>
+  if (value['status'] && value['status'] !== 'published') return false
+  for (const key of ['publish_at', 'expire_at'] as const) {
+    if (value[key] === undefined || value[key] === null) continue
+    const time = typeof value[key] === 'string' ? Date.parse(value[key]) : Number.NaN
+    if (!Number.isFinite(time)) return false
+    if (key === 'publish_at' ? time > at : time <= at) return false
+  }
+  return true
+}
+
+/**
+ * Which of a collection's entries delivery serves, keyed `locale\0entry`. Read
+ * from the canonical meta path delivery reads, so a meta file a fix moves into
+ * that path counts from the moment it lands there.
+ */
+async function collectionVisibility(
+  reader: RepoReader,
+  model: ModelDefinition,
+  config: ContentrainConfig,
+  at: number,
+): Promise<Map<string, boolean>> {
+  const visible = new Map<string, boolean>()
+  for (const locale of resolveModelLocales(model, config).locales) {
+    const content = await readJsonViaReader<Record<string, unknown>>(reader, contentFilePath(model, locale))
+    if (!content) continue
+    const meta = await readJsonViaReader<Record<string, unknown>>(reader, metaFilePath(model, locale, config.locales.default))
+    for (const entry of Object.keys(content)) visible.set(`${locale}\0${entry}`, deliveredAt(meta?.[entry], at))
+  }
+  return visible
+}
+
+function visibilityChanges(model: string, before: Map<string, boolean>, after: Map<string, boolean>): VisibilityChange[] {
+  const changes: VisibilityChange[] = []
+  for (const [key, was] of before) {
+    const now = after.get(key)
+    if (now === undefined || now === was) continue
+    const [locale, entry] = key.split('\0') as [string, string]
+    changes.push({ model, locale, entry, before: was ? 'visible' : 'hidden', after: now ? 'visible' : 'hidden' })
+  }
+  return changes
 }
 
 // ─── Shared field validation helpers ───
@@ -353,7 +425,11 @@ async function validateCollectionModel(
           await writeMeta(projectRoot, model, { locale, entryId, defaultLocale: config.locales.default }, {
             // `source: 'import'` on purpose: this record is being fabricated
             // for content that arrived without one, not written by an agent.
+            // `published` because delivery already serves an entry with no
+            // meta: the record states what is live and changes nothing. A
+            // `draft` here silently unpublished such entries (#711).
             ...mergeEntryMeta(undefined),
+            status: 'published',
             source: 'import',
           })
           fixed++
@@ -1107,6 +1183,10 @@ export async function validateProject(
   let totalEntries = 0
   let totalFixed = 0
   let modelsChecked = 0
+  const changes: VisibilityChange[] = []
+  // One clock for every before/after pair, so a schedule boundary passing
+  // mid-run never reads as a change a fix made.
+  const at = Date.now()
 
   const config = await readConfig(reader)
   if (!config) {
@@ -1137,9 +1217,14 @@ export async function validateProject(
     let result: { entries: number; fixed: number }
 
     switch (model.kind) {
-      case 'collection':
+      case 'collection': {
+        // Only collection fixes write meta (orphan backfill, stray moves), so
+        // they are the only fixes that can change what delivery serves.
+        const before = fix ? await collectionVisibility(reader, model, config, at) : undefined
         result = await validateCollectionModel(reader, projectRoot, model, config, issues, fix)
+        if (before) changes.push(...visibilityChanges(model.id, before, await collectionVisibility(reader, model, config, at)))
         break
+      }
       case 'singleton':
         result = await validateSingletonModel(reader, projectRoot, model, config, issues, fix)
         break
@@ -1216,6 +1301,7 @@ export async function validateProject(
     },
     issues,
     fixed: totalFixed,
+    ...(fix ? { visibility_changes: changes } : {}),
   }
 }
 
