@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/mcp",
-  "version": "3.11.18",
+  "version": "3.11.19",
   "mcpName": "io.github.Contentrain/contentrain",
   "license": "MIT",
   "description": "Local-first MCP server for Contentrain's content governance ecosystem — 27 deterministic tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers",
