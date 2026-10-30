@@ -270,6 +270,13 @@ describe('validateMigrateAccountStateRequest', () => {
     expect(validateMigrateAccountStateRequest(req({ exp: NOW + 5000 }))).toEqual({ ok: false, errors: ['exp: lifetime too long'] })
     expect(validateMigrateAccountStateRequest(req(), { now: NOW + 5000 })).toEqual({ ok: false, errors: ['exp: expired'] })
   })
+
+  it('accepts a request without a GitHub id (before sign-in), never a null or empty one', () => {
+    const { github_user_id: _, ...anonymous } = req()
+    expect(validateMigrateAccountStateRequest(anonymous, { now: NOW + 5 })).toEqual({ ok: true, request: anonymous })
+    expect(validateMigrateAccountStateRequest(req({ github_user_id: null }))).toEqual({ ok: false, errors: ['github_user_id: invalid'] })
+    expect(validateMigrateAccountStateRequest(req({ github_user_id: '' }))).toEqual({ ok: false, errors: ['github_user_id: invalid'] })
+  })
 })
 
 describe('grant status and install-url requests', () => {
