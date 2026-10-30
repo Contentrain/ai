@@ -138,6 +138,10 @@ pnpm --filter @contentrain/rules test
 pnpm --filter @contentrain/rules typecheck
 ```
 
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). The other parts: [Studio](https://github.com/Contentrain/studio) for team review and roles, [Migrate](https://migrate.contentrain.io) for moving WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge), a free WordPress plugin that exports a site as a Contentrain store.
+
 ## License
 
 MIT

@@ -6,6 +6,10 @@ The analysis that *produces* a good ProjectIR is the hard part and lives elsewhe
 
 ## Usage
 
+```bash
+pnpm add @contentrain/emitter-astro
+```
+
 ```ts
 import { emitAstroProject, writeEmit } from '@contentrain/emitter-astro'
 
@@ -319,6 +323,10 @@ literal routes.
 ## Checking the emitted types
 
 The unit suite asserts what the emitter writes; `pnpm --filter @contentrain/emitter-astro test:astro` (after `pnpm build`) checks it the way a migrated site's build does. It emits a site with every kind of page and endpoint — posts, pages, nested category and tag archives with their feeds, an author profile, a list, a static page, the feed, llms.txt, redirects, and a draft, an entry in review, a post scheduled for later and password-protected and private posts beside published ones — once with trailing slashes and once without, installs it with npm from its own `package.json` the way a production host does (`NODE_ENV=production`, `CI` set, no terminal), and runs `astro check` and then the site's own `npm run build`. A pass is a result naming 0 errors and a completed build; Astro's "requires @astrojs/check" notice fails it even though Astro exits 0 there. The first site is then built with `astro build`, and the output is read: the published posts have pages, sitemap lines and feed items, the held-back ones have none (nor llms.txt links or list cards), no file holds the password-protected post's text, and the live page's links to held-back entries are text. CI and the release workflow run it on every change.
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)) and a building block for moving WordPress sites to Astro, which [Migrate](https://migrate.contentrain.io) does as a paid service. [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles and the runtime the emitted forms and comments bind to; [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 

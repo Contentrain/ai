@@ -170,6 +170,10 @@ written.
 - [`@contentrain/wp-import`](../wp-import) — produces the content
 - [`@contentrain/types`](../types) — the shared contracts
 
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)) and a building block for moving WordPress sites to Astro, which [Migrate](https://migrate.contentrain.io) does as a paid service. [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles; [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
+
 ## License
 
 MIT

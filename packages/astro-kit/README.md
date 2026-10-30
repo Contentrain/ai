@@ -127,6 +127,10 @@ The full list is in `catalog.json` under `tokens`.
 
 ## API
 
+```bash
+pnpm add -D @contentrain/astro-kit
+```
+
 ```ts
 import { copyComponents, KIT_COMPONENTS_DIR, loadCatalog, loadMapping, planCopy, rulesFor } from '@contentrain/astro-kit'
 
@@ -167,6 +171,10 @@ component props, then runs `astro check` and a build. Last, it compares
 screenshots at 390, 768 and 1280 px with `visual/<platform>/`. The starter
 carries some kit components in `src/components/kit/`, and a test keeps those
 copies identical to the source here.
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)) and a building block for moving WordPress sites to Astro, which [Migrate](https://migrate.contentrain.io) does as a paid service. [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles (and runs the forms behind `contact-form`); [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 

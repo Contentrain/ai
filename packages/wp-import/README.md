@@ -11,6 +11,12 @@ SourceDeltaPlan + store (+ incoming export) ──► placed SourceDeltaPlan
 
 ## Usage
 
+```bash
+pnpm add @contentrain/wp-import
+```
+
+The `contentrain import` command in the [CLI](../cli) wraps this package.
+
 ```ts
 import { parseWxr, fetchRestRawIR, rawToContentrain, buildCommentsExport } from '@contentrain/wp-import'
 
@@ -270,6 +276,10 @@ non-colliding identities are unchanged. Rebuild the entry map and comments expor
 from the same corrected import. Locale normalization currently uses primary
 language codes: a group whose regional translations collapse to the same locale
 is rejected rather than silently overwritten.
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)) and a building block for moving WordPress sites to Astro, which [Migrate](https://migrate.contentrain.io) does as a paid service. [Bridge](https://github.com/Contentrain/wordpress-bridge) is the free WordPress plugin on the other side: it exports a site as a validated Contentrain store, as a ZIP or to your own GitHub repository. [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles.
 
 ## License
 

@@ -266,7 +266,7 @@ to understand:
 
 ## Studio Integration
 
-The `studio` command group connects the CLI to [Contentrain Studio](https://studio.contentrain.io) for enterprise workflows.
+The `studio` command group connects the CLI to [Contentrain Studio](https://studio.contentrain.io), the team operating surface for governed content.
 
 Authenticate and connect:
 
@@ -320,6 +320,10 @@ pnpm --filter contentrain test -- --run
 pnpm --filter contentrain exec tsc --noEmit
 pnpm --filter contentrain build
 ```
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This CLI is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles on the same repository, [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 
