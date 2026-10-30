@@ -389,9 +389,9 @@ contentrain serve --mcpHttp --port 3334 --host 0.0.0.0 --authToken $TOKEN
 | `--host <bind>` | `CONTENTRAIN_HOST` | Bind address (default `localhost`) |
 | `--authToken <token>` | `CONTENTRAIN_AUTH_TOKEN` | Bearer token, enforced per-request when set |
 
-**Auth:** when a token is supplied, every request must send `Authorization: Bearer <token>`. Binding MCP HTTP to `0.0.0.0` without a token logs a warning but the server still starts — the endpoint exposes full project write access, so always pass a token on non-localhost binds.
+**Auth:** when a token is supplied, every request must send `Authorization: Bearer <token>`. Binding MCP HTTP to any host other than `localhost` / `127.0.0.1` / `::1` without a token is a hard error — the endpoint exposes full project write access, so the server refuses to start (OWASP Secure-by-Default).
 
-**Web UI is stricter:** the default serve UI **hard-errors** on any non-localhost bind without `--authToken` / `CONTENTRAIN_AUTH_TOKEN` (OWASP Secure-by-Default) — it refuses to start. Note the UI has no per-request auth today; the token requirement is a start-up gate for exposing it beyond localhost.
+**Web UI follows the same rule:** the default serve UI also refuses a non-loopback bind without `--authToken` / `CONTENTRAIN_AUTH_TOKEN`. Note the UI has no per-request auth today; the token requirement is a start-up gate for exposing it beyond localhost.
 
 ## Studio Integration
 

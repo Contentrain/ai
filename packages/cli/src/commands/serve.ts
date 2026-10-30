@@ -4,6 +4,10 @@ import { createServer } from '@contentrain/mcp/server'
 import { resolveProjectRoot } from '../utils/context.js'
 import consola from 'consola'
 
+// Binds that only this machine can reach. Anything else needs --authToken:
+// both HTTP modes expose the full .contentrain/ write surface.
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
+
 export default defineCommand({
   meta: {
     name: 'serve',
@@ -67,6 +71,19 @@ export default defineCommand({
     // --- MCP over HTTP mode ---
     const useMcpHttp = args.mcpHttp || process.env['CONTENTRAIN_MCP_HTTP'] === 'true' || process.env['CONTENTRAIN_MCP_HTTP'] === '1'
     if (useMcpHttp) {
+      if (!LOOPBACK_HOSTS.has(host) && !authToken) {
+        consola.error([
+          `Refusing to start the HTTP MCP server on ${host} without a Bearer token.`,
+          '',
+          '  Any host that can reach it could write to .contentrain/. Pass a token:',
+          '',
+          `    contentrain serve --mcpHttp --host ${host} --authToken $(openssl rand -hex 32)`,
+          '',
+          '  or bind to localhost.',
+        ].join('\n'))
+        process.exitCode = 1
+        return
+      }
       const { startHttpMcpServer } = await import('@contentrain/mcp/server/http')
       const handle = await startHttpMcpServer({
         projectRoot,
@@ -84,9 +101,6 @@ export default defineCommand({
           'Press Ctrl+C to stop',
         ].join('\n'),
       })
-      if (host === '0.0.0.0' && !authToken) {
-        consola.warn('HTTP MCP server is accessible from the network with no Bearer token. Set --auth-token or CONTENTRAIN_AUTH_TOKEN.')
-      }
       process.on('SIGINT', () => { void handle.close().finally(() => process.exit(0)) })
       process.on('SIGTERM', () => { void handle.close().finally(() => process.exit(0)) })
       return
@@ -99,7 +113,7 @@ export default defineCommand({
     // any reachable host full .contentrain/ write access. Opt-out
     // flags (`--allow-unsafe`) are NOT provided — OWASP Secure-by-
     // Default. Bind to localhost if you want unauthenticated access.
-    if (host !== 'localhost' && host !== '127.0.0.1' && !authToken) {
+    if (!LOOPBACK_HOSTS.has(host) && !authToken) {
       consola.error([
         `Refusing to start serve UI on ${host} without a Bearer token.`,
         '',

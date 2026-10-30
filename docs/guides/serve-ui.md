@@ -268,9 +268,9 @@ For Studio, CI, or remote agents, serve can expose MCP over Streamable HTTP:
 npx contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
 ```
 
-When a token is supplied, every request must send `Authorization: Bearer <token>`. Binding to `0.0.0.0` without a token logs a warning but the server still starts — the endpoint exposes full project write access, so always pass a token on non-localhost binds.
+When a token is supplied, every request must send `Authorization: Bearer <token>`. Binding to any host other than `localhost` / `127.0.0.1` / `::1` without a token is a hard error: the endpoint exposes full project write access, so the server refuses to start (OWASP Secure-by-Default).
 
-**The web UI is stricter:** the default (non-MCP) serve mode **hard-errors** on any non-localhost bind without `--authToken` / `CONTENTRAIN_AUTH_TOKEN` and refuses to start (OWASP Secure-by-Default). The UI has no per-request auth today; the token requirement is a start-up gate for exposing it beyond localhost.
+**The web UI follows the same rule:** the default (non-MCP) serve mode also refuses a non-loopback bind without `--authToken` / `CONTENTRAIN_AUTH_TOKEN`. The UI has no per-request auth today; the token requirement is a start-up gate for exposing it beyond localhost.
 
 See the [HTTP Transport guide](/guides/http-transport) for deployment patterns.
 
