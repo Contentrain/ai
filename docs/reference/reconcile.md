@@ -50,8 +50,8 @@ Reconcile is a three-way merge: **base** is the merge-base tree, **ours** is `co
 | — | changed | changed *identically* | converges |
 | same | changed | — | ours wins |
 | same | — | changed | theirs wins |
-| present | deleted | edited | **`delete_edit` conflict** |
-| — | changed | changed *differently* | **`both_changed` conflict** |
+| present | deleted | edited | **`delete_edit_conflict`** |
+| — | changed | changed *differently* | **conflict** with a kind-specific code: `field_value_conflict`, `dictionary_value_conflict`, `vocabulary_value_conflict`, `model_key_conflict`, `meta_status_conflict`, `document_body_conflict`, `frontmatter_value_conflict`, or `file_conflict` |
 
 A side that did not change keeps no vote. Delete-versus-edit is split out because it needs a different question — "keep or drop?" rather than "which value?".
 
@@ -170,11 +170,11 @@ The result reports what happened mechanically:
 
 Reconcile needs two optional `RepoProvider` members: `getMergeBase` (the common ancestor) and `createMergeCommit` (a genuinely two-parent commit, so the reconciled ref contains both histories).
 
-| Provider | Reconcile |
-|---|---|
-| Local | Yes |
-| GitHub | Yes |
-| GitLab | Falls back to an MR flow |
+| Provider | Plan API (`planReconcile` + `createMergeCommit`) | `contentrain_reconcile` MCP tool |
+|---|---|---|
+| Local | Yes | Yes |
+| GitHub | Yes | No — the tool needs `localWorktree` and a project root |
+| GitLab | Falls back to an MR flow (no `createMergeCommit`) | No |
 
 A provider implementing neither cannot drive a reconcile; callers fall back to a PR/MR flow.
 
