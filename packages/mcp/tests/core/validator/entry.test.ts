@@ -110,6 +110,31 @@ describe('validateContent', () => {
     expect(result.errors.some(e => e.field === 'route' && e.severity === 'warning')).toBe(false)
   })
 
+  // #712: link targets a CMS stores in url fields. WordPress keeps `#` on a
+  // custom menu parent, so a bare `#` is a placeholder — a notice, not a warning.
+  it('url heuristic accepts tel:, mailto: and #fragment links', () => {
+    const fields: Record<string, FieldDef> = { href: { type: 'url' } }
+    for (const href of ['tel:+905551112233', 'mailto:info@example.com', '#contact']) {
+      const result = validateContent({ href }, fields, 'menu-items', 'en', 'abc')
+      expect(result.errors, href).toEqual([])
+    }
+  })
+
+  it('url heuristic reports a bare # as a notice', () => {
+    const fields: Record<string, FieldDef> = { href: { type: 'url' } }
+    const result = validateContent({ href: '#' }, fields, 'menu-items', 'en', 'abc')
+    expect(result.errors.map(e => e.severity)).toEqual(['notice'])
+    expect(result.valid).toBe(true)
+  })
+
+  it('url heuristic still warns on an empty tel: or mailto:', () => {
+    const fields: Record<string, FieldDef> = { href: { type: 'url' } }
+    for (const href of ['tel:', 'mailto:']) {
+      const result = validateContent({ href }, fields, 'menu-items', 'en', 'abc')
+      expect(result.errors.map(e => e.severity), href).toEqual(['warning'])
+    }
+  })
+
   it('polymorphic relation requires { model, ref }', () => {
     const fields: Record<string, FieldDef> = {
       author: { type: 'relation', model: ['users', 'admins'] },

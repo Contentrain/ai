@@ -4,7 +4,7 @@ import { readdir, stat } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import type { ContentrainConfig, ModelDefinition } from '@contentrain/types'
 import { readConfig } from './config.js'
-import { listModels, readModel, validateModelDefinition } from './model-manager.js'
+import { collectFieldPaths, inferTitleField, legacyFieldNames, listModels, readModel, titleFieldIssues, validateModelDefinition } from './model-manager.js'
 import { resolveContentDir, resolveJsonFilePath, resolveLocaleStrategy } from './content-manager.js'
 import { autoDetectSourceDirs, discoverFiles } from './scan-config.js'
 import { checkBranchHealth, listRemoteCrBranches } from '../git/branch-lifecycle.js'
@@ -183,20 +183,35 @@ export async function runDoctor(
         files.map(f => readJson<ModelDefinition>(join(modelsDir, f))),
       )
       const unparseable = files.filter((_, i) => parsed[i] === null)
-      const invalid = parsed
-        .filter((m): m is ModelDefinition => m !== null)
-        .filter(m => validateModelDefinition(m).errors.length > 0)
-        .map(m => m.id)
       const models = parsed.filter((m): m is ModelDefinition => m !== null)
+      // Judge each model as the project validator does (#712): a field name the
+      // model already has is a legacy name to plan around, not an error, so it
+      // is passed in as existing — the same call model_save makes.
+      const invalid = models
+        .map(m => ({ model: m, errors: validateModelDefinition(m, { existingFieldPaths: collectFieldPaths(m.fields) }).errors }))
+        .filter(r => r.errors.length > 0)
+      // `validate --fix` repairs one thing in a definition: a missing title_field
+      // it can infer. Promise it only for models whose every error is that.
+      const fixable = (m: ModelDefinition, errors: string[]) => {
+        const titleErrors = titleFieldIssues(m).errors
+        return !m.title_field && inferTitleField(m.kind, m.fields) !== null && errors.every(e => titleErrors.includes(e))
+      }
+      const repairable = invalid.filter(r => fixable(r.model, r.errors))
+      const manual = invalid.filter(r => !fixable(r.model, r.errors))
+      const legacy = models.flatMap(m => legacyFieldNames(m.fields).map(path => `${m.id}.${path}`))
 
       const problems = [
         ...(unparseable.length > 0 ? [`${unparseable.length} failed to parse (${unparseable.join(', ')})`] : []),
-        ...(invalid.length > 0 ? [`${invalid.length} invalid (${invalid.join(', ')}) — run: contentrain validate --fix`] : []),
+        ...(repairable.length > 0 ? [`${repairable.length} invalid (${repairable.map(r => r.model.id).join(', ')}) — run: contentrain validate --fix`] : []),
+        ...(manual.length > 0 ? [`${manual.length} invalid (${manual.map(r => `${r.model.id}: ${r.errors[0]}`).join('; ')}) — fix the definition with contentrain_model_save`] : []),
       ]
+      const notes = legacy.length > 0
+        ? [`${legacy.length} legacy field name(s) kept as-is (${legacy.join(', ')}) — a notice in contentrain validate`]
+        : []
       checks.push({
         name: 'Models',
         pass: problems.length === 0,
-        detail: `${models.length} model(s)${problems.length === 0 ? ', all valid' : `, ${problems.join('; ')}`}`,
+        detail: `${models.length} model(s)${problems.length === 0 ? ', all valid' : `, ${problems.join('; ')}`}${notes.map(n => `; ${n}`).join('')}`,
         severity: problems.length === 0 ? undefined : 'error',
       })
     } catch {

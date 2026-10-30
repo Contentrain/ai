@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path'
 import { simpleGit } from 'simple-git'
 import { RESERVED_PATHS } from '@contentrain/types'
 import { runDoctor } from '../../src/core/doctor.js'
+import { validateProject } from '../../src/core/validator/project.js'
 
 async function writeFileSafe(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true })
@@ -309,6 +310,52 @@ describe('runDoctor — Models check', () => {
 
     expect(models?.pass).toBe(false)
     expect(models?.detail).toContain('failed to parse')
+  })
+
+  // #712: doctor and validate give one verdict on a legacy field name. validate
+  // reports it as a notice, so doctor must not fail the check on it — `validate
+  // --fix` cannot rename a field, and a failure its remedy cannot clear is noise.
+  it('agrees with validate on a legacy kebab-case field name', async () => {
+    await seedMinimalProject(testDir)
+    await writeModelJson('portfolio', {
+      id: 'portfolio',
+      name: 'Portfolio',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: false,
+      title_field: 'title',
+      fields: { 'title': { type: 'string', required: true }, 'portfolio-category': { type: 'string' } },
+    })
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+    const validation = await validateProject(testDir, { model: 'portfolio' })
+
+    expect(validation.summary.errors).toBe(0)
+    expect(validation.issues.some(i => i.severity === 'notice' && i.field === 'portfolio-category')).toBe(true)
+    expect(models?.pass).toBe(true)
+    expect(models?.severity).toBeUndefined()
+    expect(models?.detail).toContain('portfolio.portfolio-category')
+  })
+
+  it('names an error validate --fix cannot repair without promising it will', async () => {
+    await seedMinimalProject(testDir)
+    await writeModelJson('labels', {
+      id: 'labels',
+      name: 'Labels',
+      kind: 'dictionary',
+      domain: 'marketing',
+      i18n: false,
+      title_field: 'key',
+      fields: { title: { type: 'string' } },
+    })
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(false)
+    expect(models?.detail).toContain('labels: Dictionary models cannot have fields')
+    expect(models?.detail).not.toContain('validate --fix')
   })
 
   it('omits severity when every model is valid', async () => {

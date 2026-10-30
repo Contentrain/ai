@@ -1088,7 +1088,10 @@ export function validateSemanticType(value: unknown, type: FieldType): Validatio
         ? []
         : [{ severity: 'warning', message: `"${value}" may not be a valid email` }]
     case 'url':
-      return /^https?:\/\/.+/.test(value) || value.startsWith('/')
+      // A bare `#` is the placeholder WordPress stores on a custom menu parent:
+      // not broken, but not a destination either.
+      if (value === '#') return [{ severity: 'notice', message: '"#" is a placeholder link, not a destination' }]
+      return /^https?:\/\/.+/.test(value) || /^(?:tel|mailto):.+/.test(value) || value.startsWith('/') || value.startsWith('#')
         ? []
         : [{ severity: 'warning', message: `"${value}" may not be a valid URL` }]
     case 'color':
