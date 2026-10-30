@@ -122,7 +122,7 @@ function pageHead(relativePath: string, title: string, description: string, cont
   const url = pageUrl(relativePath)
   const home = url === `${SITE}/`
   const fullTitle = home ? SITE_TITLE : `${title} | ${SITE_TITLE}`
-  const publisher = { '@type': 'Organization', 'name': 'Contentrain', 'url': 'https://contentrain.io', 'logo': `${SITE}/og-image.png` }
+  const publisher = { '@type': 'Organization', 'name': 'Contentrain', 'url': 'https://contentrain.io', 'logo': `${SITE}/logo/contentrain-512.png` }
   const section = sectionOf(relativePath)
   const graph = home
     ? [{ '@type': 'WebSite', 'name': SITE_TITLE, url, description, publisher }]
@@ -171,6 +171,17 @@ export default defineConfig({
   transformHead({ pageData, title, description, content }) {
     if (pageData.isNotFound) return []
     return pageHead(pageData.relativePath, pageData.frontmatter.title ?? pageData.title ?? title, description || SITE_DESCRIPTION, content)
+  },
+
+  // The hero image is the home page's LCP element. A preload ahead of the font preload starts its request with the
+  // CSS; transformHead output lands after the module preloads, where it measured no gain.
+  transformHtml(html, _id, { pageData }) {
+    const hero = pageData.frontmatter.hero?.image?.src
+    if (typeof hero !== 'string') return
+    const tag = `<link rel="preload" href="${hero}" as="image" fetchpriority="high">`
+    const font = html.search(/<link rel="preload" [^>]*as="font"/)
+    const at = font === -1 ? html.indexOf('</head>') : font
+    return `${html.slice(0, at)}${tag}\n    ${html.slice(at)}`
   },
 
   head: [
