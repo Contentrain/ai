@@ -602,8 +602,52 @@ export interface NormalizePlanPatch {
 
 // ─── Context ───
 
+/** `context.json > project` — see `@contentrain/rules/context/context-bridge.md`. */
+export interface ContextProject {
+  name?: string
+  description?: string
+  stack?: string
+  stack_version?: string
+  package_manager?: string
+  src_dir?: string
+  content_consumption?: string
+}
+
+/** `context.json > content` — see `@contentrain/rules/context/context-bridge.md`. */
+export interface ContextContent {
+  import_pattern?: string
+  i18n_strategy?: string
+  default_locale?: string
+  supported_locales?: string[]
+  domains?: Array<{ id: string, description?: string, models?: string[] }>
+}
+
+/** `context.json > normalize` — see `@contentrain/rules/context/context-bridge.md`. */
+export interface ContextNormalize {
+  scan_dirs?: string[]
+  scan_extensions?: string[]
+  ignore_patterns?: string[]
+  import_rewrite?: string
+}
+
+/** `context.json > conventions` — see `@contentrain/rules/context/context-bridge.md`. */
+export interface ContextConventions {
+  tone?: string
+  brand_terms?: Record<string, string>
+  forbidden_terms?: string[]
+  max_title_length?: number
+  max_description_length?: number
+  target_reading_level?: string
+  allowed_richtext_tags?: string[]
+}
+
 export interface ContextJson {
   version: string
+  /** Project intelligence. MCP never writes these; it keeps them across writes. */
+  project?: ContextProject
+  content?: ContextContent
+  normalize?: ContextNormalize
+  conventions?: ContextConventions
   lastOperation: {
     tool: string
     model: string
@@ -618,6 +662,26 @@ export interface ContextJson {
     locales: string[]
     lastSync: string
   }
+}
+
+/**
+ * The keys a write regenerates. Every other key in an existing context.json —
+ * the project intelligence above, and any key a newer writer added — is kept
+ * as it is.
+ */
+const CONTEXT_GENERATED_KEYS = ['version', 'lastOperation', 'stats'] as const
+
+/**
+ * Merge a freshly generated context into the one already on disk: `version`,
+ * `lastOperation` and `stats` come from `next`, everything else from
+ * `previous`. When `previous` is absent or not a JSON object, `next` is
+ * returned as is.
+ */
+export function mergeContextJson(previous: unknown, next: ContextJson): ContextJson {
+  if (!previous || typeof previous !== 'object' || Array.isArray(previous)) return next
+  const merged: Record<string, unknown> = { ...(previous as Record<string, unknown>) }
+  for (const key of CONTEXT_GENERATED_KEYS) merged[key] = next[key]
+  return merged as unknown as ContextJson
 }
 
 // ─── Git Transaction Types ───

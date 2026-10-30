@@ -1,6 +1,9 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RepoReader } from '../../src/core/contracts/index.js'
-import { buildContextChange, type ContextStats } from '../../src/core/context.js'
+import { buildContextChange, writeContext, type ContextStats } from '../../src/core/context.js'
 
 /**
  * buildContextChange stats-injection: passing pre-computed `opts.stats`
@@ -107,5 +110,49 @@ describe('buildContextChange stats injection', () => {
 
     expect(stats['models']).toBe(2)
     expect('entries' in stats).toBe(false)
+  })
+})
+
+/** Project intelligence a team wrote, plus a key from a newer writer. */
+const INTELLIGENCE = {
+  project: { name: 'acme', stack: 'astro' },
+  conventions: { tone: 'Friendly', max_title_length: 80 },
+  normalize: { scan_dirs: ['src/components/'] },
+  future_key: { kept: true },
+}
+
+describe('context.json keeps project intelligence across writes', () => {
+  it('writeContext regenerates lastOperation and stats and keeps every other key', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'cr-context-'))
+    try {
+      await mkdir(join(root, '.contentrain', 'models'), { recursive: true })
+      await writeFile(join(root, '.contentrain', 'config.json'), JSON.stringify({
+        version: 1, stack: 'astro', workflow: 'auto-merge',
+        locales: { default: 'en', supported: ['en'] }, domains: ['blog'],
+      }))
+      await writeFile(join(root, '.contentrain', 'context.json'), JSON.stringify({
+        version: '1', ...INTELLIGENCE,
+        lastOperation: { tool: 'contentrain_init', model: '', locale: 'en', timestamp: '2026-01-01T00:00:00.000Z', source: 'mcp-local' },
+        stats: { models: 0, entries: 0, locales: ['en'], lastSync: '2026-01-01T00:00:00.000Z' },
+      }))
+
+      await writeContext(root, OP)
+
+      const written = JSON.parse(await readFile(join(root, '.contentrain', 'context.json'), 'utf-8'))
+      expect(written).toMatchObject(INTELLIGENCE)
+      expect(written.lastOperation).toMatchObject({ tool: OP.tool, model: 'hero', timestamp: '2026-07-09T12:00:00.000Z' })
+      expect(written.stats.lastSync).toBe('2026-07-09T12:00:00.000Z')
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('buildContextChange keeps them on the reader path too', async () => {
+    const reader = fixtureReader()
+    ;(reader as unknown as { files: Map<string, string> }).files.set('.contentrain/context.json', JSON.stringify({ version: '1', ...INTELLIGENCE }))
+
+    const change = await buildContextChange(reader, OP)
+
+    expect(JSON.parse(change.content!)).toMatchObject({ ...INTELLIGENCE, lastOperation: { tool: OP.tool } })
   })
 })
