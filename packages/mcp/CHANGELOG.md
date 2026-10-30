@@ -1,5 +1,22 @@
 # @contentrain/mcp
 
+## 3.11.20
+
+### Patch Changes
+
+- 2b59642: - `contentrain scaffold --no-sample` now skips sample content. The flag was declared under a name the argument parser never sets, so sample content was always written.
+  - `serve --mcpHttp` now refuses a non-loopback bind without `--authToken`, as the UI mode already did.
+  - `contentrain_merge` with `model` + `locale` now resolves the locale-scoped branch (`cr/{scope}/{model}/{locale}/…`, as bulk copy-locale writes). Before, the narrowing looked for a `cr/content/{model}/{locale}/` prefix no branch has.
+  - `contentrain_submit` and the branch-pressure hints name `cr/*` branches, which is what they act on (they said `contentrain/*`).
+  - `@contentrain/rules` and `@contentrain/skills`: `exports["."]` pointed `types` at `dist/index.d.ts`, which the build does not emit. Types are now declared per condition (`.d.mts` for import, `.d.cts` for require), with top-level `main` / `module` / `types` for older resolvers.
+- 2477820: `context.json` keeps its project intelligence across writes. MCP regenerated the file from scratch after every write, so `project`, `content`, `normalize` and `conventions` (the fields `context-bridge.md` tells agents to prefer over rule defaults) were deleted on the first merge. `writeContext` and `buildContextChange` now update only `version`, `lastOperation` and `stats` and keep every other key, including keys they do not know. A missing or unreadable file behaves as before.
+
+  `@contentrain/types` adds `mergeContextJson(previous, next)`, the rule both writers use, and types the optional `project` / `content` / `normalize` / `conventions` fields on `ContextJson`.
+
+- Updated dependencies [3d552ae]
+- Updated dependencies [2477820]
+  - @contentrain/types@1.79.0
+
 ## 3.11.19
 
 ### Patch Changes

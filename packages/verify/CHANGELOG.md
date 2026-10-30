@@ -1,5 +1,11 @@
 # @contentrain/verify
 
+## 0.3.2
+
+### Patch Changes
+
+- 1475b02: `--allow-host` usage and the `allowHosts` doc now say what the code does: listing the source host itself turns `assets.source-origin-reference` off; other hosts have no effect.
+
 ## 0.3.1
 
 ### Patch Changes

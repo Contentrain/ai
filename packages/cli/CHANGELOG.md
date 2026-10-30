@@ -1,5 +1,24 @@
 # contentrain
 
+## 0.18.21
+
+### Patch Changes
+
+- 2b59642: - `contentrain scaffold --no-sample` now skips sample content. The flag was declared under a name the argument parser never sets, so sample content was always written.
+  - `serve --mcpHttp` now refuses a non-loopback bind without `--authToken`, as the UI mode already did.
+  - `contentrain_merge` with `model` + `locale` now resolves the locale-scoped branch (`cr/{scope}/{model}/{locale}/…`, as bulk copy-locale writes). Before, the narrowing looked for a `cr/content/{model}/{locale}/` prefix no branch has.
+  - `contentrain_submit` and the branch-pressure hints name `cr/*` branches, which is what they act on (they said `contentrain/*`).
+  - `@contentrain/rules` and `@contentrain/skills`: `exports["."]` pointed `types` at `dist/index.d.ts`, which the build does not emit. Types are now declared per condition (`.d.mts` for import, `.d.cts` for require), with top-level `main` / `module` / `types` for older resolvers.
+- Updated dependencies [3d552ae]
+- Updated dependencies [2b59642]
+- Updated dependencies [2477820]
+  - @contentrain/types@1.79.0
+  - @contentrain/mcp@3.11.20
+  - @contentrain/rules@0.7.6
+  - @contentrain/skills@0.9.9
+  - @contentrain/query@7.6.61
+  - @contentrain/wp-import@0.17.5
+
 ## 0.18.20
 
 ### Patch Changes
