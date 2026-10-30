@@ -60,9 +60,9 @@ They are listed as optional dependencies. The scanner still works without them, 
 All write operations are designed around git-backed safety:
 
 - a dedicated `contentrain` branch serves as the content state single source of truth
-- each write creates a temporary worktree on a feature branch forked from `contentrain` (branch name: `cr/{operation}/{model}/{locale}/{timestamp}-{suffix}`)
+- each write creates a temporary worktree on a feature branch forked from `contentrain` (branch name: `cr/{scope}/{target}/{timestamp}-{suffix}`, e.g. `cr/content/blog-post/1730000000-a1b2`; bulk locale copies and scaffold add a `{locale}` segment before the timestamp)
 - auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree when the base branch is the one checked out
-- baseBranch = `CONTENTRAIN_BRANCH` env → `repository.default_branch` → remote HEAD → `main` → `master` → checked-out branch (last resort). A write made on a feature branch never merges, moves or pushes that branch
+- baseBranch = `CONTENTRAIN_BRANCH` env → `repository.default_branch` → remote HEAD → `main` → `master` → checked-out branch → `main` (fallback). A write made on a feature branch never merges, moves or pushes that branch
 - plans are read from the working tree but committed on the fetched `contentrain` tip: JSON changes are carried over key by key, so entries another writer pushed are kept; a same-value conflict writes nothing and returns `CONTENT_WORKING_TREE_STALE`
 - on a checked-out feature branch, which writes do not update, `.contentrain/**` is read from the `contentrain` ref instead (source files still from the working tree); read tools report it as `content_source`
 - review: feature branch pushed to remote for team review; once merged (or deleted), its remote copy is removed too — best-effort, opt out with `remoteBranchCleanup: false` in config.json
@@ -77,7 +77,7 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-27 MCP tools — 22 core + 5 media — with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
+27 MCP tools — 22 core + 5 media — with [annotations](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#tool) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
 **Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
@@ -96,7 +96,7 @@ All write operations are designed around git-backed safety:
 | `contentrain_content_list` | Read content entries | Yes | — |
 | `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
 | `contentrain_submit` | Push `cr/*` branches to remote, then lazily prune merged local + remote leftovers | — | — |
-| `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model); deletes its remote copy | — | — |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model); deletes its remote copy | — | Yes |
 | `contentrain_reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry_run first, resolutions second) | — | — |
 | `contentrain_branch_list` | List pending `cr/*` branches with merge status (`remote: true` adds remote view) | Yes | — |
 | `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch locally and on the remote (contentrain branch protected) | — | **Yes** |
@@ -137,16 +137,18 @@ These apply to the local provider (stdio, `LocalProvider`):
 
 | Variable | Default | Effect |
 |---|---|---|
-| `CONTENTRAIN_BRANCH` | unset | Base branch the `contentrain` branch advances. Wins over `repository.default_branch`, then remote HEAD → `main` → `master` → the checked-out branch. Per process; never written to config |
+| `CONTENTRAIN_BRANCH` | unset | Base branch the `contentrain` branch advances. Wins over `repository.default_branch`, then remote HEAD → `main` → `master` → the checked-out branch → `main`. Per process; never written to config |
 | `CONTENTRAIN_REMOTE` | `origin` | Remote used for every fetch and push (and remote branch cleanup) |
 | `CONTENTRAIN_NO_PUSH` | unset | `1`/`true` turns local mode on; `0`/`false` turns it off. Any other value is ignored |
+| `CONTENTRAIN_AUTHOR_NAME` / `CONTENTRAIN_AUTHOR_EMAIL` | `Contentrain` / `ai@contentrain.io` | Author identity on Contentrain's commits |
+| `CONTENTRAIN_GIT_BINARY` | unset | Absolute path of the `git` binary to use |
 | `CONTENTRAIN_VERIFY` | unset | `1`/`true` runs the repository's commit hooks on Contentrain's commits; `0`/`false` skips them. Wins over `git.verify`. Any other value is ignored |
 
 **Local mode** keeps every write on local branches: no branch push, no review push, no push after an auto-merge, approve or reconcile, and no remote branch delete or prune. Fetching is not a push and still happens when a remote exists. Turn it on for a project with `"git": { "push": false }` in `.contentrain/config.json`, or for one run with `CONTENTRAIN_NO_PUSH=1`.
 
 Precedence: the env wins over the config in both directions. `CONTENTRAIN_NO_PUSH=1` turns pushing off even when config allows it; `CONTENTRAIN_NO_PUSH=0` turns it back on over `git.push: false`. With neither, pushing is on.
 
-It is never a silent success. Each write's `git` block reports `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `next_steps` carries a `LOCAL MODE` line. `contentrain_submit` returns an error instead of pushing; land review branches with `contentrain_merge`. `contentrain_merge` and `contentrain_branch_delete` delete the local branch as usual and report `remote_skipped: "local-mode"`, leaving any remote copy untouched.
+It is never a silent success. Each write's `git` block reports `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `next_steps` carries a `LOCAL MODE` line. `contentrain_submit` returns an error instead of pushing; land review branches with `contentrain_merge`. `contentrain_merge` and `contentrain_branch_delete` delete the local branch as usual and leave any remote copy untouched; `contentrain_branch_delete` reports `remote_skipped: "local-mode"`, `contentrain_merge` reports `remote: { deleted: false, skipped: "local-mode" }`.
 
 ### Commit hooks
 
@@ -197,7 +199,7 @@ Normalize is intentionally split into two phases:
 - creates or updates models
 - writes content entries
 - records source tracking
-- creates a review branch (`cr/normalize/extract/{domain}/{timestamp}`)
+- creates a review branch (`cr/normalize/extract/{timestamp}-{suffix}`)
 
 ### 2. Reuse
 
@@ -206,7 +208,7 @@ Normalize is intentionally split into two phases:
 - patches source files using agent-provided expressions
 - adds imports when needed
 - enforces patch path safety and scope checks
-- creates a separate review branch (`cr/normalize/reuse/{model}/{locale}/{timestamp}`)
+- creates a separate review branch (`cr/normalize/reuse/{model or domain}/{timestamp}-{suffix}`)
 
 This split keeps content extraction separate from source rewriting.
 
@@ -214,7 +216,7 @@ This split keeps content extraction separate from source rewriting.
 
 Normalize (`contentrain_scan` and `contentrain_apply`) requires local disk access — AST scanners walk the source tree and patch files in place. It runs only on a `LocalProvider` (stdio transport, or HTTP transport configured with a `LocalProvider`).
 
-Remote providers such as `GitHubProvider` expose `astScan: false`, `sourceRead: false`, and `sourceWrite: false`. Calling these tools over a remote provider returns a uniform capability error:
+Remote providers such as `GitHubProvider` expose `astScan: false`, `sourceRead: false`, and `sourceWrite: false`, so a server built on one does not register `contentrain_scan` or `contentrain_apply` at all (see `TOOL_REQUIREMENTS`). A provider that can read the source tree but not write it lists `contentrain_apply`; its `reuse` mode then returns a uniform capability error:
 
 ```json
 {
@@ -230,7 +232,7 @@ Agents driving a remote transport should fall back to a local transport (or a lo
 
 MCP supports three backends behind the same `RepoProvider` contract:
 
-- **LocalProvider** — simple-git + worktree. Every tool (normalize included) works on it. Stdio transport defaults to this.
+- **LocalProvider** — simple-git + worktree. Every core tool (normalize included) works on it; the media tools need a provider with a media facet. Stdio transport defaults to this.
 - **GitHubProvider** — Octokit over the Git Data + Repos APIs. No clone, no worktree. `@octokit/rest` ships as an optional peer dependency.
 - **GitLabProvider** — gitbeaker over the GitLab REST API. No clone, no worktree. `@gitbeaker/rest` ships as an optional peer dependency. Supports gitlab.com and self-hosted CE / EE.
 
@@ -258,7 +260,7 @@ const server = createServer({ provider })
 // serve over stdio or the HTTP transport from @contentrain/mcp/server/http
 ```
 
-Capabilities: `sourceRead`, `sourceWrite`, `astScan`, `localWorktree` are all `false`; `pushRemote`, `branchProtection`, `pullRequestFallback` are `true`. Normalize / scan / apply reject with a capability error on GitLabProvider — fall back to a local transport for those flows.
+Capabilities: `sourceRead`, `sourceWrite`, `astScan`, `localWorktree` are all `false`; `pushRemote`, `branchProtection`, `pullRequestFallback` are `true`. Normalize (scan / apply) is not registered on a GitLabProvider server — fall back to a local transport for those flows.
 
 ### Bitbucket
 
@@ -288,7 +290,7 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/util/fs`
 - `@contentrain/mcp/git/transaction`
 - `@contentrain/mcp/git/branch-lifecycle` — branch health/cleanup plus the remote cr/* lifecycle: `deleteRemoteBranch`, `listRemoteCrBranches`, `pruneMergedRemoteBranches`, `isRefMerged`, `classifyMergedBranches`
-- `@contentrain/mcp/git/base-branch` — `resolveBaseBranch`, the one base-branch resolver every MCP write and `contentrain status` / `serve` use (env → `repository.default_branch` → `origin/HEAD` → `main` → `master` → checked-out branch); `resolveBaseBranchSource` (the same, plus which rung answered); `resolveInitDefaultBranch` (what `init` records as `repository.default_branch`, or `null`)
+- `@contentrain/mcp/git/base-branch` — `resolveBaseBranch`, the one base-branch resolver every MCP write and `contentrain status` / `serve` use (env → `repository.default_branch` → `<remote>/HEAD` → `main` → `master` → checked-out branch → `main`); `resolveBaseBranchSource` (the same, plus which rung answered); `resolveInitDefaultBranch` (what `init` records as `repository.default_branch`, or `null`)
 - `@contentrain/mcp/git/errors`
 - `@contentrain/mcp/git/reconcile` — `reconcileBranches`, the local reconcile executor
 - `@contentrain/mcp/tools/annotations`
@@ -358,14 +360,14 @@ allowlist entry cannot silently cover more than it reads.
 Key design decisions in this package:
 
 - local-first **by default** — stdio transport + LocalProvider works without any network dependency
-- provider-agnostic engine — the same core tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract; media tools ride the provider's optional media facet
+- provider-agnostic engine — the core tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract (remote providers get the remote-safe subset); media tools ride the provider's optional media facet
 - remote provider SDKs (`@octokit/rest`, `@gitbeaker/rest`) are optional peer dependencies — pulled in only when their provider is used
 - JSON-only content storage
 - git-backed write workflow (worktree transaction locally, single atomic commit over the Git Data / REST APIs remotely)
 - canonical serialization — byte-deterministic output, sorted keys, trailing newline
 - framework-agnostic MCP layer
 - agent decides content semantics, MCP enforces deterministic execution
-- capability gates — tools that need source-tree access (normalize, scan, apply, doctor) reject with a uniform `capability_required` error on remote providers
+- capability gates — tools that need a local checkout or source-tree access (scan, apply, doctor, init, scaffold, bulk, submit, merge, reconcile, branch tools) are not registered on remote providers; `TOOL_REQUIREMENTS` is the map
 
 ## Development
 
@@ -407,8 +409,8 @@ on every model that predates the field, means the whole project list.
 
 A translation that was never written is a **warning**: an entry of a `collection`
 that one locale has and another lacks (`Entry parity`), like a `document`'s missing
-translation. A locale with no content file (`Locale file missing`) and a
-`dictionary` key missing from a locale (`Key parity`) are **errors**. Every message
+translation. A `dictionary` key missing from a locale (`Key parity`) is a **warning**
+too. A locale with no content file (`Locale file missing`) is an **error**. Every message
 names the list it was evaluated against, so the two cases read apart:
 
 ```

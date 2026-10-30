@@ -120,7 +120,7 @@ console.log(FRAMEWORK_GUIDES)
 |------|--------------|------|------------|
 | 1. Catalog | `name` + `description` (AGENT_SKILLS) | Session start | ~50 tokens/skill |
 | 2. Instructions | Full `SKILL.md` body | Skill activated | < 5000 tokens |
-| 3. References | `references/*.md` files | Agent needs detail | Varies (50-500 tokens/file) |
+| 3. References | `references/*.md` files | Agent needs detail | Varies (~750–6000 tokens/file) |
 
 This reduces always-loaded context from thousands of lines to just the essentials plus catalog.
 
@@ -143,6 +143,7 @@ Skills are installed by `contentrain init` (and re-applied with `contentrain ski
 | Cursor | `.cursor/rules/` | `.cursor/skills/` |
 | Windsurf | `.windsurf/rules/` | `.windsurf/skills/` |
 | GitHub Copilot | `.github/` | `.agents/skills/` |
+| OpenAI Codex | `.` (`AGENTS.md`) | `.agents/skills/` |
 
 ## Build
 

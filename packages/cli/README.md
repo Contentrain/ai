@@ -60,6 +60,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain valida
 | Command | Purpose |
 | --- | --- |
 | `contentrain init` | Initialize `.contentrain/`, git workflow, templates, and IDE rules |
+| `contentrain import <source>` | Import a WordPress site (WXR export file or REST URL) into a `.contentrain` store |
 | `contentrain status` | Show project overview, models, branch pressure, and validation summary |
 | `contentrain doctor` | Check setup health, SDK freshness, orphan content, and branch limits |
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
@@ -72,7 +73,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain valida
 | `contentrain delta <delta.json> --dry-run` | Plan a WordPress source delta against the store: placement, field changes, conflicts, tombstones, redirects (plan only) |
 | `contentrain describe-format` | Print the Contentrain content-format specification |
 | `contentrain scaffold --template` | Apply a template (`blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`) |
-| `contentrain setup <agent\|--all>` | Configure MCP server + AI rules for IDE (Claude Code, Cursor, Windsurf, VSCode, Copilot) |
+| `contentrain setup <agent\|--all>` | Configure MCP server + AI rules for IDE (Claude Code, Cursor, Windsurf, VSCode, Copilot, Codex) |
 | `contentrain skills` | Install, update, or list Contentrain AI skills and IDE rules |
 | `contentrain serve` | Start the local review UI (REST + WS), MCP stdio server (`--stdio`), or MCP HTTP server (`--mcpHttp`) |
 | `contentrain studio connect` | Connect a repository to a Studio project |
@@ -94,18 +95,21 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 
 | Command | Notable flags |
 | --- | --- |
+| `init` | `--yes`, `--locales <csv>` (default `en`), `--domains <csv>` (default `marketing,blog,system`) |
+| `import` | `--out <dir>`, `--auth <user>`, `--force`, `--include-emails`, `--json` |
 | `status` | `--json` |
 | `doctor` | `--json`, `--usage` — non-zero exit on failure; includes a remote `cr/*` branch check |
 | `validate` | `--json`, `--fix`, `--interactive`, `--watch`, `--model <id>` |
-| `generate` | `--json`, `--watch`, `--published`, `--at <ISO timestamp>`, `--require-status` |
+| `generate` | `--json`, `--watch`, `--published`, `--at <ISO timestamp>`, `--require-status`, `--mediaBaseUrl <url>` |
 | `diff` | `--json` |
 | `merge` | `--yes` (skip confirm) |
 | `reconcile` | `--yes` (execute a clean plan without prompting), `--json` (dry-run plan) |
 | `prune` | `--dry-run`, `--yes`, `--json` (mutates only with `--yes`) |
 | `delta` | `--dry-run` (required; there is no apply mode), `--incoming <dir>`, `--store <dir>`, `--taxonomy <csv>`, `--json` |
 | `describe` | `--sample`, `--locale`, `--json` |
-| `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
-| `serve` | `--port`, `--host`, `--open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
+| `describe-format` | `--json` |
+| `scaffold` | `--template <id>`, `--locales <csv>`, `--json` |
+| `serve` | `--port` (default 3333), `--host` (default localhost), `--no-open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
 
 ## Typical Flow
 
@@ -195,7 +199,7 @@ contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
 contentrain serve --mcpHttp --port 3333 --host 0.0.0.0 --authToken $TOKEN
 ```
 
-Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Bearer auth is **required** on non-localhost binds — the CLI hard-errors when no `--authToken` is set for an exposed interface (OWASP Secure-by-Default). Use HTTP mode when:
+Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Pass `--authToken` (or `CONTENTRAIN_AUTH_TOKEN`) whenever the server is reachable beyond localhost: HTTP mode starts without a token on any host, and only warns when it binds `0.0.0.0` without one. (The review UI, by contrast, refuses to start on a non-localhost host without a token.) Use HTTP mode when:
 
 - Studio's agent drives MCP remotely
 - a CI runner needs deterministic content operations
@@ -240,7 +244,7 @@ contentrain skills --list    # List installed skills
 
 This installs:
 - Contentrain Agent Skills (task guidance for Claude, Cursor, etc.)
-- IDE rules files (CLAUDE.md, .cursorrules, .windsurfrules)
+- IDE rules files: `.claude/rules/`, `.cursor/rules/`, `.windsurf/rules/`, `.github/copilot-instructions.md`, and `AGENTS.md` for Codex
 
 ## Review Workflow
 
@@ -307,28 +311,6 @@ contentrain studio submissions --form contact-form
 
 Credentials are stored securely in `~/.contentrain/credentials.json` with `0o600` permissions. Use `CONTENTRAIN_STUDIO_TOKEN` environment variable for CI/CD.
 
-## Documentation
-
-Full documentation at **[ai.contentrain.io/packages/cli](https://ai.contentrain.io/packages/cli)**.
-
-## Development
-
-From the monorepo root:
-
-```bash
-pnpm --filter contentrain test -- --run
-pnpm --filter contentrain exec tsc --noEmit
-pnpm --filter contentrain build
-```
-
-## Part of the Contentrain ecosystem
-
-Contentrain is a content governance ecosystem for teams and AI agents. This CLI is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles on the same repository, [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
-
-## License
-
-MIT
-
 ## `contentrain import`
 
 Import a WordPress site into a `.contentrain` content store:
@@ -368,3 +350,25 @@ excludes entries with no status in meta, for projects where every entry has one
 (a WordPress import); it implies `--published`. Without these flags,
 editorial generation keeps its existing behavior. Watch mode observes metadata
 edits; a scheduled static publication still needs a build/deploy trigger.
+
+## Documentation
+
+Full documentation at **[ai.contentrain.io/packages/cli](https://ai.contentrain.io/packages/cli)**.
+
+## Development
+
+From the monorepo root:
+
+```bash
+pnpm --filter contentrain test -- --run
+pnpm --filter contentrain exec tsc --noEmit
+pnpm --filter contentrain build
+```
+
+## Part of the Contentrain ecosystem
+
+Contentrain is a content governance ecosystem for teams and AI agents. This CLI is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles on the same repository, [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
+
+## License
+
+MIT

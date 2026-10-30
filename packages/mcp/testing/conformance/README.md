@@ -2,7 +2,7 @@
 
 Byte-identical conformance test suite for content operations. Each fixture describes an operation and its expected on-disk file tree after execution. Used by `packages/mcp/tests/conformance.test.ts`.
 
-**Purpose** — guarantee byte-level parity between providers (LocalProvider today; GitHubProvider + GitLabProvider in later phases) for the same operation. Any silent drift in serialization, meta generation, context.json, or path resolution shows up as a failed fixture.
+**Purpose** — pin the byte-level output of the MCP write path for each operation, so every provider can be held to the same files. Today the harness runs the write path directly (`writeContent` + `writeContext`); GitHubProvider and GitLabProvider ship but are not wired into this runner yet. Any silent drift in serialization, meta generation, context.json, or path resolution shows up as a failed fixture.
 
 ## Directory layout
 
@@ -26,7 +26,7 @@ conformance/
 {
   "id": "01-new-collection-entry",
   "description": "Save a new collection entry",
-  "operation": "save_content",     // save_content | save_model | delete_content
+  "operation": "save_content",     // save_content | save_model
   "context_tool": "contentrain_content_save",  // tool name recorded in context.json (optional)
   "input": {                         // operation-specific params
     "model": "blog",
@@ -72,6 +72,6 @@ Today the harness runs scenarios against the current MCP write path (direct fs +
 - Phase 2 — run through plan/apply API, assert `FileChange[]` → same `expected/`
 - Phase 3 — LocalProvider.applyPlan → same `expected/`
 - Phase 5 — GitHubProvider.applyPlan (mocked) → same `expected/`
-- Phase 8 — GitLab/Bitbucket providers → same `expected/`
+- Phase 8 — GitLabProvider → same `expected/`
 
 The fixtures themselves never change between providers. Only the runner wiring does.
