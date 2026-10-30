@@ -108,7 +108,7 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | `delta` | `--dry-run` (required; there is no apply mode), `--incoming <dir>`, `--store <dir>`, `--taxonomy <csv>`, `--json` |
 | `describe` | `--sample`, `--locale`, `--json` |
 | `describe-format` | `--json` |
-| `scaffold` | `--template <id>`, `--locales <csv>`, `--json` |
+| `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
 | `serve` | `--port` (default 3333), `--host` (default localhost), `--no-open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
 
 ## Typical Flow

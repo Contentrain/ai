@@ -527,7 +527,7 @@ export async function applyExtract(
     return {
       error: health.message,
       action: 'blocked' as const,
-      hint: 'Merge or delete old contentrain/* branches before executing normalize.',
+      hint: 'Merge or delete old cr/* branches before executing normalize.',
     } as unknown as ExtractionResult
   }
 
@@ -899,7 +899,7 @@ export async function applyReuse(
     return {
       dry_run: false,
       error: `Branch blocked: ${reuseHealth.message}`,
-      next_steps: ['Merge or delete old contentrain/* branches before executing reuse.'],
+      next_steps: ['Merge or delete old cr/* branches before executing reuse.'],
     }
   }
 

@@ -22,7 +22,7 @@ export interface BranchHealthCheck {
 }
 
 /**
- * Lists all local contentrain/* branches, deletes those already merged
+ * Lists all local cr/* branches, deletes those already merged
  * into the base branch, and returns the count of remaining unmerged ones.
  */
 export async function cleanupMergedBranches(projectRoot: string): Promise<CleanupResult> {
@@ -87,7 +87,7 @@ export async function cleanupMergedBranches(projectRoot: string): Promise<Cleanu
 }
 
 /**
- * Check branch health: count contentrain/* branches and return warning/blocked status.
+ * Check branch health: count cr/* branches and return warning/blocked status.
  * - 50+ branches: warning
  * - 80+ branches: blocked
  */

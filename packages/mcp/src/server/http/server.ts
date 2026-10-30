@@ -101,8 +101,8 @@ const MCP_SESSION_HEADER = 'mcp-session-id'
  * Auth is a simple opaque Bearer token. When `authToken` is supplied,
  * any request without the exact `Authorization: Bearer <token>` header
  * gets a 401 before the MCP transport sees it. Non-local bind addresses
- * should always set this — the `contentrain serve --mcpHttp` CLI hard-
- * errors when it detects a non-localhost bind without a token.
+ * should always set this — `contentrain serve --mcpHttp` starts without a
+ * token on any host and only warns when it binds 0.0.0.0 without one.
  */
 export async function startHttpMcpServer(
   opts: HttpMcpServerOptions & { port: number, host?: string },
