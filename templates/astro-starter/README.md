@@ -99,7 +99,10 @@ preview; a site you publish builds without it.
   scripts are search (on `/search/`), the Studio form and comments mounts
   (only on pages that render one), a few lines for menus with submenus, the
   inline query-address redirect on the home page, and analytics when it is
-  configured (loaded only after the visitor consents).
+  configured (loaded only after the visitor consents). Google tags (GA4, GTM)
+  run under Consent Mode v2: every signal starts denied and a yes grants
+  measurement only, so ad and remarketing tags inside a GTM container stay off
+  until the site adds an ad consent choice of its own.
 - **Interface text is content.** Every label the site prints comes from the
   `ui-strings` dictionary, in the site's language; a missing key shows the key.
   The site's own names are there too, so an editor renames them in Studio: a
