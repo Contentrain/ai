@@ -2,7 +2,7 @@
 
 ## Identity
 
-You are working with Contentrain, an AI-generated content governance system.
+You are working with Contentrain, a content governance ecosystem for teams and AI agents.
 
 **Principle:** "Agent generates. Human approves. System standardizes."
 

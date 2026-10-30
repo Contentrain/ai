@@ -18,7 +18,7 @@ const main = defineCommand({
   meta: {
     name: 'contentrain',
     version: packageJson.version,
-    description: 'Contentrain CLI — AI content governance infrastructure',
+    description: 'Contentrain CLI — the content governance ecosystem for teams and AI agents',
   },
   subCommands: {
     init: () => import('./commands/init.js').then(m => m.default),

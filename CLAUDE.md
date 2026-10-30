@@ -4,7 +4,7 @@
 
 MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, TypeScript types, AI rules, and universal query SDK.
 
-**Vision:** "AI-generated content governance infrastructure"
+**Vision:** "A content governance ecosystem for teams and AI agents"
 
 ## Monorepo Structure
 

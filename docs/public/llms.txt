@@ -1,6 +1,6 @@
 # Contentrain AI Documentation
 
-> Contentrain AI is the MIT-licensed open-source toolkit for AI-generated content governance: a 27-tool MCP server (@contentrain/mcp), a CLI (contentrain), shared TypeScript types (@contentrain/types), agent rules and skills (@contentrain/rules, @contentrain/skills), a generated typed query SDK (@contentrain/query), and the open ends of the WordPress migration pipeline (@contentrain/wp-import, @contentrain/emitter-astro, @contentrain/verify). Content lives as canonical JSON/Markdown in your Git repo under .contentrain/ — agents write through deterministic MCP tools, humans review through git branches.
+> Contentrain AI is the MIT-licensed open-source toolkit for Contentrain, the content governance ecosystem for teams and AI agents: a 27-tool MCP server (@contentrain/mcp), a CLI (contentrain), shared TypeScript types (@contentrain/types), agent rules and skills (@contentrain/rules, @contentrain/skills), a generated typed query SDK (@contentrain/query), and the open ends of the WordPress migration pipeline (@contentrain/wp-import, @contentrain/emitter-astro, @contentrain/verify). Content lives as canonical JSON/Markdown in your Git repo under .contentrain/ — agents write through deterministic MCP tools, humans review through git branches.
 
 Full documentation as a single file (for LLMs): https://ai.contentrain.io/llms-full.txt
 Contentrain Studio (team web surface) documentation: https://docs.contentrain.io/llms.txt
