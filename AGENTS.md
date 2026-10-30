@@ -1,6 +1,6 @@
 # AGENTS.md — Contentrain AI
 
-> Git-based, AI-first content governance infrastructure.
+> Git-based content governance ecosystem for teams and AI agents.
 > Agent extracts or updates content → Contentrain standardizes → Human reviews → Any platform consumes.
 
 ## What this repo is

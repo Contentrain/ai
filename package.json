@@ -2,7 +2,7 @@
   "name": "contentrain-ai",
   "private": true,
   "license": "MIT",
-  "description": "AI-generated content governance infrastructure — agent produces, human approves, system standardizes.",
+  "description": "Open-source packages of Contentrain, the content governance ecosystem for teams and AI agents — agent produces, human approves, system standardizes.",
   "homepage": "https://ai.contentrain.io",
   "repository": {
     "type": "git",

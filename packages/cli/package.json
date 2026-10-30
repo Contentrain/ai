@@ -2,7 +2,7 @@
   "name": "contentrain",
   "version": "0.18.19",
   "license": "MIT",
-  "description": "CLI for Contentrain — AI content governance infrastructure",
+  "description": "CLI for Contentrain — the content governance ecosystem for teams and AI agents",
   "type": "module",
   "repository": {
     "type": "git",
