@@ -104,6 +104,17 @@ export const CORE_META =
 export const taxModelId = (t: string): string =>
   t === 'post_tag' ? 'tags' : t === 'category' ? 'categories' : t.replace(/_/g, '-')
 
+/**
+ * Taxonomy → the name of the field a content model links its terms with: the model id in snake_case, as every field
+ * name is (`portfolio-category` → `portfolio_category`; `tags` and `categories` stay). The model id keeps its hyphen.
+ * A name that would not start with a letter takes a `tax_` prefix. A store imported before this kept the model id as
+ * the field name; `planSourceDelta` reads such a field under its stored name.
+ */
+export const taxFieldId = (t: string): string => {
+  const name = taxModelId(t).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+  return /^[a-z]/.test(name) ? name : `tax_${name}`
+}
+
 export const slugify = (s: unknown): string =>
   String(s ?? '')
     .normalize('NFKD')
@@ -136,6 +147,9 @@ export const decodeSlug = (s: string): string => {
   }
 }
 
+/** Fields a content model gets after its core ones (`rawToContentrain`): no taxonomy field takes their name. */
+const TYPE_FIELDS = new Set(['cover', 'wp_id', 'modified_at', 'link', 'parent', 'menu_order', 'sticky', 'primary_category', 'template', 'format', 'visibility', 'comments_open'])
+
 /** The measured core field skeleton for content models (same order/labels). */
 export function coreFields(opts: {
   excerpt: boolean
@@ -144,7 +158,7 @@ export function coreFields(opts: {
   author: boolean
   taxes: string[]
   cover: boolean
-}): { fields: Record<string, FieldDef>; order: number } {
+}): { fields: Record<string, FieldDef>; order: number; taxFields: Record<string, string> } {
   const fields: Record<string, FieldDef> = {
     title: { type: 'string', required: true, label: 'Title', order: 10 },
     slug: { type: 'slug', required: true, unique: true, label: 'Slug', order: 20 },
@@ -154,7 +168,17 @@ export function coreFields(opts: {
   if (opts.body) fields.body = { type: 'richtext', label: 'Body', order: (o += 10) }
   if (opts.date) fields.published_at = { type: 'datetime', label: 'Published at', order: (o += 10) }
   if (opts.author) fields.author = { type: 'relation', model: 'authors', label: 'Author', order: (o += 10) }
-  for (const t of opts.taxes) fields[taxModelId(t)] = { type: 'relations', model: taxModelId(t), label: t, order: (o += 10) }
+  // Each taxonomy's field, by taxonomy. A name already taken (a core field, one the importer adds after these, an
+  // earlier taxonomy) is never overwritten: it takes the first free counter, in the order the taxonomies come.
+  const taxFields: Record<string, string> = {}
+  const taken = (name: string) => !!fields[name] || TYPE_FIELDS.has(name)
+  for (const t of opts.taxes) {
+    const base = taxFieldId(t)
+    let name = base
+    for (let n = 2; taken(name); n++) name = `${base}_${n}`
+    taxFields[t] = name
+    fields[name] = { type: 'relations', model: taxModelId(t), label: t, order: (o += 10) }
+  }
   if (opts.cover) fields.cover = { type: 'relation', model: 'media', label: 'Cover', order: (o += 10) }
-  return { fields, order: o }
+  return { fields, order: o, taxFields }
 }

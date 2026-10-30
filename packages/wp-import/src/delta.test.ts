@@ -241,6 +241,20 @@ describe('planSourceDelta — terms and media', () => {
     expect(planSourceDelta({ delta: handDelta(entries), store: custom }).entries[0]!.entry_id).toBe('g6')
   })
 
+  it('reads a store imported before taxonomy fields were snake_case under its own field names', () => {
+    const tax = { type: 'relations', model: 'portfolio-category' }
+    const at = (field: string, terms: string[], title = 'Post six') => ({
+      '.contentrain/models/wp-post.json': JSON.stringify({ id: 'wp-post', kind: 'collection', domain: 'blog', i18n: false, fields: { title: { type: 'string' }, [field]: tax } }),
+      '.contentrain/content/blog/wp-post/data.json': JSON.stringify({ p6: { title, wp_id: 6, [field]: terms } }),
+    })
+    const old: DeltaStore = { ...store, files: { ...store.files, ...at('portfolio-category', ['t1']) } }
+    const incoming = (terms: string[], title?: string): DeltaStore => ({ ...store, files: { ...store.files, ...at('portfolio_category', terms, title) } })
+    const changed = (next: DeltaStore) => planSourceDelta({ delta: handDelta([{ op: 'updated', wp_id: 6, wp_type: 'post' }]), store: old, incoming: next }).entries[0]!.fields_changed
+    // The same terms under the new name: nothing changed, and the stored name is the one a change is said under.
+    expect(changed(incoming(['t1'], 'Post 6'))).toEqual(['title'])
+    expect(changed(incoming(['t1', 't2']))).toEqual(['portfolio-category'])
+  })
+
   it('needs the taxonomy list for a taxonomy the store has no model for', () => {
     const entries = [{ op: 'deleted' as const, wp_id: 6, wp_type: 'genre', deleted_kind: 'purged' as const }]
     expect(planSourceDelta({ delta: handDelta(entries), store, taxonomies: ['genre'] }).entries[0]!.unmapped).toBe('no-model-for-type')

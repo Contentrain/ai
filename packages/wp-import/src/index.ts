@@ -20,7 +20,7 @@ export { buildCommentsExport, selectComments, summarizeComments, COMMENT_PII_MET
 export type { CommentsExportOptions } from './comments.js'
 export { looksSerialized, phpUnserialize, tryUnserialize } from './php-unserialize.js'
 export type { UnserializeResult } from './php-unserialize.js'
-export { addressSlug, canon, hexId, slugify, strip, taxModelId } from './core.js'
+export { addressSlug, canon, hexId, slugify, strip, taxFieldId, taxModelId } from './core.js'
 // The exclusion rules are documented behaviour — an agent has to be able to
 // answer "why is my custom post type missing?" — so they are part of the
 // public surface and a docs-parity test can hold them to it.
