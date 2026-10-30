@@ -8,6 +8,10 @@
 // Consent section): without one nobody can say yes and nothing ever loads.
 // Withdrawn consent stops it on the same page: the loaded script is switched
 // off through the provider's own opt-out and its cookies are removed.
+// Google's tags (GA4, GTM) get Consent Mode v2: every signal starts denied, and a
+// yes grants measurement only (`analytics_storage`). The ad signals stay denied:
+// ad and remarketing tags inside a GTM container do not run until the site adds
+// an ad consent choice of its own.
 import { getSite } from '../lib/content'
 
 const site = await getSite()
@@ -38,6 +42,9 @@ const enabled = Boolean(provider && id && (provider !== 'matomo' || host) && (!h
       document.head.append(s)
     }
     const gtag = function () { (window.dataLayer = window.dataLayer || []).push(arguments) }
+    const google = provider === 'ga4' || provider === 'gtm'
+    // Consent Mode v2's default comes before any Google tag, so a tag never reads an unset state as consent.
+    if (google) gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' })
     // The provider's own cookies, on this host and on its parent domains (GA sets them on the registrable domain).
     const COOKIES = { ga4: /^(_ga|_gid|_gat)/, gtm: /^(_ga|_gid|_gat|_gcl)/, matomo: /^(_pk_|MATOMO_|mtm_)/ }
     const clearCookies = () => {
@@ -53,8 +60,8 @@ const enabled = Boolean(provider && id && (provider !== 'matomo' || host) && (!h
       if (provider === 'plausible') try { localStorage.removeItem('plausible_ignore') } catch {}
       if (provider === 'fathom' && window.fathom) window.fathom.enableTrackingForMe()
       if (provider === 'ga4') window[`ga-disable-${id}`] = false
+      if (google) gtag('consent', 'update', { analytics_storage: 'granted' })
       if (loaded) {
-        if (provider === 'ga4' || provider === 'gtm') gtag('consent', 'update', { analytics_storage: 'granted' })
         if (provider === 'matomo') window._paq.push(['forgetUserOptOut'])
         return
       }
@@ -65,7 +72,6 @@ const enabled = Boolean(provider && id && (provider !== 'matomo' || host) && (!h
         add(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`)
       }
       else if (provider === 'gtm') {
-        gtag('consent', 'default', { analytics_storage: 'granted', ad_storage: 'denied' })
         window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' })
         add(`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`)
       }
@@ -82,8 +88,8 @@ const enabled = Boolean(provider && id && (provider !== 'matomo' || host) && (!h
     const revoke = () => {
       clearCookies()
       if (!loaded) return
-      if (provider === 'ga4') { window[`ga-disable-${id}`] = true; gtag('consent', 'update', { analytics_storage: 'denied' }) }
-      if (provider === 'gtm') gtag('consent', 'update', { analytics_storage: 'denied', ad_storage: 'denied' })
+      if (provider === 'ga4') window[`ga-disable-${id}`] = true
+      if (google) gtag('consent', 'update', { analytics_storage: 'denied' })
       if (provider === 'plausible') try { localStorage.setItem('plausible_ignore', 'true') } catch {}
       if (provider === 'fathom' && window.fathom) window.fathom.blockTrackingForMe()
       if (provider === 'matomo') window._paq.push(['optUserOut'], ['deleteCookies'])
