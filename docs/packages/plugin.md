@@ -13,7 +13,7 @@ the framework guides, so Claude can scan a project, extract its hardcoded
 strings into `.contentrain/`, and patch the source to read from the
 [generated client](/packages/sdk), all in your own Git repository.
 
-| | |
+| Field | Value |
 |---|---|
 | Version | 1.0.9 |
 | Distribution | Plugin marketplace in the `Contentrain/ai` repository (not npm) |

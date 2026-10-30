@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, type HeadConfig } from 'vitepress'
 
 /**
@@ -103,9 +104,9 @@ function plainText(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/\u200b/g, '').replace(/\s+/g, ' ').trim()
 }
 
-/** FAQPage entities from a rendered page: every `<h3>` is a question, the HTML up to the next heading its answer. */
+/** FAQPage entities from a rendered page: every markdown `<h2>` (sidebar group titles have no id) is a question, the HTML up to the next one or the doc footer its answer. */
 function faqEntities(content: string): object[] {
-  return [...content.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>([\s\S]*?)(?=<h[23][\s>]|$)/g)].map(([, q, a]) => ({
+  return [...content.matchAll(/<h2 id=[^>]*>([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2[\s>]|<footer[\s>]|$)/g)].map(([, q, a]) => ({
     '@type': 'Question',
     'name': plainText(q),
     'acceptedAnswer': { '@type': 'Answer', 'text': plainText(a) },
@@ -189,6 +190,7 @@ export default defineConfig({
     logo: {
       light: '/logo/color-icon-black-text.svg',
       dark: '/logo/color-icon-white-text.svg',
+      alt: 'Contentrain AI',
     },
 
     siteTitle: false,
@@ -296,7 +298,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Released under the MIT License.<br><div class="footer-social-links"><a href="https://discord.gg/8XbFKfgeZx" target="_blank" rel="noopener" aria-label="Discord">Discord</a> · <a href="https://x.com/Contentrain_io" target="_blank" rel="noopener" aria-label="X">X</a> · <a href="https://www.linkedin.com/company/contentrain" target="_blank" rel="noopener" aria-label="LinkedIn">LinkedIn</a> · <a href="https://www.youtube.com/@contentrain" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a> · <a href="https://www.instagram.com/contentrain_" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a> · <a href="https://www.facebook.com/Contentrain.io" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a></div>',
+      message: 'Released under the MIT License.<br><span class="footer-social-links"><a href="https://discord.gg/8XbFKfgeZx" target="_blank" rel="noopener" aria-label="Discord">Discord</a> · <a href="https://x.com/Contentrain_io" target="_blank" rel="noopener" aria-label="X">X</a> · <a href="https://www.linkedin.com/company/contentrain" target="_blank" rel="noopener" aria-label="LinkedIn">LinkedIn</a> · <a href="https://www.youtube.com/@contentrain" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a> · <a href="https://www.instagram.com/contentrain_" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a> · <a href="https://www.facebook.com/Contentrain.io" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a></span>',
       copyright: 'Copyright © 2024-present Contentrain',
     },
 
@@ -309,4 +311,60 @@ export default defineConfig({
       text: 'Edit this page on GitHub',
     },
   },
+
+  markdown: {
+    codeTransformers: [
+      {
+        // Some github-light/dark token colors (comments, green strings) fall below
+        // 4.5:1 on the code block background; nudge those toward black or white.
+        span(node) {
+          const style = node.properties.style
+          if (typeof style !== 'string') return
+          node.properties.style = style.replace(
+            /--shiki-(light|dark):(#[0-9a-f]{6})/gi,
+            (_, theme: 'light' | 'dark', color: string) => `--shiki-${theme}:${readableOn(color, theme)}`,
+          )
+        },
+      },
+    ],
+  },
+
+  vite: {
+    resolve: {
+      // Override internal theme components. The exact relative specifiers match only
+      // the theme's own imports, so the wrappers can still import the originals.
+      alias: [
+        { find: /^\.\/VPHome\.vue$/, replacement: fileURLToPath(new URL('./theme/components/HomeMain.vue', import.meta.url)) },
+        { find: /^\.\/VPHomeContent\.vue$/, replacement: fileURLToPath(new URL('./theme/components/HomeContent.vue', import.meta.url)) },
+      ],
+    },
+  },
 })
+
+/** Code block backgrounds (--vp-code-block-bg) the shiki colors are checked against. */
+const CODE_BG = { light: '#f6f6f7', dark: '#161618' } as const
+
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const v = Number.parseInt(hex.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].toSorted((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** The color itself when it has 4.6:1 (AA is 4.5) on the theme's code background, else the nearest mix toward black (light) or white (dark) that does. */
+function readableOn(color: string, theme: 'light' | 'dark'): string {
+  const bg = CODE_BG[theme]
+  const target = theme === 'light' ? 0 : 255
+  const rgb = [1, 3, 5].map(i => Number.parseInt(color.slice(i, i + 2), 16))
+  for (let t = 0; t <= 1; t += 0.02) {
+    const mixed = `#${rgb.map(v => Math.round(v + (target - v) * t).toString(16).padStart(2, '0')).join('')}`
+    if (contrast(mixed, bg) >= 4.6) return t === 0 ? color : mixed.toUpperCase()
+  }
+  return color
+}

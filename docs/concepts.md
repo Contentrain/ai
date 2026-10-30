@@ -197,7 +197,7 @@ Divergence is reconciled with a content-aware three-way merge — `contentrain_r
 
 ## How It Compares
 
-| | Contentrain AI | Headless CMS (Sanity, Strapi) | Git CMS (Tina, Decap) |
+| Aspect | Contentrain AI | Headless CMS (Sanity, Strapi) | Git CMS (Tina, Decap) |
 |---|---|---|---|
 | **Content source** | Your codebase or agent-created from scratch | External dashboard | Markdown/JSON in repo |
 | **AI integration** | Native (MCP tools) | Manual API calls | None |
