@@ -38,10 +38,14 @@ async function resolveMergeBranch(
     return { error: 'Provide either "branch" (exact name) or "model" (to resolve the branch).', candidates: crBranches }
   }
 
-  const prefix = input.locale
-    ? `cr/content/${input.model}/${input.locale}/`
-    : `cr/content/${input.model}/`
-  let matches = crBranches.filter(b => b.startsWith(prefix))
+  // Branch names are cr/{scope}/{target}/[{locale}/]{ts}-{suffix}; only
+  // locale-scoped writes (bulk copy_locale, scaffold) carry the locale segment.
+  let matches = input.locale
+    ? crBranches.filter((b) => {
+        const [, , target, locale] = b.split('/')
+        return target === input.model && locale === input.locale
+      })
+    : crBranches.filter(b => b.startsWith(`cr/content/${input.model}/`))
   if (matches.length === 0) {
     // Fall back to any scope whose path contains the model segment (fix/bulk/...)
     matches = crBranches.filter(b => b.split('/').includes(input.model!))
@@ -103,7 +107,7 @@ export function registerWorkflowTools(
               content: [{ type: 'text' as const, text: JSON.stringify({
                 error: fixHealth.message,
                 action: 'blocked',
-                hint: 'Merge or delete old contentrain/* branches before auto-fixing.',
+                hint: 'Merge or delete old cr/* branches before auto-fixing.',
               }, null, 2) }],
               isError: true,
             }
@@ -203,9 +207,9 @@ export function registerWorkflowTools(
   // ─── contentrain_submit ───
   server.tool(
     'contentrain_submit',
-    'Push contentrain/* branches to remote. MCP is push-only — PR creation is handled by the platform. Do NOT manually push or create PRs.',
+    'Push cr/* branches to remote. MCP is push-only — PR creation is handled by the platform. Do NOT manually push or create PRs.',
     {
-      branches: z.array(z.string()).optional().describe('Specific branch names to push (omit for all contentrain/* branches)'),
+      branches: z.array(z.string()).optional().describe('Specific branch names to push (omit for all cr/* branches)'),
       message: z.string().optional().describe('Optional message for the push operation'),
     },
     TOOL_ANNOTATIONS['contentrain_submit']!,

@@ -24,6 +24,12 @@ vi.mock('@contentrain/mcp/server', () => ({
   createServer: vi.fn(() => ({ connect: mcpConnectMock })),
 }))
 
+const startHttpMcpServerMock = vi.fn().mockResolvedValue({ url: 'http://127.0.0.1:3333/mcp', close: vi.fn() })
+
+vi.mock('@contentrain/mcp/server/http', () => ({
+  startHttpMcpServer: startHttpMcpServerMock,
+}))
+
 vi.mock('../../src/serve/server.js', () => ({
   createServeApp: createServeAppMock,
 }))
@@ -144,5 +150,34 @@ describe('serve command', () => {
     expect(createServeAppMock).not.toHaveBeenCalled()
     expect(process.exitCode).toBe(1)
     process.exitCode = prevExit
+  })
+  it('refuses --mcpHttp on a non-loopback host without --authToken', async () => {
+    const prevExit = process.exitCode
+    const mod = await import('../../src/commands/serve.js')
+    await mod.default.run?.({
+      args: { root: '/test/project', mcpHttp: true, host: '192.168.1.10' },
+    })
+
+    expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('Refusing to start the HTTP MCP server'))
+    expect(startHttpMcpServerMock).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(1)
+    process.exitCode = prevExit
+  })
+
+  it('starts --mcpHttp with a token on a network host, and on loopback without one', async () => {
+    // The started server registers SIGINT/SIGTERM handlers; keep them off the test process.
+    const onSpy = vi.spyOn(process, 'on').mockImplementation(() => process)
+    const mod = await import('../../src/commands/serve.js')
+    await mod.default.run?.({
+      args: { root: '/test/project', mcpHttp: true, host: '192.168.1.10', authToken: 'test-secret' },
+    })
+    await mod.default.run?.({
+      args: { root: '/test/project', mcpHttp: true, host: '127.0.0.1' },
+    })
+
+    expect(errorMock).not.toHaveBeenCalled()
+    expect(startHttpMcpServerMock).toHaveBeenNthCalledWith(1, expect.objectContaining({ host: '192.168.1.10', authToken: 'test-secret' }))
+    expect(startHttpMcpServerMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ host: '127.0.0.1', authToken: undefined }))
+    onSpy.mockRestore()
   })
 })

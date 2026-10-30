@@ -98,6 +98,23 @@ describe('contentrain_merge (remote cleanup)', () => {
   })
 })
 
+describe('contentrain_merge (model + locale)', () => {
+  it('resolves the locale-scoped branch of a model', async () => {
+    await seedPushedBranch('cr/content/faq/1700000000-l1', 'faq-l1')
+    await seedPushedBranch('cr/bulk/faq/tr/1700000001-l2', 'faq-l2')
+
+    const result = await client.callTool({
+      name: 'contentrain_merge',
+      arguments: { model: 'faq', locale: 'tr', confirm: true },
+    })
+    const data = parseResult(result)
+
+    expect(data['status']).toBe('merged')
+    expect(data['branch']).toBe('cr/bulk/faq/tr/1700000001-l2')
+    expect((await git.branchLocal()).all).toContain('cr/content/faq/1700000000-l1')
+  })
+})
+
 describe('contentrain_branch_delete (remote cleanup)', () => {
   it('deletes the local branch and its remote copy', async () => {
     await seedPushedBranch('cr/content/blog/1700000000-d1', 'blog-d1')

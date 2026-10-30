@@ -1,3 +1,4 @@
+import { runCommand } from 'citty'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const callMock = vi.fn()
@@ -37,9 +38,9 @@ describe('scaffold command', () => {
     })
   })
 
-  it('passes --template and --no-sample to contentrain_scaffold', async () => {
+  it('passes --template and --no-sample to contentrain_scaffold through the argv parser', async () => {
     const mod = await import('../../src/commands/scaffold.js')
-    await mod.default.run?.({ args: { template: 'blog', 'no-sample': true } } as never)
+    await runCommand(mod.default, { rawArgs: ['--template', 'blog', '--no-sample'] })
 
     expect(callMock).toHaveBeenCalledWith('contentrain_scaffold', {
       template: 'blog',

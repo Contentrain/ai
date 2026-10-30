@@ -22,7 +22,9 @@ export default defineCommand({
     root: { type: 'string', description: 'Project root path', required: false },
     template: { type: 'string', description: `Template ID (${KNOWN_TEMPLATES.join(', ')})`, required: false },
     locales: { type: 'string', description: 'Comma-separated locale override (e.g. "en,tr,de")', required: false },
-    'no-sample': { type: 'boolean', description: 'Skip sample content', required: false },
+    // citty turns `--no-sample` into `sample: false`, so the flag is declared
+    // positively; a `'no-sample'` key would never be set by the parser.
+    sample: { type: 'boolean', description: 'Include sample content (--no-sample skips it)', default: true },
     json: { type: 'boolean', description: 'Emit raw JSON for scripts', required: false },
   },
   async run({ args }) {
@@ -60,7 +62,7 @@ export default defineCommand({
       const result = await session.call<Record<string, unknown>>('contentrain_scaffold', {
         template: templateId,
         ...(locales ? { locales } : {}),
-        with_sample_content: !args['no-sample'],
+        with_sample_content: args.sample !== false,
       })
 
       s?.stop(`Template "${templateId}" applied.`)

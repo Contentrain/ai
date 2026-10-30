@@ -82,7 +82,7 @@ export function registerSetupTools(
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: initHealth.message,
             action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            hint: 'Merge or delete old cr/* branches before creating new ones.',
           }, null, 2) }],
           isError: true,
         }
@@ -232,7 +232,7 @@ export function registerSetupTools(
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: scaffoldHealth.message,
             action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            hint: 'Merge or delete old cr/* branches before creating new ones.',
           }, null, 2) }],
           isError: true,
         }

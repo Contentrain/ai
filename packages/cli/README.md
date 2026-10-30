@@ -108,7 +108,7 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | `delta` | `--dry-run` (required; there is no apply mode), `--incoming <dir>`, `--store <dir>`, `--taxonomy <csv>`, `--json` |
 | `describe` | `--sample`, `--locale`, `--json` |
 | `describe-format` | `--json` |
-| `scaffold` | `--template <id>`, `--locales <csv>`, `--json` |
+| `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
 | `serve` | `--port` (default 3333), `--host` (default localhost), `--no-open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
 
 ## Typical Flow
@@ -199,7 +199,7 @@ contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
 contentrain serve --mcpHttp --port 3333 --host 0.0.0.0 --authToken $TOKEN
 ```
 
-Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Pass `--authToken` (or `CONTENTRAIN_AUTH_TOKEN`) whenever the server is reachable beyond localhost: HTTP mode starts without a token on any host, and only warns when it binds `0.0.0.0` without one. (The review UI, by contrast, refuses to start on a non-localhost host without a token.) Use HTTP mode when:
+Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Bearer auth is **required** on non-loopback binds: like the review UI, the CLI refuses to start on any host other than `localhost` / `127.0.0.1` / `::1` without `--authToken` (or `CONTENTRAIN_AUTH_TOKEN`). Use HTTP mode when:
 
 - Studio's agent drives MCP remotely
 - a CI runner needs deterministic content operations
