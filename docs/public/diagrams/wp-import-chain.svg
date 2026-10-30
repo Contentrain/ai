@@ -1,57 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 120" width="680" height="120" role="img" aria-labelledby="wp-import-chain-t wp-import-chain-d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 262" width="680" height="262" role="img" aria-labelledby="wp-import-chain-t wp-import-chain-d">
 <title id="wp-import-chain-t">Where wp-import sits in the migration chain</title>
 <desc id="wp-import-chain-d">wp-import (MIT) produces RawIR; the closed-source migration engine turns it into ProjectIR; emitter-astro (MIT) writes the Astro project; verify (MIT) checks it.</desc>
 <style>
 .dg-t{fill:var(--vp-c-text-1,#1e293b);font:600 14px Inter,system-ui,sans-serif}
 .dg-s{fill:var(--vp-c-text-2,#64748b);font:11.5px "SF Mono",Menlo,Consolas,monospace}
 .dg-c{fill:var(--vp-c-text-1,#1e293b);font:12px "SF Mono",Menlo,Consolas,monospace}
-.dg-n{fill:var(--vp-c-bg-soft,#f6f6f7);stroke:#a1a1aa;stroke-width:1.6}
-.dg-h{stroke:#3b5bf0;stroke-width:2}
-.dg-a{fill:none;stroke:var(--vp-c-text-2,#6b7280);stroke-width:1.6;stroke-dasharray:5 5;stroke-linecap:round}
-.dg-ah{fill:none;stroke:var(--vp-c-text-2,#6b7280);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.dg-n{fill:var(--vp-c-bg,#fff);stroke:var(--vp-c-text-2,#64748b);stroke-width:1.3}
+.dg-n2{fill:none;stroke:var(--vp-c-text-2,#64748b);stroke-width:.8;opacity:.4}
+.dg-sh{fill:var(--vp-c-text-1,#1e293b);opacity:.07}
+.dg-h{stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:2}
+.dg-h2{stroke:var(--vp-c-brand-1,#1f4fff)}
+.dg-a{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-dasharray:6 6;stroke-linecap:round}
+.dg-ah{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dg-g{fill:none;stroke:var(--vp-c-divider,#d4d4d8);stroke-width:1.4;stroke-dasharray:3 5}
+.dg-grid{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:.6;opacity:.14}
 </style>
 <defs>
-<filter id="wp-import-chain-f" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="15"/><feDisplacementMap in="SourceGraphic" scale="2"/></filter>
+<filter id="wp-import-chain-f" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="15"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
 <marker id="wp-import-chain-m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-ah" d="M1 1 L8 5 L1 9"/></marker>
+<pattern id="wp-import-chain-p" width="24" height="24" patternUnits="userSpaceOnUse"><path class="dg-grid" d="M24 0 V24 M0 24 H24"/></pattern>
+<radialGradient id="wp-import-chain-rg" cx=".5" cy=".5" r=".6"><stop offset=".3" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<mask id="wp-import-chain-mk"><rect width="680" height="262" fill="url(#wp-import-chain-rg)"/></mask>
 </defs>
-<g>
-<rect class="dg-n" x="4" y="14" width="100" height="50" rx="14" filter="url(#wp-import-chain-f)"/>
-
-<text x="54" y="44" text-anchor="middle" class="dg-t">wp-import</text>
-
-</g>
-<g><rect x="35" y="83" width="38" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="54" y="96" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT</text></g>
-<g>
-<rect class="dg-n" x="134" y="14" width="96" height="50" rx="14" filter="url(#wp-import-chain-f)"/>
-
-<text x="182" y="44" text-anchor="middle" class="dg-t">RawIR</text>
-
-</g>
-
-<g>
-<rect class="dg-n dg-h" x="260" y="14" width="150" height="50" rx="14" filter="url(#wp-import-chain-f)"/>
-
-<text x="335" y="35" text-anchor="middle" class="dg-t">migration engine</text>
-<text x="335" y="52" text-anchor="middle" class="dg-s">→ ProjectIR</text>
-</g>
-<g><rect x="283" y="83" width="104" height="19" rx="9.5" fill="#7c4dff" fill-opacity=".12" stroke="#7c4dff" stroke-width="1.2"/><text x="335" y="96" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#7c4dff">closed source</text></g>
-<g>
-<rect class="dg-n" x="440" y="14" width="120" height="50" rx="14" filter="url(#wp-import-chain-f)"/>
-
-<text x="500" y="44" text-anchor="middle" class="dg-t">emitter-astro</text>
+<rect width="680" height="262" fill="url(#wp-import-chain-p)" mask="url(#wp-import-chain-mk)"/>
+<style>
+.c-ink{fill:none;stroke:var(--vp-c-text-1,#1e293b);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.c-ink2{fill:none;stroke:var(--vp-c-text-2,#64748b);stroke-width:1.2;stroke-linecap:round}
+.c-blue{fill:var(--vp-c-brand-1,#1f4fff)}
+.c-blues{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-linecap:round}
+.c-paper{fill:var(--vp-c-bg,#fff)}
+.c-papers{fill:none;stroke:var(--vp-c-bg,#fff);stroke-width:1.8;stroke-linecap:round}
+.c-ok{fill:none;stroke:var(--vp-c-green-1,#16a34a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.c-bad{fill:none;stroke:var(--vp-c-red-1,#dc2626);stroke-width:2;stroke-linecap:round}
+.c-grainp{fill:var(--vp-c-text-1,#1e293b);opacity:.07}
+.c-hatchp{stroke:var(--vp-c-text-1,#1e293b);stroke-width:1.1;opacity:.28}
+</style>
+<defs>
+<pattern id="wp-import-chain-gr" width="7" height="7" patternUnits="userSpaceOnUse"><circle class="c-grainp" cx="1.5" cy="2" r=".6"/><circle class="c-grainp" cx="5" cy="5.5" r=".5"/><circle class="c-grainp" cx="5.5" cy="1" r=".4"/></pattern>
+<pattern id="wp-import-chain-ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path class="c-hatchp" d="M0 0 V5"/></pattern>
+<filter id="wp-import-chain-fa" filterUnits="userSpaceOnUse" x="-20" y="-20" width="720" height="640"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+</defs>
+<g transform="rotate(0.5 100 43)">
+<path d="M25 18 H181 Q193 18 193 30 V64 Q193 76 181 76 H25 Q13 76 13 64 V30 Q13 18 25 18 Z" fill="url(#wp-import-chain-ht)"/><path class="dg-n" d="M22 14 H178 Q190 14 190 26 V60 Q190 72 178 72 H22 Q10 72 10 60 V26 Q10 14 22 14 Z" filter="url(#wp-import-chain-f)"/><path d="M22 14 H178 Q190 14 190 26 V60 Q190 72 178 72 H22 Q10 72 10 60 V26 Q10 14 22 14 Z" fill="url(#wp-import-chain-gr)"/><path class="dg-n2" d="M22 14 H178 Q190 14 190 26 V60 Q190 72 178 72 H22 Q10 72 10 60 V26 Q10 14 22 14 Z" transform="translate(.9 -.7)" filter="url(#wp-import-chain-f)"/>
+<g transform="translate(26 25) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-blues" d="M12.5 14 L9.5 18 L12.5 22 M19.5 14 L22.5 18 L19.5 22 M17.2 13.5 L14.8 22.5"/></g>
+<text x="74" y="48" class="dg-t">wp-import</text>
 
 </g>
-<g><rect x="481" y="83" width="38" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="500" y="96" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT</text></g>
-<g>
-<rect class="dg-n" x="590" y="14" width="86" height="50" rx="14" filter="url(#wp-import-chain-f)"/>
-
-<text x="633" y="44" text-anchor="middle" class="dg-t">verify</text>
+<g><rect x="26" y="87" width="38" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="45" y="100" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT</text></g>
+<g transform="rotate(0.3 321 43)">
+<path d="M261 18 H387 L399 30 V64 Q399 76 387 76 H261 Q249 76 249 64 V30 Q249 18 261 18 Z" fill="url(#wp-import-chain-ht)"/><path class="dg-n" d="M258 14 H384 L396 26 V60 Q396 72 384 72 H258 Q246 72 246 60 V26 Q246 14 258 14 Z" filter="url(#wp-import-chain-f)"/><path d="M258 14 H384 L396 26 V60 Q396 72 384 72 H258 Q246 72 246 60 V26 Q246 14 258 14 Z" fill="url(#wp-import-chain-gr)"/><path class="dg-n2" d="M258 14 H384 L396 26 V60 Q396 72 384 72 H258 Q246 72 246 60 V26 Q246 14 258 14 Z" transform="translate(.9 -.7)" filter="url(#wp-import-chain-f)"/><path class="c-ink2" d="M384 14 V23 Q384 26 387 26 H396" filter="url(#wp-import-chain-f)"/>
+<g transform="translate(262 25) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-ink2" d="M10 14 H22 M10 18 H20 M10 22 H22"/></g>
+<text x="310" y="48" class="dg-t">RawIR</text>
 
 </g>
-<g><rect x="614" y="83" width="38" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="633" y="96" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT</text></g>
-<path class="dg-a" d="M109 39 H129" marker-end="url(#wp-import-chain-m)"/>
-<path class="dg-a" d="M235 39 H255" marker-end="url(#wp-import-chain-m)"/>
-<path class="dg-a" d="M415 39 H435" marker-end="url(#wp-import-chain-m)"/>
-<path class="dg-a" d="M565 39 H585" marker-end="url(#wp-import-chain-m)"/>
+<g transform="rotate(0 561 43)">
+<path d="M467 14 H661 Q673 14 673 26 V68 Q673 80 661 80 H467 Q455 80 455 68 V26 Q455 14 467 14 Z" fill="url(#wp-import-chain-ht)"/><path class="dg-n dg-h" d="M464 10 H658 Q670 10 670 22 V64 Q670 76 658 76 H464 Q452 76 452 64 V22 Q452 10 464 10 Z" filter="url(#wp-import-chain-f)"/><path d="M464 10 H658 Q670 10 670 22 V64 Q670 76 658 76 H464 Q452 76 452 64 V22 Q452 10 464 10 Z" fill="url(#wp-import-chain-gr)"/><path class="dg-n2 dg-h2" d="M464 10 H658 Q670 10 670 22 V64 Q670 76 658 76 H464 Q452 76 452 64 V22 Q452 10 464 10 Z" transform="translate(.9 -.7)" filter="url(#wp-import-chain-f)"/>
+<g transform="translate(468 25) scale(1.125)"><path class="c-blue" d="M14 3 h4 l.8 3.6 l2.6 1.1 l3.1 -2 l2.8 2.8 l-2 3.1 l1.1 2.6 L30 14 v4 l-3.6 .8 l-1.1 2.6 l2 3.1 l-2.8 2.8 l-3.1 -2 l-2.6 1.1 L18 30 h-4 l-.8 -3.6 l-2.6 -1.1 l-3.1 2 l-2.8 -2.8 l2 -3.1 l-1.1 -2.6 L2 18 v-4 l3.6 -.8 l1.1 -2.6 l-2 -3.1 l2.8 -2.8 l3.1 2 l2.6 -1.1 Z"/>
+<path class="c-ink" d="M14 3 h4 l.8 3.6 l2.6 1.1 l3.1 -2 l2.8 2.8 l-2 3.1 l1.1 2.6 L30 14 v4 l-3.6 .8 l-1.1 2.6 l2 3.1 l-2.8 2.8 l-3.1 -2 l-2.6 1.1 L18 30 h-4 l-.8 -3.6 l-2.6 -1.1 l-3.1 2 l-2.8 -2.8 l2 -3.1 l-1.1 -2.6 L2 18 v-4 l3.6 -.8 l1.1 -2.6 l-2 -3.1 l2.8 -2.8 l3.1 2 l2.6 -1.1 Z"/>
+<circle class="c-paper" cx="16" cy="16" r="4.5"/><circle class="c-ink" cx="16" cy="16" r="4.5"/></g>
+<text x="516" y="39" class="dg-t">migration engine</text>
+<text x="516" y="56" class="dg-s">→ ProjectIR</text>
+</g>
+<g><rect x="468" y="91" width="104" height="19" rx="9.5" fill="#7c4dff" fill-opacity=".12" stroke="#7c4dff" stroke-width="1.2"/><text x="520" y="104" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#7c4dff">closed source</text></g>
+<g transform="rotate(0.1 561 179)">
+<path d="M467 154 H661 Q673 154 673 166 V200 Q673 212 661 212 H467 Q455 212 455 200 V166 Q455 154 467 154 Z" fill="url(#wp-import-chain-ht)"/><path class="dg-n" d="M464 150 H658 Q670 150 670 162 V196 Q670 208 658 208 H464 Q452 208 452 196 V162 Q452 150 464 150 Z" filter="url(#wp-import-chain-f)"/><path d="M464 150 H658 Q670 150 670 162 V196 Q670 208 658 208 H464 Q452 208 452 196 V162 Q452 150 464 150 Z" fill="url(#wp-import-chain-gr)"/><path class="dg-n2" d="M464 150 H658 Q670 150 670 162 V196 Q670 208 658 208 H464 Q452 208 452 196 V162 Q452 150 464 150 Z" transform="translate(.9 -.7)" filter="url(#wp-import-chain-f)"/>
+<g transform="translate(468 161) scale(1.125)"><rect class="c-paper" x="3" y="6" width="26" height="21" rx="3"/>
+<path class="c-blue" d="M3 9 a3 3 0 0 1 3 -3 h20 a3 3 0 0 1 3 3 v3 H3 Z"/><rect class="c-ink" x="3" y="6" width="26" height="21" rx="3"/>
+<circle class="c-paper" cx="7" cy="9" r="1.1"/><circle class="c-paper" cx="10.5" cy="9" r="1.1"/>
+<path class="c-ink2" d="M7 17 H25 M7 21 H19"/></g>
+<text x="516" y="184" class="dg-t">emitter-astro</text>
+
+</g>
+<g><rect x="468" y="223" width="38" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="487" y="236" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT</text></g>
+<g transform="rotate(-0.1 321 179)">
+<path d="M261 154 H387 Q399 154 399 166 V200 Q399 212 387 212 H261 Q249 212 249 200 V166 Q249 154 261 154 Z" fill="url(#wp-import-chain-ht)"/><path class="dg-n" d="M258 150 H384 Q396 150 396 162 V196 Q396 208 384 208 H258 Q246 208 246 196 V162 Q246 150 258 150 Z" filter="url(#wp-import-chain-f)"/><path d="M258 150 H384 Q396 150 396 162 V196 Q396 208 384 208 H258 Q246 208 246 196 V162 Q246 150 258 150 Z" fill="url(#wp-import-chain-gr)"/><path class="dg-n2" d="M258 150 H384 Q396 150 396 162 V196 Q396 208 384 208 H258 Q246 208 246 196 V162 Q246 150 258 150 Z" transform="translate(.9 -.7)" filter="url(#wp-import-chain-f)"/>
+<g transform="translate(262 161) scale(1.125)"><circle class="c-ok" cx="16" cy="16" r="12"/><circle class="c-ok" cx="16" cy="16" r="8.8" stroke-dasharray="2 2.2" stroke-width="1.1"/>
+<path class="c-ok" d="M11 16.5 l3.6 3.6 l7 -8" stroke-width="2.4"/></g>
+<text x="310" y="184" class="dg-t">verify</text>
+
+</g>
+<g><rect x="262" y="223" width="38" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="281" y="236" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT</text></g>
+<path class="dg-a" d="M196 43 C 210 37, 224 49, 238 43" marker-end="url(#wp-import-chain-m)" filter="url(#wp-import-chain-fa)"/>
+<path class="dg-a" d="M402 43 C 416 37, 430 49, 444 43" marker-end="url(#wp-import-chain-m)" filter="url(#wp-import-chain-fa)"/>
+<path class="dg-a" d="M640 84 C 648 104, 632 122, 640 142" marker-end="url(#wp-import-chain-m)" filter="url(#wp-import-chain-fa)"/>
+<path class="dg-a" d="M446 179 C 432 173, 418 185, 404 179" marker-end="url(#wp-import-chain-m)" filter="url(#wp-import-chain-fa)"/>
 </svg>

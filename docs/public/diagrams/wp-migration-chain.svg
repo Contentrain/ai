@@ -1,60 +1,115 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 534" width="680" height="534" role="img" aria-labelledby="wp-migration-chain-t wp-migration-chain-d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 548" width="680" height="548" role="img" aria-labelledby="wp-migration-chain-t wp-migration-chain-d">
 <title id="wp-migration-chain-t">The WordPress to Astro migration chain</title>
 <desc id="wp-migration-chain-d">WordPress site, through @contentrain/wp-import (MIT, in this repo), to RawIR: what the source said. Through the migration engine (closed source, Contentrain Migrate), to ProjectIR: what the new site should be. Through @contentrain/emitter-astro (MIT, in this repo), to an Astro project. Through @contentrain/verify (MIT, in this repo), to pass or fail.</desc>
 <style>
 .dg-t{fill:var(--vp-c-text-1,#1e293b);font:600 14px Inter,system-ui,sans-serif}
 .dg-s{fill:var(--vp-c-text-2,#64748b);font:11.5px "SF Mono",Menlo,Consolas,monospace}
 .dg-c{fill:var(--vp-c-text-1,#1e293b);font:12px "SF Mono",Menlo,Consolas,monospace}
-.dg-n{fill:var(--vp-c-bg-soft,#f6f6f7);stroke:#a1a1aa;stroke-width:1.6}
-.dg-h{stroke:#3b5bf0;stroke-width:2}
-.dg-a{fill:none;stroke:var(--vp-c-text-2,#6b7280);stroke-width:1.6;stroke-dasharray:5 5;stroke-linecap:round}
-.dg-ah{fill:none;stroke:var(--vp-c-text-2,#6b7280);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.dg-n{fill:var(--vp-c-bg,#fff);stroke:var(--vp-c-text-2,#64748b);stroke-width:1.3}
+.dg-n2{fill:none;stroke:var(--vp-c-text-2,#64748b);stroke-width:.8;opacity:.4}
+.dg-sh{fill:var(--vp-c-text-1,#1e293b);opacity:.07}
+.dg-h{stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:2}
+.dg-h2{stroke:var(--vp-c-brand-1,#1f4fff)}
+.dg-a{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-dasharray:6 6;stroke-linecap:round}
+.dg-ah{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dg-g{fill:none;stroke:var(--vp-c-divider,#d4d4d8);stroke-width:1.4;stroke-dasharray:3 5}
+.dg-grid{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:.6;opacity:.14}
 </style>
 <defs>
-<filter id="wp-migration-chain-f" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="18"/><feDisplacementMap in="SourceGraphic" scale="2"/></filter>
+<filter id="wp-migration-chain-f" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="18"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
 <marker id="wp-migration-chain-m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-ah" d="M1 1 L8 5 L1 9"/></marker>
+<pattern id="wp-migration-chain-p" width="24" height="24" patternUnits="userSpaceOnUse"><path class="dg-grid" d="M24 0 V24 M0 24 H24"/></pattern>
+<radialGradient id="wp-migration-chain-rg" cx=".5" cy=".5" r=".6"><stop offset=".3" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<mask id="wp-migration-chain-mk"><rect width="680" height="548" fill="url(#wp-migration-chain-rg)"/></mask>
 </defs>
-<g>
-<rect class="dg-n" x="30" y="10" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
-
-<text x="165" y="41" text-anchor="middle" class="dg-t">WordPress site</text>
-
-</g>
-<g>
-<rect class="dg-n" x="30" y="128" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
-
-<text x="165" y="150" text-anchor="middle" class="dg-t">RawIR</text>
-<text x="165" y="167" text-anchor="middle" class="dg-s">what the source said</text>
-</g>
-<g>
-<rect class="dg-n dg-h" x="30" y="246" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
-
-<text x="165" y="268" text-anchor="middle" class="dg-t">ProjectIR</text>
-<text x="165" y="285" text-anchor="middle" class="dg-s">what the new site should be</text>
-</g>
-<g>
-<rect class="dg-n" x="30" y="364" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
-
-<text x="165" y="395" text-anchor="middle" class="dg-t">Astro project</text>
-
-</g>
-<g>
-<rect class="dg-n" x="30" y="482" width="270" height="52" rx="14" filter="url(#wp-migration-chain-f)"/>
-
-<text x="165" y="513" text-anchor="middle" class="dg-t">pass / fail</text>
+<rect width="680" height="548" fill="url(#wp-migration-chain-p)" mask="url(#wp-migration-chain-mk)"/>
+<style>
+.c-ink{fill:none;stroke:var(--vp-c-text-1,#1e293b);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.c-ink2{fill:none;stroke:var(--vp-c-text-2,#64748b);stroke-width:1.2;stroke-linecap:round}
+.c-blue{fill:var(--vp-c-brand-1,#1f4fff)}
+.c-blues{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-linecap:round}
+.c-paper{fill:var(--vp-c-bg,#fff)}
+.c-papers{fill:none;stroke:var(--vp-c-bg,#fff);stroke-width:1.8;stroke-linecap:round}
+.c-ok{fill:none;stroke:var(--vp-c-green-1,#16a34a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.c-bad{fill:none;stroke:var(--vp-c-red-1,#dc2626);stroke-width:2;stroke-linecap:round}
+.c-grainp{fill:var(--vp-c-text-1,#1e293b);opacity:.07}
+.c-hatchp{stroke:var(--vp-c-text-1,#1e293b);stroke-width:1.1;opacity:.28}
+</style>
+<defs>
+<pattern id="wp-migration-chain-gr" width="7" height="7" patternUnits="userSpaceOnUse"><circle class="c-grainp" cx="1.5" cy="2" r=".6"/><circle class="c-grainp" cx="5" cy="5.5" r=".5"/><circle class="c-grainp" cx="5.5" cy="1" r=".4"/></pattern>
+<pattern id="wp-migration-chain-ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path class="c-hatchp" d="M0 0 V5"/></pattern>
+<filter id="wp-migration-chain-fa" filterUnits="userSpaceOnUse" x="-20" y="-20" width="720" height="640"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+</defs>
+<g transform="rotate(-0.2 202 38)">
+<path d="M82 14 H328 Q340 14 340 26 V58 Q340 70 328 70 H82 Q70 70 70 58 V26 Q70 14 82 14 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M79 10 H325 Q337 10 337 22 V54 Q337 66 325 66 H79 Q67 66 67 54 V22 Q67 10 79 10 Z" filter="url(#wp-migration-chain-f)"/><path d="M79 10 H325 Q337 10 337 22 V54 Q337 66 325 66 H79 Q67 66 67 54 V22 Q67 10 79 10 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M79 10 H325 Q337 10 337 22 V54 Q337 66 325 66 H79 Q67 66 67 54 V22 Q67 10 79 10 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(83 20) scale(1.125)"><rect class="c-paper" x="3" y="6" width="26" height="21" rx="3"/>
+<path class="c-blue" d="M3 9 a3 3 0 0 1 3 -3 h20 a3 3 0 0 1 3 3 v3 H3 Z"/><rect class="c-ink" x="3" y="6" width="26" height="21" rx="3"/>
+<circle class="c-paper" cx="7" cy="9" r="1.1"/><circle class="c-paper" cx="10.5" cy="9" r="1.1"/>
+<path class="c-ink2" d="M7 17 H25 M7 21 H19"/></g>
+<text x="131" y="43" class="dg-t">WordPress site</text>
 
 </g>
-<path class="dg-a" d="M165 68 V122" marker-end="url(#wp-migration-chain-m)"/>
-<text x="196" y="91" text-anchor="start" class="dg-c">@contentrain/wp-import</text>
-<g><rect x="196" y="100" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="264.5" y="113" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
-<path class="dg-a" d="M165 186 V240" marker-end="url(#wp-migration-chain-m)"/>
-<text x="196" y="209" text-anchor="start" class="dg-c">migration engine</text>
-<g><rect x="196" y="218" width="249" height="19" rx="9.5" fill="#7c4dff" fill-opacity=".12" stroke="#7c4dff" stroke-width="1.2"/><text x="320.5" y="231" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#7c4dff">closed source · Contentrain Migrate</text></g>
-<path class="dg-a" d="M165 304 V358" marker-end="url(#wp-migration-chain-m)"/>
-<text x="196" y="327" text-anchor="start" class="dg-c">@contentrain/emitter-astro</text>
-<g><rect x="196" y="336" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="264.5" y="349" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
-<path class="dg-a" d="M165 422 V476" marker-end="url(#wp-migration-chain-m)"/>
-<text x="196" y="445" text-anchor="start" class="dg-c">@contentrain/verify</text>
-<g><rect x="196" y="454" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="264.5" y="467" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
+<g transform="rotate(0.3 202 156)">
+<path d="M82 132 H326 L340 146 V176 Q340 188 328 188 H82 Q70 188 70 176 V144 Q70 132 82 132 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M79 128 H323 L337 142 V172 Q337 184 325 184 H79 Q67 184 67 172 V140 Q67 128 79 128 Z" filter="url(#wp-migration-chain-f)"/><path d="M79 128 H323 L337 142 V172 Q337 184 325 184 H79 Q67 184 67 172 V140 Q67 128 79 128 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M79 128 H323 L337 142 V172 Q337 184 325 184 H79 Q67 184 67 172 V140 Q67 128 79 128 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/><path class="c-ink2" d="M323 128 V139 Q323 142 326 142 H337" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(83 138) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-ink2" d="M10 14 H22 M10 18 H20 M10 22 H22"/></g>
+<text x="131" y="152" class="dg-t">RawIR</text>
+<text x="131" y="169" class="dg-s">what the source said</text>
+</g>
+<g transform="rotate(0.3 202 274)">
+<path d="M82 250 H326 L340 264 V294 Q340 306 328 306 H82 Q70 306 70 294 V262 Q70 250 82 250 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n dg-h" d="M79 246 H323 L337 260 V290 Q337 302 325 302 H79 Q67 302 67 290 V258 Q67 246 79 246 Z" filter="url(#wp-migration-chain-f)"/><path d="M79 246 H323 L337 260 V290 Q337 302 325 302 H79 Q67 302 67 290 V258 Q67 246 79 246 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2 dg-h2" d="M79 246 H323 L337 260 V290 Q337 302 325 302 H79 Q67 302 67 290 V258 Q67 246 79 246 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/><path class="c-ink2" d="M323 246 V257 Q323 260 326 260 H337" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(83 256) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<rect class="c-blue" x="10" y="12" width="12" height="4" rx="1"/><rect class="c-blue" x="10" y="18.5" width="5.5" height="6" rx="1" opacity=".55"/><rect class="c-blue" x="17" y="18.5" width="5" height="6" rx="1" opacity=".55"/></g>
+<text x="131" y="270" class="dg-t">ProjectIR</text>
+<text x="131" y="287" class="dg-s">what the new site should be</text>
+</g>
+<g transform="rotate(-0.4 202 392)">
+<path d="M82 368 H328 Q340 368 340 380 V412 Q340 424 328 424 H82 Q70 424 70 412 V380 Q70 368 82 368 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M79 364 H325 Q337 364 337 376 V408 Q337 420 325 420 H79 Q67 420 67 408 V376 Q67 364 79 364 Z" filter="url(#wp-migration-chain-f)"/><path d="M79 364 H325 Q337 364 337 376 V408 Q337 420 325 420 H79 Q67 420 67 408 V376 Q67 364 79 364 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M79 364 H325 Q337 364 337 376 V408 Q337 420 325 420 H79 Q67 420 67 408 V376 Q67 364 79 364 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(83 374) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-blues" d="M12 14 V23 M20 17 C20 22 12 20 12 23"/>
+<circle class="c-blue" cx="12" cy="12.5" r="2.4"/><circle class="c-blue" cx="12" cy="24.5" r="2.4"/><circle class="c-blue" cx="20" cy="16" r="2.4"/></g>
+<text x="131" y="397" class="dg-t">Astro project</text>
+
+</g>
+<g transform="rotate(0.4 202 510)">
+<path d="M82 486 H328 Q340 486 340 498 V530 Q340 542 328 542 H82 Q70 542 70 530 V498 Q70 486 82 486 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M79 482 H325 Q337 482 337 494 V526 Q337 538 325 538 H79 Q67 538 67 526 V494 Q67 482 79 482 Z" filter="url(#wp-migration-chain-f)"/><path d="M79 482 H325 Q337 482 337 494 V526 Q337 538 325 538 H79 Q67 538 67 526 V494 Q67 482 79 482 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M79 482 H325 Q337 482 337 494 V526 Q337 538 325 538 H79 Q67 538 67 526 V494 Q67 482 79 482 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(83 492) scale(1.125)"><circle class="c-ok" cx="16" cy="16" r="12"/><circle class="c-ok" cx="16" cy="16" r="8.8" stroke-dasharray="2 2.2" stroke-width="1.1"/>
+<path class="c-ok" d="M11 16.5 l3.6 3.6 l7 -8" stroke-width="2.4"/></g>
+<text x="131" y="515" class="dg-t">pass / fail</text>
+
+</g>
+<path class="dg-a" d="M202 72 C 209 86, 195 106, 202 120" marker-end="url(#wp-migration-chain-m)" filter="url(#wp-migration-chain-fa)"/>
+<g transform="rotate(-1.4 462 83.5)">
+<path d="M372 73 H558 Q564 73 564 79 V96 Q564 102 558 102 H372 Q366 102 366 96 V79 Q366 73 372 73 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M369 69 H555 Q561 69 561 75 V92 Q561 98 555 98 H369 Q363 98 363 92 V75 Q363 69 369 69 Z" filter="url(#wp-migration-chain-f)"/><path d="M369 69 H555 Q561 69 561 75 V92 Q561 98 555 98 H369 Q363 98 363 92 V75 Q363 69 369 69 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M369 69 H555 Q561 69 561 75 V92 Q561 98 555 98 H369 Q363 98 363 92 V75 Q363 69 369 69 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(369 71.5) scale(0.75)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-blues" d="M12.5 14 L9.5 18 L12.5 22 M19.5 14 L22.5 18 L19.5 22 M17.2 13.5 L14.8 22.5"/></g>
+<text x="399" y="87" class="dg-s">@contentrain/wp-import</text>
+</g>
+<g><rect x="371" y="104" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="439.5" y="117" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
+<path class="dg-a" d="M202 190 C 209 204, 195 224, 202 238" marker-end="url(#wp-migration-chain-m)" filter="url(#wp-migration-chain-fa)"/>
+<g transform="rotate(1.4 441 201.5)">
+<path d="M372 191 H516 Q522 191 522 197 V214 Q522 220 516 220 H372 Q366 220 366 214 V197 Q366 191 372 191 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M369 187 H513 Q519 187 519 193 V210 Q519 216 513 216 H369 Q363 216 363 210 V193 Q363 187 369 187 Z" filter="url(#wp-migration-chain-f)"/><path d="M369 187 H513 Q519 187 519 193 V210 Q519 216 513 216 H369 Q363 216 363 210 V193 Q363 187 369 187 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M369 187 H513 Q519 187 519 193 V210 Q519 216 513 216 H369 Q363 216 363 210 V193 Q363 187 369 187 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(369 189.5) scale(0.75)"><path class="c-blue" d="M14 3 h4 l.8 3.6 l2.6 1.1 l3.1 -2 l2.8 2.8 l-2 3.1 l1.1 2.6 L30 14 v4 l-3.6 .8 l-1.1 2.6 l2 3.1 l-2.8 2.8 l-3.1 -2 l-2.6 1.1 L18 30 h-4 l-.8 -3.6 l-2.6 -1.1 l-3.1 2 l-2.8 -2.8 l2 -3.1 l-1.1 -2.6 L2 18 v-4 l3.6 -.8 l1.1 -2.6 l-2 -3.1 l2.8 -2.8 l3.1 2 l2.6 -1.1 Z"/>
+<path class="c-ink" d="M14 3 h4 l.8 3.6 l2.6 1.1 l3.1 -2 l2.8 2.8 l-2 3.1 l1.1 2.6 L30 14 v4 l-3.6 .8 l-1.1 2.6 l2 3.1 l-2.8 2.8 l-3.1 -2 l-2.6 1.1 L18 30 h-4 l-.8 -3.6 l-2.6 -1.1 l-3.1 2 l-2.8 -2.8 l2 -3.1 l-1.1 -2.6 L2 18 v-4 l3.6 -.8 l1.1 -2.6 l-2 -3.1 l2.8 -2.8 l3.1 2 l2.6 -1.1 Z"/>
+<circle class="c-paper" cx="16" cy="16" r="4.5"/><circle class="c-ink" cx="16" cy="16" r="4.5"/></g>
+<text x="399" y="205" class="dg-s">migration engine</text>
+</g>
+<g><rect x="371" y="222" width="249" height="19" rx="9.5" fill="#7c4dff" fill-opacity=".12" stroke="#7c4dff" stroke-width="1.2"/><text x="495.5" y="235" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#7c4dff">closed source · Contentrain Migrate</text></g>
+<path class="dg-a" d="M202 308 C 209 322, 195 342, 202 356" marker-end="url(#wp-migration-chain-m)" filter="url(#wp-migration-chain-fa)"/>
+<g transform="rotate(-1.4 475.5 319.5)">
+<path d="M372 309 H585 Q591 309 591 315 V332 Q591 338 585 338 H372 Q366 338 366 332 V315 Q366 309 372 309 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M369 305 H582 Q588 305 588 311 V328 Q588 334 582 334 H369 Q363 334 363 328 V311 Q363 305 369 305 Z" filter="url(#wp-migration-chain-f)"/><path d="M369 305 H582 Q588 305 588 311 V328 Q588 334 582 334 H369 Q363 334 363 328 V311 Q363 305 369 305 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M369 305 H582 Q588 305 588 311 V328 Q588 334 582 334 H369 Q363 334 363 328 V311 Q363 305 369 305 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(369 307.5) scale(0.75)"><path class="c-blue" d="M14 3 h4 l.8 3.6 l2.6 1.1 l3.1 -2 l2.8 2.8 l-2 3.1 l1.1 2.6 L30 14 v4 l-3.6 .8 l-1.1 2.6 l2 3.1 l-2.8 2.8 l-3.1 -2 l-2.6 1.1 L18 30 h-4 l-.8 -3.6 l-2.6 -1.1 l-3.1 2 l-2.8 -2.8 l2 -3.1 l-1.1 -2.6 L2 18 v-4 l3.6 -.8 l1.1 -2.6 l-2 -3.1 l2.8 -2.8 l3.1 2 l2.6 -1.1 Z"/>
+<path class="c-ink" d="M14 3 h4 l.8 3.6 l2.6 1.1 l3.1 -2 l2.8 2.8 l-2 3.1 l1.1 2.6 L30 14 v4 l-3.6 .8 l-1.1 2.6 l2 3.1 l-2.8 2.8 l-3.1 -2 l-2.6 1.1 L18 30 h-4 l-.8 -3.6 l-2.6 -1.1 l-3.1 2 l-2.8 -2.8 l2 -3.1 l-1.1 -2.6 L2 18 v-4 l3.6 -.8 l1.1 -2.6 l-2 -3.1 l2.8 -2.8 l3.1 2 l2.6 -1.1 Z"/>
+<circle class="c-paper" cx="16" cy="16" r="4.5"/><circle class="c-ink" cx="16" cy="16" r="4.5"/></g>
+<text x="399" y="323" class="dg-s">@contentrain/emitter-astro</text>
+</g>
+<g><rect x="371" y="340" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="439.5" y="353" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
+<path class="dg-a" d="M202 426 C 209 440, 195 460, 202 474" marker-end="url(#wp-migration-chain-m)" filter="url(#wp-migration-chain-fa)"/>
+<g transform="rotate(1.4 451.5 437.5)">
+<path d="M372 427 H537 Q543 427 543 433 V450 Q543 456 537 456 H372 Q366 456 366 450 V433 Q366 427 372 427 Z" fill="url(#wp-migration-chain-ht)"/><path class="dg-n" d="M369 423 H534 Q540 423 540 429 V446 Q540 452 534 452 H369 Q363 452 363 446 V429 Q363 423 369 423 Z" filter="url(#wp-migration-chain-f)"/><path d="M369 423 H534 Q540 423 540 429 V446 Q540 452 534 452 H369 Q363 452 363 446 V429 Q363 423 369 423 Z" fill="url(#wp-migration-chain-gr)"/><path class="dg-n2" d="M369 423 H534 Q540 423 540 429 V446 Q540 452 534 452 H369 Q363 452 363 446 V429 Q363 423 369 423 Z" transform="translate(.9 -.7)" filter="url(#wp-migration-chain-f)"/>
+<g transform="translate(369 425.5) scale(0.75)"><circle class="c-ok" cx="16" cy="16" r="12"/><circle class="c-ok" cx="16" cy="16" r="8.8" stroke-dasharray="2 2.2" stroke-width="1.1"/>
+<path class="c-ok" d="M11 16.5 l3.6 3.6 l7 -8" stroke-width="2.4"/></g>
+<text x="399" y="441" class="dg-s">@contentrain/verify</text>
+</g>
+<g><rect x="371" y="458" width="137" height="19" rx="9.5" fill="#3b5bf0" fill-opacity=".12" stroke="#3b5bf0" stroke-width="1.2"/><text x="439.5" y="471" text-anchor="middle" style="font:600 11px Inter,system-ui,sans-serif" fill="#3b5bf0">MIT · in this repo</text></g>
 </svg>
