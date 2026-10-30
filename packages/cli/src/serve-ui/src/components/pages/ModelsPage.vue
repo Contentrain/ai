@@ -133,7 +133,8 @@ function clearSearch() {
 
       <!-- Empty state -->
       <div v-else-if="models.length === 0" class="flex flex-col items-center py-16 text-center">
-        <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-6" />
+        <img src="/model-empty-state.webp" alt="" class="dark:hidden empty-illustration mb-6" />
+        <img src="/model-empty-state-dark.webp" alt="" class="hidden dark:block empty-illustration mb-6" />
         <h2 class="text-lg font-semibold text-foreground">{{ t['models.no-models-yet'] }}</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
           {{ t['models.create-content-models-using'] }}

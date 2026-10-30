@@ -142,7 +142,8 @@ useWatch((event) => {
 
           <!-- Empty -->
           <div v-else-if="branches.length === 0" class="flex flex-col items-center py-16 text-center">
-            <img src="/merge-1.svg" alt="" class="empty-illustration mb-6" />
+            <img src="/merge-1.webp" alt="" class="dark:hidden empty-illustration mb-6" />
+            <img src="/merge-1-dark.webp" alt="" class="hidden dark:block empty-illustration mb-6" />
             <h2 class="text-lg font-semibold">{{ t['branches.no-pending-branches'] }}</h2>
             <p class="mt-2 max-w-sm text-sm text-muted-foreground">
               {{ t['branches.aigenerated-changes-from-your'] }}

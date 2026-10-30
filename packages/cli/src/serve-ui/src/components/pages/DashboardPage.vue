@@ -183,7 +183,8 @@ const agentPrompts = computed(() => {
 
       <!-- Not initialized -->
       <div v-else-if="project.status && !project.status.initialized" class="flex flex-col items-center justify-center py-20 text-center">
-        <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-6" />
+        <img src="/model-empty-state.webp" alt="" class="dark:hidden empty-illustration mb-6" />
+        <img src="/model-empty-state-dark.webp" alt="" class="hidden dark:block empty-illustration mb-6" />
         <h2 class="text-lg font-semibold text-foreground">{{ t['dashboard.not-a-contentrain-project'] }}</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
           Run <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ t['dashboard.contentrain-init'] }}</code> {{ t['dashboard.to-initialize'] }}
@@ -282,7 +283,8 @@ const agentPrompts = computed(() => {
 
           <!-- Empty state -->
           <div v-else class="flex flex-col items-center rounded-xl border border-dashed border-border py-16 text-center">
-            <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-5" />
+            <img src="/model-empty-state.webp" alt="" class="dark:hidden empty-illustration mb-5" />
+            <img src="/model-empty-state-dark.webp" alt="" class="hidden dark:block empty-illustration mb-5" />
             <h3 class="text-sm font-semibold text-foreground">{{ t['dashboard.no-content-models-yet'] }}</h3>
             <p class="mt-1.5 max-w-xs text-xs text-muted-foreground">{{ t['dashboard.create-models-using-ai'] }}</p>
           </div>

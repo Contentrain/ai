@@ -11,8 +11,9 @@ hero:
   text: Extract, govern, and ship structured content from your codebase
   tagline: "Turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer. Agents do the extraction work, Contentrain enforces schema, Git review, and portable output."
   image:
-    src: /hero-pipeline.svg
-    alt: An agent calls an MCP write tool; MCP validates and commits on a cr/* branch; review or auto-merge lands it on the contentrain branch, the base branch fast-forwards, and the result is plain JSON and Markdown in .contentrain/
+    light: /hero.webp
+    dark: /hero-dark.webp
+    alt: A terminal runs npx contentrain init and finds hardcoded strings in the code; they become a typed ui-strings model, an en.json file and a guide.md document, which all land in the Contentrain organiser
   actions:
     - theme: brand
       text: See 2-Minute Demo

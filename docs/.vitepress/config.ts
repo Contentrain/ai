@@ -176,7 +176,9 @@ export default defineConfig({
   // The hero image is the home page's LCP element. A preload ahead of the font preload starts its request with the
   // CSS; transformHead output lands after the module preloads, where it measured no gain.
   transformHtml(html, _id, { pageData }) {
-    const hero = pageData.frontmatter.hero?.image?.src
+    // A light/dark pair preloads the light file; dark-mode visitors fetch theirs when the theme applies.
+    const image = pageData.frontmatter.hero?.image
+    const hero = image?.src ?? image?.light
     if (typeof hero !== 'string') return
     const tag = `<link rel="preload" href="${hero}" as="image" fetchpriority="high">`
     const font = html.search(/<link rel="preload" [^>]*as="font"/)

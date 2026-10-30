@@ -152,7 +152,8 @@ onMounted(async () => {
       <!-- ═══ Phase: empty — no plan, no branches ═══ -->
       <div v-else-if="phase === 'empty'" class="space-y-8">
         <div class="flex flex-col items-center py-12 text-center">
-          <img src="/select-data-type.svg" alt="" class="empty-illustration mb-6" />
+          <img src="/select-data-type.webp" alt="" class="dark:hidden empty-illustration mb-6" />
+          <img src="/select-data-type-dark.webp" alt="" class="hidden dark:block empty-illustration mb-6" />
           <h2 class="text-xl font-semibold">{{ t['normalize.extract-hardcoded-strings'] }}</h2>
           <p class="mt-2 max-w-md text-sm text-muted-foreground">
             {{ t['normalize.normalize-scans-your-source'] }}

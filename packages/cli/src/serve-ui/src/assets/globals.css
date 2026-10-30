@@ -206,13 +206,8 @@
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .custom-scrollbar::-webkit-scrollbar-corner { background: transparent; }
 
-  /* Empty state illustrations — dark mode friendly */
+  /* Empty state illustrations: each ships a light file and a -dark twin, switched with dark: classes */
   .empty-illustration {
-    opacity: 0.5;
     max-height: 160px;
-  }
-  .dark .empty-illustration {
-    opacity: 0.15;
-    filter: invert(1) hue-rotate(180deg);
   }
 }
