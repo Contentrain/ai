@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 300" width="680" height="300" role="img" aria-labelledby="wp-import-outputs-t wp-import-outputs-d">
+<title id="wp-import-outputs-t">What @contentrain/wp-import produces</title>
+<desc id="wp-import-outputs-d">A WXR file or the REST API becomes RawIR (source-faithful, provenance-stamped) through parseWxr or fetchRestRawIR. rawToContentrain turns RawIR into the .contentrain content store and an EntrySourceMap. buildCommentsExport turns RawIR plus the EntrySourceMap into a CommentsExport, the intake payload for a live comments service.</desc>
+<style>
+.dg-t{fill:var(--vp-c-text-1,#1e293b);font:600 14px Inter,system-ui,sans-serif}
+.dg-s{fill:var(--vp-c-text-2,#64748b);font:11.5px "SF Mono",Menlo,Consolas,monospace}
+.dg-c{fill:var(--vp-c-text-1,#1e293b);font:12px "SF Mono",Menlo,Consolas,monospace}
+.dg-n{fill:var(--vp-c-bg,#fff);stroke:var(--vp-c-text-2,#64748b);stroke-width:1.3}
+.dg-n2{fill:none;stroke:var(--vp-c-text-2,#64748b);stroke-width:.8;opacity:.4}
+.dg-sh{fill:var(--vp-c-text-1,#1e293b);opacity:.07}
+.dg-h{stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:2}
+.dg-h2{stroke:var(--vp-c-brand-1,#1f4fff)}
+.dg-a{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-dasharray:6 6;stroke-linecap:round}
+.dg-ah{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dg-g{fill:none;stroke:var(--vp-c-divider,#d4d4d8);stroke-width:1.4;stroke-dasharray:3 5}
+.dg-grid{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:.6;opacity:.14}
+</style>
+<defs>
+<filter id="wp-import-outputs-f" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="17"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+<marker id="wp-import-outputs-m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-ah" d="M1 1 L8 5 L1 9"/></marker>
+<pattern id="wp-import-outputs-p" width="24" height="24" patternUnits="userSpaceOnUse"><path class="dg-grid" d="M24 0 V24 M0 24 H24"/></pattern>
+<radialGradient id="wp-import-outputs-rg" cx=".5" cy=".5" r=".6"><stop offset=".3" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<mask id="wp-import-outputs-mk"><rect width="680" height="300" fill="url(#wp-import-outputs-rg)"/></mask>
+</defs>
+<rect width="680" height="300" fill="url(#wp-import-outputs-p)" mask="url(#wp-import-outputs-mk)"/>
+<style>
+.c-ink{fill:none;stroke:var(--vp-c-text-1,#1e293b);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.c-ink2{fill:none;stroke:var(--vp-c-text-2,#64748b);stroke-width:1.2;stroke-linecap:round}
+.c-blue{fill:var(--vp-c-brand-1,#1f4fff)}
+.c-blues{fill:none;stroke:var(--vp-c-brand-1,#1f4fff);stroke-width:1.8;stroke-linecap:round}
+.c-paper{fill:var(--vp-c-bg,#fff)}
+.c-papers{fill:none;stroke:var(--vp-c-bg,#fff);stroke-width:1.8;stroke-linecap:round}
+.c-ok{fill:none;stroke:var(--vp-c-green-1,#16a34a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.c-bad{fill:none;stroke:var(--vp-c-red-1,#dc2626);stroke-width:2;stroke-linecap:round}
+.c-grainp{fill:var(--vp-c-text-1,#1e293b);opacity:.07}
+.c-hatchp{stroke:var(--vp-c-text-1,#1e293b);stroke-width:1.1;opacity:.28}
+</style>
+<defs>
+<pattern id="wp-import-outputs-gr" width="7" height="7" patternUnits="userSpaceOnUse"><circle class="c-grainp" cx="1.5" cy="2" r=".6"/><circle class="c-grainp" cx="5" cy="5.5" r=".5"/><circle class="c-grainp" cx="5.5" cy="1" r=".4"/></pattern>
+<pattern id="wp-import-outputs-ht" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path class="c-hatchp" d="M0 0 V5"/></pattern>
+<filter id="wp-import-outputs-fa" filterUnits="userSpaceOnUse" x="-20" y="-20" width="720" height="640"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+</defs>
+<g transform="rotate(-0.1 94 147)">
+<path d="M21 120 H173 L185 132 V170 Q185 182 173 182 H21 Q9 182 9 170 V132 Q9 120 21 120 Z" fill="url(#wp-import-outputs-ht)"/><path class="dg-n" d="M18 116 H170 L182 128 V166 Q182 178 170 178 H18 Q6 178 6 166 V128 Q6 116 18 116 Z" filter="url(#wp-import-outputs-f)"/><path d="M18 116 H170 L182 128 V166 Q182 178 170 178 H18 Q6 178 6 166 V128 Q6 116 18 116 Z" fill="url(#wp-import-outputs-gr)"/><path class="dg-n2" d="M18 116 H170 L182 128 V166 Q182 178 170 178 H18 Q6 178 6 166 V128 Q6 116 18 116 Z" transform="translate(.9 -.7)" filter="url(#wp-import-outputs-f)"/><path class="c-ink2" d="M170 116 V125 Q170 128 173 128 H182" filter="url(#wp-import-outputs-f)"/>
+<g transform="translate(22 129) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-blues" d="M12.5 14 L9.5 18 L12.5 22 M19.5 14 L22.5 18 L19.5 22 M17.2 13.5 L14.8 22.5"/></g>
+<text x="70" y="143" class="dg-t">WXR file</text>
+<text x="70" y="160" class="dg-s">or REST API</text>
+</g>
+<g transform="rotate(0.3 320 147)">
+<path d="M237 114 H409 Q421 114 421 126 V176 Q421 188 409 188 H237 Q225 188 225 176 V126 Q225 114 237 114 Z" fill="url(#wp-import-outputs-ht)"/><path class="dg-n dg-h" d="M234 110 H406 Q418 110 418 122 V172 Q418 184 406 184 H234 Q222 184 222 172 V122 Q222 110 234 110 Z" filter="url(#wp-import-outputs-f)"/><path d="M234 110 H406 Q418 110 418 122 V172 Q418 184 406 184 H234 Q222 184 222 172 V122 Q222 110 234 110 Z" fill="url(#wp-import-outputs-gr)"/><path class="dg-n2 dg-h2" d="M234 110 H406 Q418 110 418 122 V172 Q418 184 406 184 H234 Q222 184 222 172 V122 Q222 110 234 110 Z" transform="translate(.9 -.7)" filter="url(#wp-import-outputs-f)"/>
+<g transform="translate(238 129) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-ink2" d="M10 14 H22 M10 18 H20 M10 22 H22"/></g>
+<text x="286" y="134" class="dg-t">RawIR</text>
+<text x="286" y="151" class="dg-s">source-faithful,</text>
+<text x="286" y="169" class="dg-s">provenance-stamped</text>
+</g>
+<g transform="rotate(-0.3 563 41)">
+<path d="M467 14 H665 Q677 14 677 26 V64 Q677 76 665 76 H467 Q455 76 455 64 V26 Q455 14 467 14 Z" fill="url(#wp-import-outputs-ht)"/><path class="dg-n" d="M464 10 H662 Q674 10 674 22 V60 Q674 72 662 72 H464 Q452 72 452 60 V22 Q452 10 464 10 Z" filter="url(#wp-import-outputs-f)"/><path d="M464 10 H662 Q674 10 674 22 V60 Q674 72 662 72 H464 Q452 72 452 60 V22 Q452 10 464 10 Z" fill="url(#wp-import-outputs-gr)"/><path class="dg-n2" d="M464 10 H662 Q674 10 674 22 V60 Q674 72 662 72 H464 Q452 72 452 60 V22 Q452 10 464 10 Z" transform="translate(.9 -.7)" filter="url(#wp-import-outputs-f)"/>
+<g transform="translate(468 23) scale(1.125)"><g transform="rotate(-7 15 10)"><rect class="c-paper" x="7" y="3" width="15" height="13" rx="1.5"/><rect class="c-ink" x="7" y="3" width="15" height="13" rx="1.5"/></g>
+<g transform="rotate(6 18 10)"><rect class="c-paper" x="11" y="4" width="15" height="13" rx="1.5"/><rect class="c-ink" x="11" y="4" width="15" height="13" rx="1.5"/><path class="c-ink2" d="M14 8 H23 M14 11 H20"/></g>
+<path class="c-blue" d="M3 14 H29 L27 29 H5 Z"/><path class="c-ink" d="M3 14 H29 L27 29 H5 Z"/>
+<path class="c-papers" d="M11.5 24.5 a3.2 3.2 0 0 1 0.6 -6 a4 4 0 0 1 7.6 1 a2.6 2.6 0 0 1 0.4 5 Z"/></g>
+<text x="516" y="37" class="dg-t">.contentrain/</text>
+<text x="516" y="54" class="dg-s">content store</text>
+</g>
+<g transform="rotate(-0.5 563 147)">
+<path d="M467 120 H665 L677 132 V170 Q677 182 665 182 H467 Q455 182 455 170 V132 Q455 120 467 120 Z" fill="url(#wp-import-outputs-ht)"/><path class="dg-n" d="M464 116 H662 L674 128 V166 Q674 178 662 178 H464 Q452 178 452 166 V128 Q452 116 464 116 Z" filter="url(#wp-import-outputs-f)"/><path d="M464 116 H662 L674 128 V166 Q674 178 662 178 H464 Q452 178 452 166 V128 Q452 116 464 116 Z" fill="url(#wp-import-outputs-gr)"/><path class="dg-n2" d="M464 116 H662 L674 128 V166 Q674 178 662 178 H464 Q452 178 452 166 V128 Q452 116 464 116 Z" transform="translate(.9 -.7)" filter="url(#wp-import-outputs-f)"/><path class="c-ink2" d="M662 116 V125 Q662 128 665 128 H674" filter="url(#wp-import-outputs-f)"/>
+<g transform="translate(468 129) scale(1.125)"><path class="c-paper" d="M6 3 H20 L26 9 V29 H6 Z"/><path class="c-ink" d="M6 3 H20 L26 9 V29 H6 Z M20 3 V9 H26"/>
+<path class="c-ink2" d="M9.5 14 H12.5 M9.5 20 H12.5"/><path class="c-blues" d="M14.5 14 H22 M14.5 20 H22"/><path class="c-blue" d="M20 12 L22.5 14 L20 16 Z M20 18 L22.5 20 L20 22 Z"/></g>
+<text x="516" y="143" class="dg-t">EntrySourceMap</text>
+<text x="516" y="160" class="dg-s">WP id → entry address</text>
+</g>
+<g transform="rotate(-0.3 563 255)">
+<path d="M467 228 H665 Q677 228 677 240 V278 Q677 290 665 290 H467 Q455 290 455 278 V240 Q455 228 467 228 Z" fill="url(#wp-import-outputs-ht)"/><path class="dg-n" d="M464 224 H662 Q674 224 674 236 V274 Q674 286 662 286 H464 Q452 286 452 274 V236 Q452 224 464 224 Z" filter="url(#wp-import-outputs-f)"/><path d="M464 224 H662 Q674 224 674 236 V274 Q674 286 662 286 H464 Q452 286 452 274 V236 Q452 224 464 224 Z" fill="url(#wp-import-outputs-gr)"/><path class="dg-n2" d="M464 224 H662 Q674 224 674 236 V274 Q674 286 662 286 H464 Q452 286 452 274 V236 Q452 224 464 224 Z" transform="translate(.9 -.7)" filter="url(#wp-import-outputs-f)"/>
+<g transform="translate(468 237) scale(1.125)"><path class="c-blue" d="M4 6 h20 a4 4 0 0 1 4 4 v9 a4 4 0 0 1 -4 4 h-11 l-6 5 v-5 h-3 a4 4 0 0 1 -4 -4 v-9 a4 4 0 0 1 4 -4z"/>
+<path class="c-ink" d="M4 6 h20 a4 4 0 0 1 4 4 v9 a4 4 0 0 1 -4 4 h-11 l-6 5 v-5 h-3 a4 4 0 0 1 -4 -4 v-9 a4 4 0 0 1 4 -4z"/>
+<path class="c-papers" d="M9 12 H23 M9 17 H18"/></g>
+<text x="516" y="251" class="dg-t">CommentsExport</text>
+<text x="516" y="268" class="dg-s">live-service intake</text>
+</g>
+<path class="dg-a" d="M188 147 C 198 141, 204 151, 214 147" marker-end="url(#wp-import-outputs-m)" filter="url(#wp-import-outputs-fa)"/>
+<text x="201" y="104" text-anchor="middle" class="dg-s">parseWxr</text>
+<text x="201" y="204" text-anchor="middle" class="dg-s">fetchRestRawIR</text>
+<path class="dg-a" d="M424 140 H434" filter="url(#wp-import-outputs-fa)"/>
+<path class="dg-a" d="M434 140 C 446 134, 434 44, 446 42" marker-end="url(#wp-import-outputs-m)" filter="url(#wp-import-outputs-fa)"/>
+<path class="dg-a" d="M434 140 C 440 142, 440 147, 446 147" marker-end="url(#wp-import-outputs-m)" filter="url(#wp-import-outputs-fa)"/>
+<text x="436" y="76" text-anchor="end" class="dg-s">rawToContentrain</text>
+<path class="dg-a" d="M424 160 C 444 176, 428 252, 446 254" marker-end="url(#wp-import-outputs-m)" filter="url(#wp-import-outputs-fa)"/>
+<path class="dg-a" d="M563 186 C 568 198, 558 206, 563 216" marker-end="url(#wp-import-outputs-m)" filter="url(#wp-import-outputs-fa)"/>
+<text x="436" y="280" text-anchor="end" class="dg-s">buildCommentsExport</text>
+</svg>
