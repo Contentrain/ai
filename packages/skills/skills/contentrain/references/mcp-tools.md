@@ -320,7 +320,7 @@ Validate project content against model schemas.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `model` | string | No | Validate specific model only (omit for all) |
-| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, `publish_at`/`expire_at` copies an older `content_save` left in document frontmatter) and backfill a missing model `title_field`. Default: `false` |
+| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, `publish_at`/`expire_at` copies an older `content_save` left in document frontmatter) and backfill a missing model `title_field`. Content without meta gets meta with `status: published`, which is what delivery already serves; a fix that would change whether an entry is delivered is listed in `visibility_changes` and left on its `cr/fix/validate/…` branch for review instead of auto-merged. Default: `false` |
 
 ### contentrain_submit
 

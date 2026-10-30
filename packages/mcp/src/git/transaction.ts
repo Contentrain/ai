@@ -76,7 +76,11 @@ export interface GitTransaction {
   baseCheckedOut: boolean
   write(callback: (worktreePath: string) => Promise<void>): Promise<void>
   commit(message: string, contextUpdate?: ContextUpdate): Promise<string>
-  complete(): Promise<CompleteResult>
+  /**
+   * `review: true` keeps the branch for review even when the workflow is
+   * auto-merge: for a write whose effect is only known once it is made.
+   */
+  complete(options?: { review?: boolean }): Promise<CompleteResult>
   cleanup(): Promise<void>
 }
 
@@ -341,8 +345,8 @@ export async function createTransaction(
       return commitHash
     },
 
-    async complete() {
-      if (workflow === 'review') {
+    async complete(completeOptions) {
+      if (workflow === 'review' || completeOptions?.review) {
         // Mark the branch as surviving BEFORE attempting the push. The commit
         // already exists at this point, so a push failure (no write access,
         // offline, expired credentials) must not make cleanup() treat this as

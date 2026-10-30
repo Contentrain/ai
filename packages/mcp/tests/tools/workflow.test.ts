@@ -7,7 +7,11 @@ import { tmpdir } from 'node:os'
 import { simpleGit } from 'simple-git'
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { createClient, cloneTemplate, makeInitedTemplate, parseResult } from '../support/project.js'
+import type { ModelDefinition } from '@contentrain/types'
 import { readJson, writeJson } from '../../src/util/fs.js'
+// Delivery's own visibility rule, read from source so the #711 tests check what
+// a build would serve rather than a copy of the rule.
+import { isPublishedAt, publicationContext, publicationMeta } from '../../../sdk/js/src/generator/publication.js'
 
 let template: string
 let testDir: string
@@ -357,8 +361,85 @@ describe('contentrain_validate', () => {
 
     const updatedMeta = await readJson<Record<string, Record<string, unknown>>>(metaPath)
     expect(updatedMeta!['keep-me']).toBeDefined()
-    expect(updatedMeta!['keep-me']!['status']).toBe('draft')
+    expect(updatedMeta!['keep-me']!['status']).toBe('published')
     expect(updatedMeta!['keep-me']!['source']).toBe('import')
+  })
+
+  // #711: delivery serves an entry that has no meta. The backfill must keep
+  // serving it, so it lands without review and reports no visibility change.
+  it('keeps an entry without meta delivered after fix:true', async () => {
+    client = await createModel(client, 'redirects', 'collection', 'system', {
+      from: { type: 'string' },
+    })
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: { model: 'redirects', entries: [{ id: 'old-page', locale: 'en', data: { from: '/old' } }] },
+    })
+    const metaPath = join(testDir, '.contentrain', 'meta', 'redirects', 'en.json')
+    const metaData = await readJson<Record<string, unknown>>(metaPath) ?? {}
+    delete metaData['old-page']
+    await writeJson(metaPath, metaData)
+    const git = simpleGit(testDir)
+    await git.add('.')
+    await git.commit('drop redirect meta')
+
+    const model = (await readJson<ModelDefinition>(join(testDir, '.contentrain', 'models', 'redirects.json')))!
+    const delivered = async () => {
+      const context = publicationContext(testDir, 'en', { publishedOnly: true })!
+      const meta = await publicationMeta({ modelId: 'redirects', locale: 'en', filePath: '', kind: 'collection' }, model, context)
+      return isPublishedAt((meta as Record<string, unknown> | undefined)?.['old-page'], context.at)
+    }
+    expect(await delivered()).toBe(true)
+
+    client = await createClient(testDir)
+    const data = parseResult(await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'redirects', fix: true },
+    }))
+
+    expect(data['fixed']).toBeGreaterThan(0)
+    expect(await delivered()).toBe(true)
+    expect(data['visibility_changes']).toEqual([])
+    expect((data['git'] as Record<string, unknown>)['action']).toBe('auto-merged')
+  })
+
+  // #711: moving a non-i18n stray meta to the default path makes delivery read
+  // a status it never read before. That change is listed and held for review.
+  it('holds a fix that changes delivery for review and lists the entry', async () => {
+    await client.callTool({
+      name: 'contentrain_model_save',
+      arguments: {
+        id: 'menus', name: 'menus', kind: 'collection', domain: 'system', i18n: false,
+        title_field: 'label', fields: { label: { type: 'string' } },
+      },
+    })
+    client = await createClient(testDir)
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: { model: 'menus', entries: [{ id: 'main-menu', locale: 'en', data: { label: 'Main' } }] },
+    })
+    const metaDir = join(testDir, '.contentrain', 'meta', 'menus')
+    const meta = await readJson<Record<string, Record<string, unknown>>>(join(metaDir, 'en.json'))
+    expect(meta!['main-menu']!['status']).toBe('draft')
+    await writeJson(join(metaDir, 'tr.json'), meta)
+    await rm(join(metaDir, 'en.json'))
+    const git = simpleGit(testDir)
+    await git.add('.')
+    await git.commit('meta stranded under tr')
+
+    client = await createClient(testDir)
+    const data = parseResult(await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'menus', fix: true },
+    }))
+
+    expect(data['visibility_changes']).toEqual([
+      { model: 'menus', locale: 'en', entry: 'main-menu', before: 'visible', after: 'hidden' },
+    ])
+    expect((data['git'] as Record<string, unknown>)['action']).toBe('pending-review')
+    // Nothing reached the base branch: the stray is still where it was.
+    expect(await readJson(join(metaDir, 'tr.json'))).not.toBeNull()
+    expect(await readJson(join(metaDir, 'en.json'))).toBeNull()
   })
 
   it('detects duplicate dictionary values', async () => {

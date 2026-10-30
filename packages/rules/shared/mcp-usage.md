@@ -185,7 +185,7 @@ Each entry in the `entries` array has this shape:
 #### contentrain_validate parameters
 
 - `model`: validate a specific model only (omit for all models).
-- `fix`: auto-fix structural issues like canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, and `publish_at`/`expire_at` copies an older `content_save` left in document frontmatter (stripped only when meta holds the same key), and backfill a missing model `title_field` (default: false). Stray-meta cleanup is deterministic: it prunes extras when the default-locale meta is authoritative, or migrates a lone stray to the default path — it never merges or downgrades a status.
+- `fix`: auto-fix structural issues like canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, and `publish_at`/`expire_at` copies an older `content_save` left in document frontmatter (stripped only when meta holds the same key), and backfill a missing model `title_field` (default: false). Stray-meta cleanup is deterministic: it prunes extras when the default-locale meta is authoritative, or migrates a lone stray to the default path — it never merges or downgrades a status. Content without meta gets meta with `status: published`, which is what delivery already serves; a fix that would change whether an entry is delivered is listed in `visibility_changes` and left on its `cr/fix/validate/…` branch for review instead of auto-merged.
 
 #### contentrain_submit parameters
 
