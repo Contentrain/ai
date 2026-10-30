@@ -444,7 +444,7 @@ The optional `locales` field says which project locales a model actually covers:
 }
 ```
 
-| | Meaning |
+| `locales` | Meaning |
 |---|---|
 | **Absent** (the default) | The model covers every locale in `config.locales.supported` — the behaviour every model had before this field existed |
 | **Present** | Parity is checked against these locales only. The rest are neither required nor reported |
@@ -496,7 +496,7 @@ By default, content files are stored inside `.contentrain/content/{domain}/{mode
 }
 ```
 
-| | Without content_path | With `content_path: "content/blog"` |
+| File | Without content_path | With `content_path: "content/blog"` |
 |---|---|---|
 | **Content** | `.contentrain/content/blog/blog-posts/en.json` | `content/blog/en.json` |
 | **Meta** | `.contentrain/meta/blog-posts/en.json` | `.contentrain/meta/blog-posts/en.json` |

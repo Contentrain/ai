@@ -2,9 +2,11 @@
 
 :root {
   /* Primary blue from serve-ui: oklch(0.55 0.18 250) ≈ #3b5afc */
-  --vp-c-brand-1: #3b5afc;
-  --vp-c-brand-2: #5270fd;
-  --vp-c-brand-3: #6986fe;
+  /* brand-1 is the text shade (links, inline code), brand-3 the button background.
+     #324cd4 keeps 4.6:1 on the tip/info block backgrounds; white on #3b5afc is 5.2:1 */
+  --vp-c-brand-1: #324cd4;
+  --vp-c-brand-2: #3753ec;
+  --vp-c-brand-3: #3b5afc;
   --vp-c-brand-soft: rgba(59, 90, 252, 0.14);
 
   /* Home hero */
@@ -12,13 +14,21 @@
   --vp-home-hero-name-background: linear-gradient(135deg, #3b5afc 0%, #7c3aed 100%);
   --vp-home-hero-image-background-image: linear-gradient(135deg, rgba(59, 90, 252, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
   --vp-home-hero-image-filter: blur(56px);
+
+  /* Code block language label: text-3 is 3.0:1 (light) / 3.4:1 (dark) on the block background */
+  --vp-code-lang-color: var(--vp-c-text-2);
+
+  /* Inline code in danger blocks: the default red-1 is 4.4:1 (light) / 4.2:1 (dark) on its background */
+  --vp-c-danger-1: #b2262b;
 }
 
 .dark {
-  --vp-c-brand-1: #6986fe;
+  /* #6986fe was 3.9–4.5:1 for links and inline code on the tip/info block backgrounds */
+  --vp-c-brand-1: #879efe;
   --vp-c-brand-2: #5270fd;
   --vp-c-brand-3: #3b5afc;
   --vp-c-brand-soft: rgba(105, 134, 254, 0.14);
+  --vp-c-danger-1: #f77c8c;
 }
 
 /* Hero section polish */
