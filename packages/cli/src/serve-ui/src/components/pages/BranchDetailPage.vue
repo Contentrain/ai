@@ -442,7 +442,8 @@ onMounted(async () => {
         </div>
 
         <div v-else class="flex flex-col items-center py-12 text-center">
-          <img src="/merge-2.svg" alt="" class="empty-illustration mb-4" />
+          <img src="/merge-2.webp" alt="" class="dark:hidden empty-illustration mb-4" />
+          <img src="/merge-2-dark.webp" alt="" class="hidden dark:block empty-illustration mb-4" />
           <p class="text-sm text-muted-foreground">{{ t['branch-detail.no-diff-available-for'] }}</p>
         </div>
       </template>

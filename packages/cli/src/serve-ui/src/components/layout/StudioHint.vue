@@ -15,9 +15,14 @@ defineProps<{
     <!-- Background pattern -->
     <div class="absolute inset-0 bg-linear-to-r from-primary/8 via-primary/4 to-primary/8" />
     <img
-      src="/for-developers-1.svg"
+      src="/for-developers-1.webp"
       alt=""
-      class="absolute inset-0 size-full object-cover opacity-[0.04] dark:opacity-[0.08] pointer-events-none select-none"
+      class="absolute inset-0 size-full object-cover opacity-20 pointer-events-none select-none dark:hidden"
+    />
+    <img
+      src="/for-developers-1-dark.webp"
+      alt=""
+      class="absolute inset-0 hidden size-full object-cover opacity-30 pointer-events-none select-none dark:block"
     />
 
     <!-- Content -->
