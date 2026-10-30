@@ -26,6 +26,7 @@ import {
   pageTypeOf,
   slugify,
   strip,
+  taxFieldId,
   taxModelId,
 } from './core.js'
 
@@ -71,6 +72,8 @@ export interface ImportReport {
   acf_options: Record<string, string>
   /** ACF Options Page fields whose name was already taken, written under a counter (`new name: <page slug>.<field>`). */
   acf_options_renamed: Record<string, string>
+  /** Taxonomy fields whose snake_case name was already taken on their model, written under a counter (`<model>.<new name>: <taxonomy>`). */
+  tax_fields_renamed: Record<string, string>
   /** ACF select/checkbox values outside their field's stated choices, left out (`field: count`). */
   acf_outside_choices: Record<string, number>
   /** ACF date-times written without a zone because the source named none (`timezone_string` / `gmt_offset`). */
@@ -250,6 +253,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
     acf_fields: {},
     acf_options: {},
     acf_options_renamed: {},
+    tax_fields_renamed: {},
     acf_outside_choices: {},
     acf_datetime_unzoned: 0,
     acf_media_unknown: {},
@@ -614,7 +618,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
     const typeItems = raw.posts.filter((p) => p.type === type)
     const mid = typeModelId(type)
     const taxes = [...new Set(typeItems.flatMap((p) => p.terms.map((t) => t.taxonomy)))].filter((t) => models[taxModelId(t)])
-    const { fields, order } = coreFields({
+    const { fields, order, taxFields } = coreFields({
       excerpt: typeItems.some((p) => p.excerpt),
       body: typeItems.some((p) => p.content),
       date: typeItems.some((p) => p.date),
@@ -622,6 +626,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       taxes,
       cover: typeItems.some((p) => p.meta._thumbnail_id),
     })
+    for (const t of taxes) if (taxFields[t] !== taxFieldId(t)) report.tax_fields_renamed[`${mid}.${taxFields[t]}`] = t
     // Children of different parents sharing a slug: the slug is unique per parent, not per type, so the field is not
     // `unique` there (the WP post ID still is). Every other type keeps a unique slug.
     const typeSlugs = typeItems.filter((p) => slugOf.has(p.id)).map((p) => `${multilingual ? `${postLocale(p)}:` : ''}${slugOf.get(p.id)!}`)
@@ -709,7 +714,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       if (p.link) e.link = p.link
       if (fields.author && p.author) e.author = authorId(slugify(p.author))
       for (const t of taxes) {
-        e[taxModelId(t)] = p.terms
+        e[taxFields[t]!] = p.terms
           .filter((x) => x.taxonomy === t && termExists(taxModelId(t), termRef(t, x.slug)))
           .map((x) => termRef(t, x.slug))
       }
@@ -730,7 +735,8 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         const term = termWpId === undefined ? undefined : termById.get(termWpId)
         const ref = term && term.taxonomy === 'category' ? termRef('category', term.slug) : undefined
         // Only a category the post is in, as Yoast and Rank Math check before using it; a stale one is left out.
-        const assigned = ref !== undefined && Array.isArray(e[taxModelId('category')]) && (e[taxModelId('category')] as string[]).includes(ref)
+        const inCategories = e[taxFields.category!]
+        const assigned = ref !== undefined && Array.isArray(inCategories) && (inCategories as string[]).includes(ref)
         if (ref && assigned && termExists(taxModelId('category'), ref)) e.primary_category = ref
         else if (termWpId !== undefined) report.dropped_relations++
       }

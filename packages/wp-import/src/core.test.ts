@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RawIR } from '@contentrain/types'
 import { parseWxr, rawToContentrain, hexId } from './index'
-import { decodeEntities, strip } from './core'
+import { coreFields, decodeEntities, strip, taxFieldId } from './core'
 import { FIXTURE } from './wxr.test'
 
 // A plain-text field is escaped once where it is printed (Astro's text escaping); a
@@ -52,5 +52,21 @@ describe('rawToContentrain plain-text fields', () => {
     const entry = JSON.parse(files['.contentrain/content/blog/posts/data.json']!)[hexId('posts:entities')]
     expect(entry.title).toBe('Fish & chips…')
     expect(entry.excerpt).toBe('It’s here […]')
+  })
+})
+
+describe('taxonomy fields are snake_case, the model id keeps its hyphen', () => {
+  it('names the field from the model id', () => {
+    expect(['category', 'post_tag', 'portfolio_category', 'project-type', '2024_events'].map(taxFieldId)).toEqual(['categories', 'tags', 'portfolio_category', 'project_type', 'tax_2024_events'])
+  })
+
+  it('never writes two taxonomies, or a taxonomy and another field, under one name', () => {
+    const opts = { excerpt: false, body: false, date: false, author: true, cover: true }
+    const { fields, taxFields } = coreFields({ ...opts, taxes: ['a-b', 'a_b', 'author', 'format'] })
+    expect(taxFields).toEqual({ 'a-b': 'a_b', 'a_b': 'a_b_2', 'author': 'author_2', 'format': 'format_2' })
+    expect(fields.a_b).toMatchObject({ type: 'relations', model: 'a-b', label: 'a-b' })
+    expect(fields.a_b_2).toMatchObject({ type: 'relations', model: 'a-b', label: 'a_b' })
+    expect(fields.author).toMatchObject({ type: 'relation', model: 'authors' })
+    expect(fields.cover).toMatchObject({ type: 'relation', model: 'media' })
   })
 })

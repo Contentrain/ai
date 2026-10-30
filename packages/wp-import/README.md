@@ -64,7 +64,7 @@ console.log(formatSourceDeltaReport(plan))
 ```
 
 - **Placement.** A post-type record is looked up in the `EntrySourceMap`. A term or media record is found by its `wp_id` in its own model (`wp-tax-<taxonomy>` / `categories` / `tags`, `wp-media` / `media`). The map lists post ids only, and post 6 and category 6 are different records. A record that cannot be placed gets `unmapped` with a reason: `not-in-source-map`, `no-model-for-type` or `entry-not-found`.
-- **`updated` / `moved`** list `fields_changed`, comparing the stored entry with the incoming one (frontmatter keys and `body` for a document). A `moved` record whose address changed adds a 301 to `redirects`. If the store derives entry ids from slugs, the new id is in `entry_id_after`.
+- **`updated` / `moved`** list `fields_changed`, comparing the stored entry with the incoming one (frontmatter keys and `body` for a document). A store imported before taxonomy fields were snake_case keeps its field names: an incoming `portfolio_category` is compared under the stored `portfolio-category` field that links the same model. A `moved` record whose address changed adds a 301 to `redirects`. If the store derives entry ids from slugs, the new id is in `entry_id_after`.
 - **`deleted`** is a tombstone. `trashed` (can come back) and `purged` (gone) stay distinct.
 - **Conflicts.** If the entry's meta says something other than the importer wrote it last (`source` is not `import`, or `updated_by` is not an importer), the record gets `conflict: true` and `repo_edit: { updated_by, updated_at?, source }`. Nothing is overwritten, and a person decides.
 
@@ -262,6 +262,13 @@ testimonial post type, say) keeps its content but gets no address (`link` is
 null), so no route or redirect claims a page that does not exist. Custom
 taxonomies in REST are read with their terms, and a post's terms in them become
 its relations.
+
+A taxonomy's model id is kebab-case (`portfolio-category`), and the field a post
+links its terms with is the same name in snake_case (`portfolio_category`,
+`taxFieldId`), like every field name. `categories` and `tags` are unchanged. If
+that name is already taken on the model (a core field such as `author` or
+`format`, or a second taxonomy with the same name), the field gets a counter
+(`format_2`) and the report lists it under `tax_fields_renamed`.
 
 
 ### Publication and translation identity

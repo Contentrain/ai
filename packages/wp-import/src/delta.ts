@@ -195,6 +195,26 @@ function repoEdit(meta: EntryMeta | undefined, importers: Set<string>): SourceDe
   }
 }
 
+/**
+ * The incoming entry under the stored model's field names. A store imported before taxonomy fields were snake_case
+ * links its terms under the model id (`portfolio-category`); the new export names the same link `portfolio_category`.
+ * A relation field the stored model does not have is read under the stored field that links the same model, when
+ * exactly one does and the incoming model has no field of that name: the stored name stays, nothing reads as changed.
+ */
+function underStoredNames(stored: ModelDefinition, incoming: ModelDefinition, entry: StoredEntry): StoredEntry {
+  const have = stored.fields ?? {}
+  const next = incoming.fields ?? {}
+  const fields = { ...entry.fields }
+  for (const [name, def] of Object.entries(next)) {
+    if (have[name] || (def.type !== 'relations' && def.type !== 'relation') || !(name in fields)) continue
+    const same = Object.entries(have).filter(([other, d]) => !next[other] && d.type === def.type && JSON.stringify(d.model) === JSON.stringify(def.model))
+    if (same.length !== 1) continue
+    fields[same[0]![0]] = fields[name]!
+    delete fields[name]
+  }
+  return { ...entry, fields }
+}
+
 function changedFields(before: StoredEntry, after: StoredEntry): string[] {
   const keys = new Set([...Object.keys(before.fields), ...Object.keys(after.fields)])
   return [...keys].filter(key => before.fields[key] !== after.fields[key]).toSorted()
@@ -239,11 +259,12 @@ function planEntry(entry: SourceDeltaEntry, input: PlanSourceDeltaInput, taxonom
   if (entry.op === 'deleted' && entry.deleted_kind) notes.push(DELETED_DETAIL[entry.deleted_kind])
 
   if ((entry.op === 'updated' || entry.op === 'moved') && stored) {
-    const after = incoming ? place(incoming, entry.wp_type, entry.wp_id, taxonomies) : undefined
-    const next = after && isPlaced(after) ? readEntry(incoming!.files, after) : undefined
-    if (next) {
-      out.fields_changed = changedFields(stored, next)
-      if (isPlaced(after!) && after.entry_id !== target.entry_id) out.entry_id_after = after.entry_id
+    const placed = incoming ? place(incoming, entry.wp_type, entry.wp_id, taxonomies) : undefined
+    const after = placed && isPlaced(placed) ? placed : undefined
+    const next = after ? readEntry(incoming!.files, after) : undefined
+    if (after && next) {
+      out.fields_changed = changedFields(stored, underStoredNames(target.model, after.model, next))
+      if (after.entry_id !== target.entry_id) out.entry_id_after = after.entry_id
     }
     else {
       notes.push(incoming ? 'not in the incoming export' : 'no incoming export to compare with')

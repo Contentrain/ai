@@ -199,7 +199,9 @@ describe('fetchRestRawIR + rawToContentrain on a Secure Custom Fields site', () 
     expect(f.api_secret).toBeUndefined()
     // The custom taxonomy is a model and the projects link to its term.
     expect(files['.contentrain/models/project-type.json']).toBeDefined()
-    expect(f['project-type']).toMatchObject({ type: 'relations', model: 'project-type' })
+    // The field is snake_case like every field name (#1425); the model id keeps its hyphen.
+    expect(f.project_type).toMatchObject({ type: 'relations', model: 'project-type' })
+    expect(f['project-type']).toBeUndefined()
 
     const byId = JSON.parse(files[Object.keys(files).find((p) => /content\/[^/]+\/project\//.test(p))!]!) as Record<string, Record<string, unknown>>
     const idOf = (slug: string) => Object.keys(byId).find((k) => byId[k]!.slug === slug)!
@@ -214,6 +216,8 @@ describe('fetchRestRawIR + rawToContentrain on a Secure Custom Fields site', () 
     expect(harbor.related_projects).toEqual([idOf('metro-signalling')])
     expect(typeof harbor.lead).toBe('string')
     expect(typeof harbor.primary_type).toBe('string')
+    expect(harbor.project_type).toEqual([harbor.primary_type])
+    expect(harbor['project-type']).toBeUndefined()
     expect((harbor.gallery as string[]).length).toBe(1)
     // A page link to a draft page is no address: left out.
     expect(harbor.landing_page).toBeUndefined()
