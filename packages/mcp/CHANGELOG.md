@@ -1,5 +1,14 @@
 # @contentrain/mcp
 
+## 3.11.21
+
+### Patch Changes
+
+- 20eda05: `contentrain_doctor` and `contentrain_validate` now give one verdict on a model. A field name that predates the snake_case rule is a notice in both: doctor's Models check no longer fails on it, and lists it as a note instead. Doctor suggests `contentrain validate --fix` only for an error that command repairs (a missing `title_field` it can infer); for any other error it names the error and points at `contentrain_model_save`. The `url` field check accepts `tel:` and `mailto:` links and `#fragment` anchors; a bare `#` (a WordPress menu parent) is a notice instead of a warning.
+- 5639799: `contentrain_validate fix:true` no longer unpublishes content. Meta it backfills for an entry without meta is `status: published`, which is what delivery already serves for such entries; it used to write `draft`, silently dropping them from public builds. Every entry whose delivery a fix changes is now listed in `visibility_changes`, and a fix that changes one is left on its `cr/fix/validate/…` branch for review instead of auto-merged.
+- Updated dependencies [20eda05]
+  - @contentrain/types@1.79.1
+
 ## 3.11.20
 
 ### Patch Changes

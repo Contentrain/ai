@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/rules",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "license": "MIT",
   "description": "AI agent rules for Contentrain — quality standards, architecture conventions, IDE integration",
   "type": "module",

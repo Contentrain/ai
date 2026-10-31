@@ -1,5 +1,20 @@
 # contentrain
 
+## 0.18.23
+
+### Patch Changes
+
+- e6a69b9: serve: redrawn empty-state illustrations with real dark-mode variants (the old ones were inverted with a CSS filter)
+- Updated dependencies [20eda05]
+- Updated dependencies [5639799]
+- Updated dependencies [ab042c9]
+  - @contentrain/mcp@3.11.21
+  - @contentrain/types@1.79.1
+  - @contentrain/rules@0.7.7
+  - @contentrain/skills@0.9.10
+  - @contentrain/wp-import@0.18.0
+  - @contentrain/query@7.6.62
+
 ## 0.18.22
 
 ### Patch Changes
