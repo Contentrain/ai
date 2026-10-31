@@ -288,7 +288,7 @@ is rejected rather than silently overwritten.
 
 ## Part of the Contentrain ecosystem
 
-Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)) and a building block for moving WordPress sites to Astro, which [Migrate](https://migrate.contentrain.io) does as a paid service. [Bridge](https://github.com/Contentrain/wordpress-bridge) is the free WordPress plugin on the other side: it exports a site as a validated Contentrain store, as a ZIP or to your own GitHub repository. [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles.
+Contentrain is a content governance ecosystem for teams and AI agents; agents work on the content through the [MCP server](https://ai.contentrain.io/packages/mcp). This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)) and a building block for moving WordPress sites to Astro, which [Migrate](https://migrate.contentrain.io) does as a paid service. [Bridge](https://github.com/Contentrain/wordpress-bridge) is the free WordPress plugin on the other side: it exports a site as a validated Contentrain store, as a ZIP or to your own GitHub repository. [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles.
 
 ## License
 

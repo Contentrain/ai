@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/astro-kit"
   },
-  "homepage": "https://ai.contentrain.io",
+  "homepage": "https://ai.contentrain.io/packages/astro-kit",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },

@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/emitter-astro"
   },
-  "homepage": "https://ai.contentrain.io",
+  "homepage": "https://ai.contentrain.io/packages/emitter-astro",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },

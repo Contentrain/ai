@@ -61,7 +61,7 @@ Optional parser support for higher-quality source scanning:
 - **MCP Registry name:** `io.github.Contentrain/contentrain`
 - **Local server binary:** `contentrain-mcp`
 - **CLI stdio entrypoint:** `contentrain serve --stdio`
-- **Hosted remote endpoint:** Contentrain Studio MCP Cloud at `https://studio.contentrain.io/api/mcp/v1/{projectId}/mcp`
+- **Hosted remote endpoint:** Contentrain [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud) at `https://studio.contentrain.io/api/mcp/v1/{projectId}/mcp`
 
 Use the local stdio server when the agent should work against a checkout on your machine. Use Studio MCP Cloud when an external agent should operate a connected Studio project through a project-scoped API key.
 

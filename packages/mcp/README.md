@@ -111,7 +111,7 @@ All write operations are designed around git-backed safety:
 | `contentrain_media_update` | Update asset metadata (alt, tags, filename) | — | — |
 | `contentrain_media_delete` | Delete an asset from the media stack | — | **Yes** |
 
-The five `contentrain_media_*` tools are a deterministic passthrough to the provider's optional media facet (`RepoProvider.media`) and are registered **only when the provider exposes one** (e.g. Studio MCP Cloud). Local stdio servers and plain GitHub/GitLab providers never list them. Ingest is URL-based (MCP has no binary channel); the provider implementation owns SSRF/MIME/size policy for the fetch.
+The five `contentrain_media_*` tools are a deterministic passthrough to the provider's optional media facet (`RepoProvider.media`) and are registered **only when the provider exposes one** (e.g. [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud)). Local stdio servers and plain GitHub/GitLab providers never list them. Ingest is URL-based (MCP has no binary channel); the provider implementation owns SSRF/MIME/size policy for the fetch.
 
 ## Quick Start
 
@@ -393,7 +393,7 @@ Full documentation at **[ai.contentrain.io/packages/mcp](https://ai.contentrain.
 
 ## Part of the Contentrain ecosystem
 
-Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles; it drives this engine over the HTTP transport, and the `contentrain_media_*` tools need a provider with a media stack such as Studio's. [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
+Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) is the team surface for review and roles; it drives this engine over the HTTP transport and hosts it for external agents as [MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud), and the `contentrain_media_*` tools need a provider with a media stack such as Studio's. [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 

@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/wp-import"
   },
-  "homepage": "https://ai.contentrain.io",
+  "homepage": "https://ai.contentrain.io/packages/wp-import",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },

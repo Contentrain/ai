@@ -85,7 +85,7 @@ Note that the tool list is capability-aware: a session backed by a remote provid
 
 ### Studio MCP Cloud
 
-Studio MCP Cloud is the hosted version of the HTTP transport for connected Studio projects. It exposes:
+[Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud) is the hosted version of the HTTP transport for connected Studio projects. It exposes:
 
 ```text
 https://studio.contentrain.io/api/mcp/v1/{projectId}/mcp
@@ -145,3 +145,4 @@ Agent drivers should treat `capability_required` as a retry signal — prompt th
 - [Providers & Transports](/guides/providers) — deeper reference for each backend.
 - [MCP package docs](/packages/mcp) — tool catalogue and response shapes.
 - [Contentrain Studio](/studio) — the hosted surface that drives HTTP MCP.
+- [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud) — set up the hosted endpoint for a Studio project.
