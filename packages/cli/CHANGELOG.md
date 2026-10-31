@@ -1,5 +1,18 @@
 # contentrain
 
+## 0.18.24
+
+### Patch Changes
+
+- 65958ad: Package pages and links: each package's npm `homepage` now opens its own page on ai.contentrain.io, every README's closing paragraph links the MCP server, and the MCP and CLI READMEs and the registry description link Studio MCP Cloud.
+- Updated dependencies [65958ad]
+  - @contentrain/mcp@3.11.22
+  - @contentrain/query@7.6.63
+  - @contentrain/types@1.79.2
+  - @contentrain/rules@0.7.8
+  - @contentrain/skills@0.9.11
+  - @contentrain/wp-import@0.18.1
+
 ## 0.18.23
 
 ### Patch Changes
