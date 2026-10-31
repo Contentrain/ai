@@ -2,22 +2,31 @@
 
 > Contentrain AI is the MIT-licensed open-source toolkit for Contentrain, the content governance ecosystem for teams and AI agents: a 27-tool MCP server (@contentrain/mcp), a CLI (contentrain), shared TypeScript types (@contentrain/types), agent rules and skills (@contentrain/rules, @contentrain/skills), a generated typed query SDK (@contentrain/query), and the open ends of the WordPress migration pipeline (@contentrain/wp-import, @contentrain/emitter-astro, @contentrain/verify). Content lives as canonical JSON/Markdown in your Git repo under .contentrain/ — agents write through deterministic MCP tools, humans review through git branches.
 
-Full documentation as a single file (for LLMs): https://ai.contentrain.io/llms-full.txt
-Contentrain Studio (team web surface) documentation: https://docs.contentrain.io/llms.txt
+- [Full documentation as a single file (for LLMs)](https://ai.contentrain.io/llms-full.txt)
+- [Contentrain Studio (team web surface) documentation](https://docs.contentrain.io/llms.txt)
+
+## Contentrain Products
+
+- [Website](https://contentrain.io)
+- [Studio](https://studio.contentrain.io)
+- [Migrate, WordPress to Astro migration](https://migrate.contentrain.io)
+- [Bridge, free WordPress plugin on WordPress.org](https://wordpress.org/plugins/contentrain-bridge/)
+- [Studio docs](https://docs.contentrain.io/llms.txt)
+- [GitHub organization](https://github.com/Contentrain)
 
 ## Packages (npm)
 
-- @contentrain/mcp — MCP server: 27 deterministic tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers
-- contentrain — CLI: init, import, serve (review UI + MCP transports), validate, generate, diff, merge, reconcile, prune, studio commands
-- @contentrain/query — universal query SDK; `contentrain generate` emits a typed client into .contentrain/client/ (#contentrain imports); optional CDN transport plus public forms/comments clients
-- @contentrain/types — shared contract: model/field/config/provider types, the migration contracts (RawIR, ProjectIR, CapabilityManifest, MigrationHandoff), plus pure, browser-safe validate/serialize functions
-- @contentrain/rules — always-loaded agent guardrails plus shared quality rules
-- @contentrain/skills — 16 on-demand Agent Skills (Agent Skills standard) and 9 framework guides
-- @contentrain/wp-import — WordPress WXR/REST importers → RawIR → .contentrain content store
-- @contentrain/emitter-astro — ProjectIR → a complete Astro project, returned as a pure file map
-- @contentrain/verify — offline SEO/indexing/link/asset gates for a built site; takes documents, never makes a network request
-- @contentrain/astro-kit — copy-in Astro components for Contentrain sites, with a machine-readable catalog
-- @contentrain/decide — small typed decisions (a choice or a score): rule first, then a model, cached, budgeted and audited
+- [@contentrain/mcp](https://ai.contentrain.io/packages/mcp): MCP server: 27 deterministic tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers
+- [contentrain](https://ai.contentrain.io/packages/cli): CLI: init, import, serve (review UI + MCP transports), validate, generate, diff, merge, reconcile, prune, studio commands
+- [@contentrain/query](https://ai.contentrain.io/packages/sdk): universal query SDK; `contentrain generate` emits a typed client into .contentrain/client/ (#contentrain imports); optional CDN transport plus public forms/comments clients
+- [@contentrain/types](https://ai.contentrain.io/packages/types): shared contract: model/field/config/provider types, the migration contracts (RawIR, ProjectIR, CapabilityManifest, MigrationHandoff), plus pure, browser-safe validate/serialize functions
+- [@contentrain/rules](https://ai.contentrain.io/packages/rules): always-loaded agent guardrails plus shared quality rules
+- [@contentrain/skills](https://ai.contentrain.io/packages/skills): 16 on-demand Agent Skills (Agent Skills standard) and 9 framework guides
+- [@contentrain/wp-import](https://ai.contentrain.io/packages/wp-import): WordPress WXR/REST importers → RawIR → .contentrain content store
+- [@contentrain/emitter-astro](https://ai.contentrain.io/packages/emitter-astro): ProjectIR → a complete Astro project, returned as a pure file map
+- [@contentrain/verify](https://ai.contentrain.io/packages/verify): offline SEO/indexing/link/asset gates for a built site; takes documents, never makes a network request
+- [@contentrain/astro-kit](https://ai.contentrain.io/packages/astro-kit): copy-in Astro components for Contentrain sites, with a machine-readable catalog
+- [@contentrain/decide](https://ai.contentrain.io/packages/decide): small typed decisions (a choice or a score): rule first, then a model, cached, budgeted and audited
 
 ## Claude Code plugin
 
@@ -38,36 +47,36 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 
 ## Key Pages
 
-- Getting Started: /getting-started
-- 2-Minute Demo: /demo
-- Ecosystem Map: /ecosystem
-- Core Concepts: /concepts
-- Contentrain Studio: /studio
-- FAQ: /faq
-- MCP Tools: /packages/mcp
-- CLI: /packages/cli
-- Query SDK: /packages/sdk
-- Rules: /packages/rules
-- Skills: /packages/skills
-- Types: /packages/types
-- WordPress Import: /packages/wp-import
-- Astro Emitter: /packages/emitter-astro
-- Verify: /packages/verify
-- Astro Kit: /packages/astro-kit
-- Decide: /packages/decide
-- Claude Code Plugin: /packages/plugin
-- Your First Model (guided walkthrough): /guides/first-model
-- Providers & Transports: /guides/providers
-- HTTP Transport: /guides/http-transport
-- Embedding MCP: /guides/embedding-mcp
-- Normalize Flow: /guides/normalize
-- Framework Integration: /guides/frameworks
-- i18n Workflow: /guides/i18n
-- Serve UI: /guides/serve-ui
-- WordPress Migration: /guides/migration
-- Forms & Comments: /guides/forms-comments
-- Model Kinds: /reference/model-kinds
-- Field Types: /reference/field-types
-- Configuration: /reference/config
-- RepoProvider Reference: /reference/providers
-- Reconcile & Divergence: /reference/reconcile
+- [Getting Started](https://ai.contentrain.io/getting-started)
+- [2-Minute Demo](https://ai.contentrain.io/demo)
+- [Ecosystem Map](https://ai.contentrain.io/ecosystem)
+- [Core Concepts](https://ai.contentrain.io/concepts)
+- [Contentrain Studio](https://ai.contentrain.io/studio)
+- [FAQ](https://ai.contentrain.io/faq)
+- [MCP Tools](https://ai.contentrain.io/packages/mcp)
+- [CLI](https://ai.contentrain.io/packages/cli)
+- [Query SDK](https://ai.contentrain.io/packages/sdk)
+- [Rules](https://ai.contentrain.io/packages/rules)
+- [Skills](https://ai.contentrain.io/packages/skills)
+- [Types](https://ai.contentrain.io/packages/types)
+- [WordPress Import](https://ai.contentrain.io/packages/wp-import)
+- [Astro Emitter](https://ai.contentrain.io/packages/emitter-astro)
+- [Verify](https://ai.contentrain.io/packages/verify)
+- [Astro Kit](https://ai.contentrain.io/packages/astro-kit)
+- [Decide](https://ai.contentrain.io/packages/decide)
+- [Claude Code Plugin](https://ai.contentrain.io/packages/plugin)
+- [Your First Model (guided walkthrough)](https://ai.contentrain.io/guides/first-model)
+- [Providers & Transports](https://ai.contentrain.io/guides/providers)
+- [HTTP Transport](https://ai.contentrain.io/guides/http-transport)
+- [Embedding MCP](https://ai.contentrain.io/guides/embedding-mcp)
+- [Normalize Flow](https://ai.contentrain.io/guides/normalize)
+- [Framework Integration](https://ai.contentrain.io/guides/frameworks)
+- [i18n Workflow](https://ai.contentrain.io/guides/i18n)
+- [Serve UI](https://ai.contentrain.io/guides/serve-ui)
+- [WordPress Migration](https://ai.contentrain.io/guides/migration)
+- [Forms & Comments](https://ai.contentrain.io/guides/forms-comments)
+- [Model Kinds](https://ai.contentrain.io/reference/model-kinds)
+- [Field Types](https://ai.contentrain.io/reference/field-types)
+- [Configuration](https://ai.contentrain.io/reference/config)
+- [RepoProvider Reference](https://ai.contentrain.io/reference/providers)
+- [Reconcile & Divergence](https://ai.contentrain.io/reference/reconcile)
