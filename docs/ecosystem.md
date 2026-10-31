@@ -58,7 +58,7 @@ Use **Contentrain Studio** when you need:
 | Claude Desktop | `claude_desktop_config.json` | Local desktop users who want a checkout-scoped Contentrain server |
 | [Claude Code plugin](/packages/plugin) | `/plugin marketplace add Contentrain/ai` | One-command install that bundles the MCP server plus the normalize skills — the shortest path for Claude Code users |
 | Claude Code (manual) | `claude mcp add`, `.mcp.json` | Coding-agent workflows that want project-scoped MCP approval without the plugin |
-| Studio MCP Cloud | Hosted Streamable HTTP endpoint + API key | Teams that want external agents to operate a Studio project without sharing a local checkout |
+| [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud) | Hosted Streamable HTTP endpoint + API key | Teams that want external agents to operate a Studio project without sharing a local checkout |
 
 ## Product Philosophy
 
@@ -90,6 +90,15 @@ Studio docs should point back to AI packages whenever they explain:
 - how normalize starts the journey
 - how rules and skills shape agent behavior
 - how `@contentrain/query` relates to CDN delivery and consumer apps
+
+## Contentrain Products
+
+| Product | What it is | Link |
+|---|---|---|
+| Contentrain Studio | The team web surface for review, roles, media and delivery | [contentrain.io/studio](https://contentrain.io/studio) |
+| Studio MCP Cloud | A hosted MCP endpoint that lets external agents operate a connected Studio project | [docs.contentrain.io/developer/mcp-cloud](https://docs.contentrain.io/developer/mcp-cloud) |
+| Contentrain Migrate | A paid service that moves WordPress sites to Astro | [migrate.contentrain.io](https://migrate.contentrain.io) |
+| Contentrain Bridge | A free WordPress plugin that exports a site as a Contentrain store | [wordpress.org/plugins/contentrain-bridge](https://wordpress.org/plugins/contentrain-bridge/) |
 
 ## Docs Map
 

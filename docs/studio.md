@@ -254,6 +254,15 @@ contentrain studio connect
 
 This single interactive flow handles workspace selection, GitHub App installation, repository detection, `.contentrain/` scanning, and project creation. See the [CLI Studio Integration](/packages/cli#connecting-a-repository) section for the full step-by-step.
 
+## Contentrain Products
+
+| Product | What it is | Link |
+|---|---|---|
+| Contentrain Studio | The team web surface for review, roles, media and delivery | [contentrain.io/studio](https://contentrain.io/studio) |
+| Studio MCP Cloud | A hosted MCP endpoint that lets external agents operate a connected Studio project | [docs.contentrain.io/developer/mcp-cloud](https://docs.contentrain.io/developer/mcp-cloud) |
+| Contentrain Migrate | A paid service that moves WordPress sites to Astro | [migrate.contentrain.io](https://migrate.contentrain.io) |
+| Contentrain Bridge | A free WordPress plugin that exports a site as a Contentrain store | [wordpress.org/plugins/contentrain-bridge](https://wordpress.org/plugins/contentrain-bridge/) |
+
 ## Go Deeper
 
 - [Ecosystem Map](/ecosystem)
@@ -261,6 +270,7 @@ This single interactive flow handles workspace selection, GitHub App installatio
 - [Studio Branches & Review](https://docs.contentrain.io/guide/branches-and-review)
 - [Studio CDN](https://docs.contentrain.io/guide/cdn)
 - [Studio Self-Hosting](https://docs.contentrain.io/developer/self-hosting)
+- [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud)
 
 ## Short Definition
 

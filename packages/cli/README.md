@@ -207,6 +207,8 @@ Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POS
 
 HTTP sessions use the same `LocalProvider` backing as stdio — the transport differs, the behaviour does not. Remote git-host providers (`GitHubProvider`, `GitLabProvider`) are constructed by embedders who instantiate the MCP server programmatically; see the MCP package docs for that flow.
 
+To let external agents operate a connected Studio project without running a server yourself, use the hosted endpoint, [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud).
+
 ## `generate` and `#contentrain`
 
 `contentrain generate` writes a typed client to `.contentrain/client/` and injects `#contentrain` imports into your `package.json`.
@@ -367,7 +369,7 @@ pnpm --filter contentrain build
 
 ## Part of the Contentrain ecosystem
 
-Contentrain is a content governance ecosystem for teams and AI agents. This CLI is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles on the same repository, [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
+Contentrain is a content governance ecosystem for teams and AI agents; agents work on the content through the [MCP server](https://ai.contentrain.io/packages/mcp). This CLI is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles on the same repository, [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 

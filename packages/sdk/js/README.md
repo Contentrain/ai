@@ -656,7 +656,7 @@ Full documentation at **[ai.contentrain.io/packages/sdk](https://ai.contentrain.
 
 ## Part of the Contentrain ecosystem
 
-Contentrain is a content governance ecosystem for teams and AI agents. This SDK is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles, and serves the CDN transport above; [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro; [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
+Contentrain is a content governance ecosystem for teams and AI agents; agents work on the content through the [MCP server](https://ai.contentrain.io/packages/mcp). This SDK is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)). [Studio](https://github.com/Contentrain/studio) adds team review and roles, and serves the CDN transport above; [Migrate](https://migrate.contentrain.io) moves WordPress sites to Astro; [Bridge](https://github.com/Contentrain/wordpress-bridge) is a free WordPress plugin that exports a site as a Contentrain store.
 
 ## 📄 License
 

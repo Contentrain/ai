@@ -336,7 +336,7 @@ pnpm --filter @contentrain/types typecheck
 
 ## Part of the Contentrain ecosystem
 
-Contentrain is a content governance ecosystem for teams and AI agents. This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)); [Studio](https://github.com/Contentrain/studio) builds on the same types for team review and roles. The other parts are [Migrate](https://migrate.contentrain.io), which moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge), a free WordPress plugin that exports a site as a Contentrain store.
+Contentrain is a content governance ecosystem for teams and AI agents; agents work on the content through the [MCP server](https://ai.contentrain.io/packages/mcp). This package is one of the [open-source tools](https://github.com/Contentrain/ai) ([docs](https://ai.contentrain.io)); [Studio](https://github.com/Contentrain/studio) builds on the same types for team review and roles. The other parts are [Migrate](https://migrate.contentrain.io), which moves WordPress sites to Astro, and [Bridge](https://github.com/Contentrain/wordpress-bridge), a free WordPress plugin that exports a site as a Contentrain store.
 
 ## License
 

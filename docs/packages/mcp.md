@@ -61,13 +61,13 @@ Optional parser support for higher-quality source scanning:
 - **MCP Registry name:** `io.github.Contentrain/contentrain`
 - **Local server binary:** `contentrain-mcp`
 - **CLI stdio entrypoint:** `contentrain serve --stdio`
-- **Hosted remote endpoint:** Contentrain Studio MCP Cloud at `https://studio.contentrain.io/api/mcp/v1/{projectId}/mcp`
+- **Hosted remote endpoint:** Contentrain [Studio MCP Cloud](https://docs.contentrain.io/developer/mcp-cloud) at `https://studio.contentrain.io/api/mcp/v1/{projectId}/mcp`
 
 Use the local stdio server when the agent should work against a checkout on your machine. Use Studio MCP Cloud when an external agent should operate a connected Studio project through a project-scoped API key.
 
 ## Tool Catalog
 
-The MCP server exposes **27 tools** — 22 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **27 tools** — 22 core + 5 media — organized by function. Each tool includes [MCP annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
 `tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 22 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
