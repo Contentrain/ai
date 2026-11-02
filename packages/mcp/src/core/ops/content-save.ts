@@ -224,9 +224,9 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         // on disk or produced earlier in this plan — makes this an update.
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
 
-        // Merge with what is on disk, the way collections and singletons above
-        // already do. Documents were the only kind that replaced instead of
-        // merging, so a save that touched one frontmatter field wrote a file
+        // Merge with what is on disk, the way dictionaries do. Singletons and
+        // collection entries are replaced by their input (hence the tool's
+        // destructiveHint); documents used to be replaced too, so a save that touched one frontmatter field wrote a file
         // containing only that field — and an entirely empty body. Nothing
         // reported it: the response said `valid: true`, because validation runs
         // over the plan's own output, which was internally consistent and

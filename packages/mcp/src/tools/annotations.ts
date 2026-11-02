@@ -95,10 +95,14 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   },
 
   // ─── Content (mixed) ───
+  // Destructive for the same reason as model_save: a singleton save replaces
+  // the whole file and an update to an existing collection entry replaces that
+  // entry, so a field left out of the input is dropped. Dictionaries and
+  // documents merge, but the hint covers the tool, not one model kind.
   contentrain_content_save: {
     title: 'Save Content',
     readOnlyHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: false,
   },
