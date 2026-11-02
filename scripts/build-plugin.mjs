@@ -93,6 +93,39 @@ function syncVersion() {
 }
 
 /**
+ * Cursor's marketplace review validates both Cursor manifests against its
+ * published schemas (github.com/cursor/plugins, schemas/): `author` and
+ * `owner` take only `name` and `email`, and each marketplace entry's name must
+ * match the plugin's own. Both manifests once carried a `url` there and failed
+ * that check. The schemas aren't vendored (that repo has no license), so the
+ * rules they enforce on our files are restated here.
+ */
+function checkCursorManifests() {
+  const problems = []
+  const marketplace = readJson(CURSOR_MARKETPLACE_MANIFEST)
+  const manifest = readJson(CURSOR_MANIFEST)
+  for (const [where, person] of [['marketplace owner', marketplace.owner], ['plugin author', manifest.author]]) {
+    const extra = Object.keys(person ?? {}).filter(key => key !== 'name' && key !== 'email')
+    if (extra.length > 0) problems.push(`${where} has ${extra.join(', ')} (Cursor allows name and email only)`)
+  }
+  for (const entry of marketplace.plugins ?? []) {
+    if (entry.source === 'plugins/contentrain' && entry.name !== manifest.name) {
+      problems.push(`marketplace entry "${entry.name}" does not match plugin name "${manifest.name}"`)
+    }
+  }
+  for (const key of ['logo', 'mcpServers']) {
+    const path = manifest[key]
+    if (typeof path === 'string' && (path.startsWith('/') || path.includes('..'))) {
+      problems.push(`${key} "${path}" must be a relative path inside the plugin`)
+    }
+  }
+  if (problems.length > 0) {
+    console.error(`✘ Cursor manifests:\n  ${problems.join('\n  ')}`)
+    process.exit(1)
+  }
+}
+
+/**
  * plugins/contentrain/.mcp.json pins the MCP server the plugin starts, written
  * from packages/mcp/package.json as an exact version: the Claude plugin
  * directory blocks any launcher that is not pinned exactly. An exact pin once
@@ -255,6 +288,7 @@ function build() {
   cpSync(FRAMEWORKS_SRC, frameworksOut, { recursive: true })
 
   const version = syncVersion()
+  checkCursorManifests()
   const mcpSpec = writeMcpConfig()
   writeOpenAiPlugin(version)
   const frameworkCount = readdirSync(frameworksOut).filter(f => f.endsWith('.md')).length
