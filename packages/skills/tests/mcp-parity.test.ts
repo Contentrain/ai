@@ -35,13 +35,17 @@ describe('MCP parity — tool reference coverage', () => {
 })
 
 describe('MCP parity — tool count in the core skill', () => {
-  it('SKILL.md states the number of tools the MCP server registers', () => {
+  it('SKILL.md states the number of tools a local MCP server lists', () => {
     // The Claude plugin pinned an MCP release with 24 tools while this line
     // said 27 (#513): the agent was promised tools the server did not have.
+    // The same holds for the media tools: they need a media-capable provider
+    // (Studio), so a local server lists the registry minus contentrain_media_*
+    // (asserted in @contentrain/mcp's tool-availability test).
     const content = readFileSync(join(PKG_ROOT, 'skills', 'contentrain', 'SKILL.md'), 'utf-8')
     const m = /\|\s*@contentrain\/mcp\s*\|\s*(\d+)\s+MCP tools\b/u.exec(content)
     expect(m, 'SKILL.md has no "| @contentrain/mcp | <n> MCP tools" row').not.toBeNull()
-    expect(Number(m![1])).toBe(TOOL_NAMES.length)
+    const localTools = TOOL_NAMES.filter(name => !name.startsWith('contentrain_media_'))
+    expect(Number(m![1])).toBe(localTools.length)
   })
 })
 

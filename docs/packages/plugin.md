@@ -38,17 +38,30 @@ server config and logo.
 
 Requirements: Node.js 22+ and a Git repository. No account is needed.
 
+For ChatGPT and Codex through the OpenAI plugin directory, there is a second
+package, `plugins/contentrain-openai/`. It is the remote version: no skills,
+and its MCP server is the hosted
+[Studio endpoint](https://docs.contentrain.io/developer/mcp-cloud) with OAuth,
+so it needs a Studio account. `pnpm plugin:build` generates it and
+`pnpm plugin:openai:zip` packs the upload. Codex users who want the local
+plugin can add this repository as a marketplace:
+
+```
+codex plugin marketplace add Contentrain/ai
+```
+
 ## What it includes
 
-**MCP server.** The plugin's `.mcp.json` starts the current major of the server
-from npm on first use:
+**MCP server.** The plugin's `.mcp.json` starts the server from npm on first
+use, pinned to the exact version released with the plugin (every MCP release
+ships a plugin update):
 
 ```json
 {
   "mcpServers": {
     "contentrain": {
       "command": "npx",
-      "args": ["-y", "@contentrain/mcp@^3"]
+      "args": ["-y", "@contentrain/mcp@<version>"]
     }
   }
 }
@@ -93,6 +106,6 @@ source file. See the [normalize flow](/guides/normalize).
 
 The plugin is versioned by changesets like the npm packages. Its `skills/` and
 `frameworks/` folders are generated from `packages/skills/` by
-`pnpm plugin:build`, which also writes `.mcp.json` from the current major in
+`pnpm plugin:build`, which also writes `.mcp.json` pinned to the exact version in
 `packages/mcp/package.json`; CI fails when the generated payload is stale.
 

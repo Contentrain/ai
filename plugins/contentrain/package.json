@@ -4,6 +4,9 @@
   "private": true,
   "description": "Claude Code plugin payload — versioned by changesets, published through the marketplace rather than npm",
   "license": "MIT",
+  "dependencies": {
+    "@contentrain/mcp": "workspace:*"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Contentrain/ai.git",

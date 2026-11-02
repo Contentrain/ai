@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { TOOL_NAMES } from '../src/tools/annotations.js'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { createServer } from '../src/server.js'
 
 /**
  * MCP Registry manifest sanity. The registry enforces limits at publish
@@ -29,14 +32,23 @@ describe('server.json (MCP Registry manifest)', () => {
    * is meant to inform — the worst place for this drift to live, and the one
    * place no docs check looks, because it is JSON rather than prose.
    *
-   * Counted from this package's own `TOOL_NAMES` rather than `@contentrain/rules`:
-   * the registry entry describes what THIS server registers, and a test should
-   * not make the package depend on another one to say so.
+   * The count is what `npx @contentrain/mcp` lists, not the registry size:
+   * the 5 media tools need a media-capable provider (Studio), so "27" told
+   * every npm user about tools they would never see. Counted from a live local
+   * server's tools/list, so the number follows the capability gate too.
    */
-  it('the tool count in the description matches the registry', () => {
+  it('the tool count in the description matches what a local server lists', async () => {
     const stated = /(\d+) deterministic MCP tools/.exec(serverJson.description)
     expect(stated, 'description should state the tool count').not.toBeNull()
-    expect(Number(stated![1])).toBe(TOOL_NAMES.length)
+
+    const server = createServer(tmpdir())
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    const client = new Client({ name: 'manifest-test', version: '1.0.0' })
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)])
+    const { tools } = await client.listTools()
+    await client.close()
+
+    expect(Number(stated![1])).toBe(tools.length)
   })
 
   it('description fits the registry limit (≤ 100 chars)', () => {

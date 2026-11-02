@@ -107,6 +107,11 @@ async function resolveFacts() {
       value: tools.length,
       source: '@contentrain/rules MCP_TOOLS.length',
     },
+    'mcp-tools-listed': {
+      label: 'MCP tools a session lists without a media stack (local, GitHub, GitLab)',
+      value: tools.length - media.length,
+      source: '@contentrain/rules MCP_TOOLS minus contentrain_media_* — the local tools/list, asserted in packages/mcp/tests/server/tool-availability.test.ts',
+    },
     'mcp-tools-core': {
       label: 'core (non-media) MCP tools',
       value: tools.length - media.length,
@@ -181,23 +186,33 @@ async function resolveFacts() {
  */
 const MATCHERS = [
   {
-    // "27 tools", "27 MCP tools", "27 deterministic tools", "22 core tools"
-    re: /\b(\d+)\s+((?:deterministic|MCP|core|media|remote-safe)\s+)*tools?\b/gi,
+    // "22 tools", "22 MCP tools", "22 deterministic tools", "22 core tools".
+    // A bare count is what a user gets, i.e. what tools/list holds: the 5
+    // media tools need a media-capable provider (Studio), so "27 MCP tools"
+    // overstated every npx install. The registry size has its own phrasings
+    // below ("27 MCP tool names", "the registry holds 27 tools").
+    re: /(?<!\bregistry (?:holds|of) )\b(\d+)\s+((?:deterministic|MCP|core|media|remote-safe)\s+)*tools?\b(?!\s+names)/gi,
     fact: m => {
       const qualifier = (m[2] ?? '').toLowerCase()
       if (qualifier.includes('core')) return 'mcp-tools-core'
       if (qualifier.includes('media')) return 'mcp-tools-media'
-      return 'mcp-tools'
+      if (qualifier.includes('remote-safe')) return 'mcp-tools'
+      return 'mcp-tools-listed'
     },
   },
-  { re: /\b(\d+)-tool\b/gi, fact: () => 'mcp-tools' },
+  { re: /\b(\d+)-tool\b/gi, fact: () => 'mcp-tools-listed' },
+  { re: /\b(\d+)\s+MCP tool names\b/gi, fact: () => 'mcp-tools' },
+  { re: /\bregistry (?:holds|of) (\d+)\s+tools?\b/gi, fact: () => 'mcp-tools' },
+  // "5 more for media", "+5 media" — the media add-on next to the listed count.
+  { re: /\b(\d+)\s+more\s+for\s+media\b/gi, fact: () => 'mcp-tools-media' },
+  { re: /\+(\d+)\s+media\b/gi, fact: () => 'mcp-tools-media' },
   {
     // "MCP tools (17 operations)" — the registry under another noun. Guarded to
     // the same line mentioning MCP or tools, because "operations" on its own is
     // ordinary English and a check that fires on prose gets switched off.
     re: /\b(\d+)\s+operations\b/gi,
     guard: /MCP|\btools?\b/i,
-    fact: () => 'mcp-tools',
+    fact: () => 'mcp-tools-listed',
   },
   { re: /\b(\d+)\s+`?contentrain_media_\*`?\s+tools?\b/gi, fact: () => 'mcp-tools-media' },
   {
@@ -298,9 +313,10 @@ function breakdownProblems(text, fieldTypeTotal) {
  * contract coding agents load; `CLAUDE.md` is the instruction file agents load
  * in this repo (its counts were corrected in #516); `packages/mcp/server.json`
  * is the MCP Registry listing. Its version is checked by
- * `scripts/sync-server-json.mjs --check`.
+ * `scripts/sync-server-json.mjs --check`. `packages/mcp/package.json` carries the
+ * npm description, and `scripts/og-image.html` is the source of the social card.
  */
-const EXTRA_FILES = ['README.md', 'AGENTS.md', 'CLAUDE.md', 'packages/mcp/server.json']
+const EXTRA_FILES = ['README.md', 'AGENTS.md', 'CLAUDE.md', 'packages/mcp/server.json', 'packages/mcp/package.json', 'scripts/og-image.html']
 
 /**
  * Every markdown file a package ships: READMEs, and the rule and skill
@@ -357,11 +373,11 @@ function docsFiles() {
  * regression it represents can come back unnoticed.
  */
 const HISTORICAL_DRIFT = [
-  { fact: 'mcp-tools', wrong: 24, line: 'description: ... powering AI content governance with 24 deterministic tools over stdio or HTTP' },
-  { fact: 'mcp-tools', wrong: 26, line: '| [`@contentrain/mcp`](https://npmjs.com/) | 26 MCP tools for AI agents | `pnpm add` |' },
+  { fact: 'mcp-tools-listed', wrong: 24, line: 'description: ... powering AI content governance with 24 deterministic tools over stdio or HTTP' },
+  { fact: 'mcp-tools-listed', wrong: 26, line: '| [`@contentrain/mcp`](https://npmjs.com/) | 26 MCP tools for AI agents | `pnpm add` |' },
   { fact: 'mcp-tools', wrong: 24, line: 'console.log(MCP_TOOLS.length)                           // 24' },
-  { fact: 'mcp-tools', wrong: 24, line: '> Contentrain AI is ... a 24-tool MCP server (@contentrain/mcp), a CLI ...' },
-  { fact: 'mcp-tools', wrong: 26, line: '- @contentrain/mcp — MCP server: 26 deterministic tools (21 core + 5 media), stdio + HTTP' },
+  { fact: 'mcp-tools-listed', wrong: 24, line: '> Contentrain AI is ... a 24-tool MCP server (@contentrain/mcp), a CLI ...' },
+  { fact: 'mcp-tools-listed', wrong: 26, line: '- @contentrain/mcp — MCP server: 26 deterministic tools (21 core + 5 media), stdio + HTTP' },
   { fact: 'mcp-tools-core', wrong: 21, line: '- @contentrain/mcp — MCP server: 26 deterministic tools (21 core + 5 media), stdio + HTTP' },
   { fact: 'mcp-tools-core', wrong: 19, line: 'Uses `LocalProvider`, so it serves the 19 core tools over stdio' },
   { fact: 'mcp-tools-core', wrong: 19, line: 'All 19 core tools are available because the runner has `LocalProvider`' },
@@ -369,16 +385,21 @@ const HISTORICAL_DRIFT = [
   { fact: 'agent-skills', wrong: 15, line: 'Installs 15 Agent Skills + essential rules across detected IDEs' },
   { fact: 'agent-skills', wrong: 15, line: 'Published under `skills/` — 15 production skills:' },
   { fact: 'capability-keys', wrong: 24, line: 'It is evidence-based detection across 24 capability keys — `seo`, `forms`, ...' },
-  { fact: 'mcp-tools', wrong: 17, line: '- Contentrain MCP tools (17 operations)' },
+  { fact: 'mcp-tools-listed', wrong: 17, line: '- Contentrain MCP tools (17 operations)' },
   { fact: 'mcp-tools', wrong: 26, line: '- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`)' },
   { fact: 'mcp-tools-core', wrong: 21, line: '- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`)' },
-  { fact: 'mcp-tools', wrong: 22, line: '| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) |' },
   { fact: 'model-kinds', wrong: 5, line: '- Read/write/delete content and models (5 kinds).' },
   { fact: 'field-types', wrong: 26, line: '## 2. Complete Type Reference (26 Types)' },
   // #516: the linked and badge forms the README carried while 16 skills shipped.
   { fact: 'agent-skills', wrong: 15, line: 'This repo ships 15 [Agent Skills](https://agentskills.io) — reusable workflow procedures' },
   { fact: 'agent-skills', wrong: 15, line: '[![Agent Skills](https://img.shields.io/badge/Agent_Skills-15_skills-8B5CF6)](https://agentskills.io)' },
-  { fact: 'mcp-tools', wrong: 21, line: '│   ├── mcp/          — 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers' },
+  { fact: 'mcp-tools-listed', wrong: 21, line: '│   ├── mcp/          — 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers' },
+  // The registry size sold as what a user gets: npx lists 22, the 5 media
+  // tools need a media-capable provider. Live on every surface until the
+  // store-readiness PR.
+  { fact: 'mcp-tools-listed', wrong: 27, line: '| @contentrain/mcp | 27 MCP tools (scan, apply, validate, merge, reconcile, doctor...) | MCP tool calls |' },
+  { fact: 'mcp-tools-listed', wrong: 27, line: '"description": "Git content governance, 27 deterministic MCP tools. Hosted: docs.contentrain.io/developer/mcp-cloud",' },
+  { fact: 'mcp-tools-listed', wrong: 27, line: '<div class="chips"><span class="chip">27 MCP tools</span><span class="chip">16 agent skills</span>' },
 ]
 
 function selfTest(facts) {

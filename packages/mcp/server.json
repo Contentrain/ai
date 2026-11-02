@@ -2,8 +2,20 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Contentrain/contentrain",
   "title": "Contentrain",
-  "description": "Git content governance, 27 deterministic MCP tools. Hosted: docs.contentrain.io/developer/mcp-cloud",
+  "description": "Git content governance, 22 deterministic MCP tools. Hosted: docs.contentrain.io/developer/mcp-cloud",
   "websiteUrl": "https://ai.contentrain.io/packages/mcp",
+  "icons": [
+    {
+      "src": "https://ai.contentrain.io/logo/contentrain-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    },
+    {
+      "src": "https://ai.contentrain.io/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
   "repository": {
     "url": "https://github.com/Contentrain/ai",
     "source": "github",

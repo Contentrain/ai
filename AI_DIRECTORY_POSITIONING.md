@@ -19,7 +19,7 @@ vocabulary before submitting.
 
 > **Two directories, two repos.** The Claude **plugin** listing is owned by
 > `Contentrain/ai` (public, MIT — no plan gate). The **Connectors Directory**
-> listing is owned by `Contentrain/studio` (Team/Enterprise org required).
+> listing is owned by `Contentrain/studio` (any paid Claude plan can submit).
 > See `docs/REMOTE_MCP_SUBMISSION.md` in that repo for the connector runbook.
 
 ## The spine
@@ -44,7 +44,7 @@ alone, which the plugin copy then contradicted in its own first paragraph.
 |---|---|
 | Name (both listings) | `Contentrain` |
 | **Slug (permanent)** | `contentrain` |
-| Connector categories | **Developer Tools** (primary) + **CMS & Web** (secondary) — two signals, no dilution |
+| Connector categories | **Developer Tools** (primary) + one secondary picked from the portal's own list, never a name with "CMS" in it |
 | Tagline strategy | **Split by entry point, one spine** |
 
 ### Taglines (55 char limit)
@@ -106,6 +106,22 @@ locale, review, typed, validated*.
 
 The closing line answers the portal's "what users need before they can
 connect" — an incomplete answer there is a rejection reason.
+
+## OpenAI plugin fields
+
+The OpenAI plugin directory (one catalog for ChatGPT and Codex) lists the
+**remote** server, so it takes the connector copy above as its long
+description, with "Connect Claude" read as "Connect ChatGPT or Codex".
+`pnpm plugin:build` reads this section and the connector description into
+`plugins/contentrain-openai/plugin.json`; edit them here, never there.
+
+- displayName (≤30): `Contentrain`
+- shortDescription (≤30): `Edit Git-backed content safely`
+- category: `Developer Tools`
+- defaultPrompt (≤3, ≤128 each):
+  - `What content models are in this project, and which locales does it use?`
+  - `List the English blog posts and show which ones have no German version.`
+  - `Validate the project and tell me what needs fixing.`
 
 ## Plugin description
 
@@ -171,13 +187,10 @@ There are two Anthropic marketplaces and only one accepts submissions:
 | `claude-plugins-official` | Registered automatically on first interactive Claude Code start | Curated by Anthropic, at its discretion. **No application process** |
 | `claude-community` | User adds `anthropics/claude-plugins-community` manually | In-app form → automated validation + safety screening |
 
-Two submission forms exist, and the plan gate runs the opposite way to what
-you would guess:
-
-- **Console** — `platform.claude.com/plugins/submit` — for individual authors
-  **not** in a Team or Enterprise org. **This is our path; no plan gate.**
-- **claude.ai** — `claude.ai/admin-settings/directory/submissions/plugins/new`
-  — *requires* a Team or Enterprise org with directory management access.
+One portal takes both listings: `claude.ai/directory/manage` → Submit new →
+**Plugin bundle** (or **MCP connector**). Any paid plan (Pro, Max, Ultra, Team
+or Enterprise) can submit; in a Team or Enterprise org only an Owner can. The
+old Console form (`platform.claude.com/plugins/submit`) is gone.
 
 Run `claude plugin validate` locally first; the review pipeline runs the same
 check. Approved plugins are pinned to a commit SHA in the community catalog,
@@ -203,6 +216,6 @@ plugin hints.
 
 - Re-verify the category vocabulary against the portal (the list used here
   came from a third-party aggregation, not Anthropic's own docs).
-- Confirm the remaining Console form fields; only the public-repo and
+- Confirm the portal's remaining Plugin bundle fields; only the public-repo and
   `claude plugin validate` requirements are documented.
 - Keep the two descriptions in sync with the spine if either is edited.

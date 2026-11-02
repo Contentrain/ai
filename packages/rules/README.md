@@ -14,7 +14,7 @@ Start here:
 
 This package is the **policy layer** of the Contentrain ecosystem. It defines how agents should behave when they work with:
 
-- Contentrain MCP tools (27 operations)
+- Contentrain MCP tools (22 operations, +5 media on a media-capable provider)
 - schema and model design
 - content quality (SEO, accessibility, media, i18n)
 - normalize workflows (extraction + reuse)

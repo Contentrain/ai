@@ -60,10 +60,13 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   },
 
   // ─── Model (write + git) ───
+  // Destructive: a save replaces the whole model definition, so a field left
+  // out of the input is dropped from the model. Clients should treat it like a
+  // delete, even though it lands on a cr/* branch like every other write.
   contentrain_model_save: {
     title: 'Save Model',
     readOnlyHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: false,
   },

@@ -1,6 +1,6 @@
 ---
 title: MCP Tools
-description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 27 deterministic tools over stdio or HTTP
+description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 22 deterministic tools over stdio or HTTP
 order: 1
 slug: mcp
 ---
@@ -67,7 +67,7 @@ Use the local stdio server when the agent should work against a checkout on your
 
 ## Tool Catalog
 
-The MCP server exposes **27 tools** — 22 core + 5 media — organized by function. Each tool includes [MCP annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable provider such as Studio (the registry holds 27; a session lists only the tools its provider can serve). They are organized by function. Each tool includes [MCP annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
 `tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 22 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
@@ -265,7 +265,7 @@ Three tools take a `dry_run` parameter:
 2. Review the output
 3. Run with `dry_run: false` to commit
 
-The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`.
+The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`. `model_save` is also annotated `destructiveHint: true`: it replaces the whole model definition, so a field left out of the input is dropped. It needs no `confirm`, but clients that gate destructive tools will ask before running it.
 
 ::: warning Never Skip the Apply Preview
 Always call `contentrain_apply` with `dry_run: true` first and review the plan. It is the only tool that can touch source code — skipping the preview risks unreviewed source patches.

@@ -372,7 +372,11 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  plugins/contentrain: {}
+  plugins/contentrain:
+    dependencies:
+      '@contentrain/mcp':
+        specifier: workspace:*
+        version: link:../../packages/mcp
 
 packages:
 
