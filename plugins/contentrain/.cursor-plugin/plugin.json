@@ -1,10 +1,11 @@
 {
   "name": "contentrain",
+  "displayName": "Contentrain",
   "description": "Content governance for AI agents: turn hardcoded strings into governed, reviewable content in your repository",
   "version": "1.0.9",
   "author": {
     "name": "Contentrain",
-    "url": "https://contentrain.io"
+    "email": "support@contentrain.io"
   },
   "homepage": "https://ai.contentrain.io",
   "repository": "https://github.com/Contentrain/ai",
