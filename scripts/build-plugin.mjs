@@ -16,7 +16,7 @@
  *   plugins/contentrain/skills/<skill>/ -> ../../frameworks/ = plugins/contentrain/frameworks/
  * so the framework links inside SKILL.md resolve in both layouts unchanged.
  */
-import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -339,18 +339,41 @@ function pluginTextFiles() {
   return out
 }
 
+/** Pending changesets that bump the plugin, so their text lands in its CHANGELOG. */
+function pluginChangesets() {
+  const dir = join(ROOT, '.changeset')
+  if (!existsSync(dir)) return []
+  const name = readJson(join(PLUGIN_DIR, 'package.json')).name
+  return readdirSync(dir)
+    .filter(f => f.endsWith('.md') && f !== 'README.md')
+    .map(f => join(dir, f))
+    .filter(file => {
+      const front = readFileSync(file, 'utf-8').match(/^---\n([\s\S]*?)\n---/)
+      return front !== null && front[1].split('\n').some(line => line.trim().replace(/^["']|["']?\s*:.*$/g, '') === name)
+    })
+}
+
 /**
  * The gate: nothing in the plugin may run or install a package without an
  * exact version, or name `@latest`. It runs on the finished payload, so it
  * also catches text a future skill brings in that the pinning above does not
  * know about (a third-party `npx`, a `uvx`).
+ *
+ * The plugin's CHANGELOG ships in the plugin too, and changesets writes it
+ * from changeset text the pinning never sees. So the gate also reads that
+ * CHANGELOG (the version step runs this build right after `changeset
+ * version`) and every pending changeset that names the plugin, which fails the
+ * changeset's own PR rather than the release.
  */
 function checkExactPins() {
   const problems = []
   const run = new RegExp(String.raw`\b${LAUNCHER}((?:\s+-{1,2}[\w-]+)*)\s+([^\s\`'")\]]+)`, 'g')
   const install = new RegExp(String.raw`\b${INSTALLER}((?:\s+-{1,2}[\w-]+)*)((?:\s+[^\s\`'")\]#;&|]+)*)`, 'g')
-  for (const file of pluginTextFiles()) {
-    const rel = file.slice(PLUGIN_DIR.length + 1)
+  const files = pluginTextFiles().map(file => [file.slice(PLUGIN_DIR.length + 1), file])
+  const changelog = join(PLUGIN_DIR, 'CHANGELOG.md')
+  if (existsSync(changelog)) files.push(['CHANGELOG.md', changelog])
+  for (const file of pluginChangesets()) files.push([file.slice(ROOT.length + 1), file])
+  for (const [rel, file] of files) {
     readFileSync(file, 'utf-8').split('\n').forEach((line, i) => {
       const at = `${rel}:${i + 1}`
       if (/@latest\b/.test(line)) problems.push(`${at} names @latest`)
