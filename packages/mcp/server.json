@@ -4,6 +4,18 @@
   "title": "Contentrain",
   "description": "Git content governance, 27 deterministic MCP tools. Hosted: docs.contentrain.io/developer/mcp-cloud",
   "websiteUrl": "https://ai.contentrain.io/packages/mcp",
+  "icons": [
+    {
+      "src": "https://ai.contentrain.io/logo/contentrain-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    },
+    {
+      "src": "https://ai.contentrain.io/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
   "repository": {
     "url": "https://github.com/Contentrain/ai",
     "source": "github",

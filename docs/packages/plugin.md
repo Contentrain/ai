@@ -40,15 +40,16 @@ Requirements: Node.js 22+ and a Git repository. No account is needed.
 
 ## What it includes
 
-**MCP server.** The plugin's `.mcp.json` starts the current major of the server
-from npm on first use:
+**MCP server.** The plugin's `.mcp.json` starts the server from npm on first
+use, pinned to the exact version released with the plugin (every MCP release
+ships a plugin update):
 
 ```json
 {
   "mcpServers": {
     "contentrain": {
       "command": "npx",
-      "args": ["-y", "@contentrain/mcp@^3"]
+      "args": ["-y", "@contentrain/mcp@<version>"]
     }
   }
 }

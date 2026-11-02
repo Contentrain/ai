@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createServer, DEFAULT_INSTRUCTIONS, type CreateServerOptions } from '../../src/server.js'
+import { readFileSync } from 'node:fs'
+import { createServer, DEFAULT_INSTRUCTIONS, SERVER_IDENTITY, type CreateServerOptions } from '../../src/server.js'
 import { TOOL_ANNOTATIONS, TOOL_NAMES } from '../../src/tools/annotations.js'
 import { isToolAvailable, TOOL_REQUIREMENTS } from '../../src/tools/availability.js'
 
@@ -190,5 +191,19 @@ describe('tool annotations', () => {
       expect(tool.annotations?.openWorldHint, `${tool.name} openWorldHint`).toBe(expected)
     }
     await client.close()
+  })
+})
+
+describe('server identity', () => {
+  it('sends the title, website and icons the registry entry lists', async () => {
+    const client = await connectedClient(tmpdir())
+    const info = client.getServerVersion()
+    expect(info?.name).toBe('contentrain-mcp')
+    expect(info?.title).toBe('Contentrain')
+    expect(info?.icons?.length).toBeGreaterThan(0)
+    await client.close()
+
+    const manifest = JSON.parse(readFileSync(new URL('../../server.json', import.meta.url), 'utf8'))
+    expect(SERVER_IDENTITY).toEqual({ title: manifest.title, websiteUrl: manifest.websiteUrl, icons: manifest.icons })
   })
 })

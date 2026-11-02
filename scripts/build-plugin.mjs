@@ -90,20 +90,21 @@ function syncVersion() {
 }
 
 /**
- * plugins/contentrain/.mcp.json pins the MCP server the plugin starts. It is
- * written from packages/mcp/package.json as `^<major>`: a hand-kept exact pin
- * sat at 2.3.0 (24 tools) for ~70 releases while the plugin's skill described
- * 27. A caret on the current major takes every fix without a plugin release,
- * and a new major regenerates this file, which CI's stale-diff check catches.
+ * plugins/contentrain/.mcp.json pins the MCP server the plugin starts, written
+ * from packages/mcp/package.json as an exact version: the Claude plugin
+ * directory blocks any launcher that is not pinned exactly. An exact pin once
+ * sat at 2.3.0 (24 tools) for ~70 releases because a human kept it; now the
+ * plugin package depends on @contentrain/mcp (workspace:*), so changesets
+ * bumps the plugin with every MCP release and `version-packages` rewrites this
+ * file in the same commit. CI's stale-diff check catches a skipped rebuild.
  */
 function writeMcpConfig() {
   const { version } = readJson(MCP_PKG)
-  const major = /^(\d+)\./.exec(version ?? '')?.[1]
-  if (!major) {
-    console.error(`✘ Cannot read a major version from ${MCP_PKG} (got ${JSON.stringify(version)})`)
+  if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) {
+    console.error(`✘ Cannot read an exact version from ${MCP_PKG} (got ${JSON.stringify(version)})`)
     process.exit(1)
   }
-  const spec = `@contentrain/mcp@^${major}`
+  const spec = `@contentrain/mcp@${version}`
   writeJson(PLUGIN_MCP, { mcpServers: { contentrain: { command: 'npx', args: ['-y', spec] } } })
   return spec
 }

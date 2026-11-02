@@ -36,7 +36,7 @@ Install dependencies:
 pnpm install
 ```
 
-The root `.mcp.json` starts the published MCP server (`npx -y @contentrain/mcp@^3`), the same config the plugin ships. To run your working copy instead, build first and register it for yourself only:
+The root `.mcp.json` starts the published MCP server (`npx -y @contentrain/mcp@^3`); the plugin ships the same config pinned to an exact version. To run your working copy instead, build first and register it for yourself only:
 
 ```bash
 pnpm build

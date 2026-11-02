@@ -110,6 +110,20 @@ class CapabilityFilteredMcpServer extends McpServer {
 }
 
 /**
+ * What clients show for this server at `initialize`: a display name, a home
+ * page and icons. Same values as `server.json`, the registry entry; a test
+ * keeps the two equal.
+ */
+export const SERVER_IDENTITY = {
+  title: 'Contentrain',
+  websiteUrl: 'https://ai.contentrain.io/packages/mcp',
+  icons: [
+    { src: 'https://ai.contentrain.io/logo/contentrain-512.png', mimeType: 'image/png', sizes: ['512x512'] },
+    { src: 'https://ai.contentrain.io/favicon.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
+  ],
+}
+
+/**
  * Create an MCP server instance with every *available* Contentrain tool
  * registered.
  *
@@ -143,6 +157,7 @@ export function createServer(input: string | CreateServerOptions): McpServer {
     {
       name: 'contentrain-mcp',
       version: packageJson.version,
+      ...SERVER_IDENTITY,
     },
     { instructions: sent || undefined },
     skipTools,
