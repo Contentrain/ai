@@ -226,11 +226,12 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
 
         // Merge with what is on disk, the way dictionaries do. Singletons and
         // collection entries are replaced by their input (hence the tool's
-        // destructiveHint); documents used to be replaced too, so a save that touched one frontmatter field wrote a file
-        // containing only that field — and an entirely empty body. Nothing
-        // reported it: the response said `valid: true`, because validation runs
-        // over the plan's own output, which was internally consistent and
-        // wrong. Under auto-merge that reaches the default branch directly.
+        // destructiveHint). Documents used to be replaced too, so a save that
+        // touched one frontmatter field wrote a file containing only that
+        // field — and an entirely empty body. Nothing reported it: the
+        // response said `valid: true`, because validation runs over the plan's
+        // own output, which was internally consistent and wrong. Under
+        // auto-merge that reaches the default branch directly.
         const existing = existingRaw ? parseMarkdownFrontmatter(existingRaw) : null
         const fmData = { ...existing?.frontmatter, ...incomingFm }
 
