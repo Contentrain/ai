@@ -94,6 +94,6 @@ source file. See the [normalize flow](/guides/normalize).
 
 The plugin is versioned by changesets like the npm packages. Its `skills/` and
 `frameworks/` folders are generated from `packages/skills/` by
-`pnpm plugin:build`, which also writes `.mcp.json` from the current major in
+`pnpm plugin:build`, which also writes `.mcp.json` pinned to the exact version in
 `packages/mcp/package.json`; CI fails when the generated payload is stale.
 
