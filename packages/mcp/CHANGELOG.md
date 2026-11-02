@@ -1,5 +1,13 @@
 # @contentrain/mcp
 
+## 3.11.23
+
+### Patch Changes
+
+- d61346b: `contentrain_content_save` is now annotated `destructiveHint: true` and `idempotentHint: false`. A singleton save replaces the whole file and an update to an existing collection entry replaces that entry, so a field left out of the input is dropped; clients that gate destructive tools will ask before running it. A collection save without an id adds a new entry on every call, so repeating it is not a no-op. The tool tables now mark `model_save` and `content_save` as destructive.
+- de349ac: The tool count now says what a user gets: 22 MCP tools from the local `@contentrain/mcp` server, plus 5 media tools on a media-capable provider such as Studio. The earlier "27" was the registry size, and the media tools never appear on a local, GitHub or GitLab provider. `contentrain_model_save` is now annotated `destructiveHint: true`: a save replaces the whole model definition, so a field left out of the input is dropped. Clients that gate destructive tools will ask before running it.
+- de349ac: Ready for the plugin and MCP directories. The MCP server now sends a title, website and icons at `initialize`, and the registry entry lists the same icons. The plugin pins the MCP server to an exact version, as the Claude plugin directory requires; every MCP release now bumps the plugin with it. The plugin logo is a square SVG without a stylesheet, which the directory's icon check accepts.
+
 ## 3.11.22
 
 ### Patch Changes
