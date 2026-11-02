@@ -77,7 +77,7 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-27 MCP tools — 22 core + 5 media — with [annotations](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#tool) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
+22 MCP tools, plus 5 media tools on a media-capable provider such as Studio, with [annotations](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#tool) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
 **Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 

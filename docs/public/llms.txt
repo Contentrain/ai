@@ -1,6 +1,6 @@
 # Contentrain AI Documentation
 
-> Contentrain AI is the MIT-licensed open-source toolkit for Contentrain, the content governance ecosystem for teams and AI agents: a 27-tool MCP server (@contentrain/mcp), a CLI (contentrain), shared TypeScript types (@contentrain/types), agent rules and skills (@contentrain/rules, @contentrain/skills), a generated typed query SDK (@contentrain/query), and the open ends of the WordPress migration pipeline (@contentrain/wp-import, @contentrain/emitter-astro, @contentrain/verify). Content lives as canonical JSON/Markdown in your Git repo under .contentrain/ — agents write through deterministic MCP tools, humans review through git branches.
+> Contentrain AI is the MIT-licensed open-source toolkit for Contentrain, the content governance ecosystem for teams and AI agents: a 22-tool MCP server (@contentrain/mcp; 5 more for media on a media-capable provider such as Studio), a CLI (contentrain), shared TypeScript types (@contentrain/types), agent rules and skills (@contentrain/rules, @contentrain/skills), a generated typed query SDK (@contentrain/query), and the open ends of the WordPress migration pipeline (@contentrain/wp-import, @contentrain/emitter-astro, @contentrain/verify). Content lives as canonical JSON/Markdown in your Git repo under .contentrain/ — agents write through deterministic MCP tools, humans review through git branches.
 
 - [Full documentation as a single file (for LLMs)](https://ai.contentrain.io/llms-full.txt)
 - [Contentrain Studio (team web surface) documentation](https://docs.contentrain.io/llms.txt)
@@ -16,7 +16,7 @@
 
 ## Packages (npm)
 
-- [@contentrain/mcp](https://ai.contentrain.io/packages/mcp): MCP server: 27 deterministic tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers
+- [@contentrain/mcp](https://ai.contentrain.io/packages/mcp): MCP server: 22 deterministic tools (5 more for media on a media-capable provider such as Studio), stdio + HTTP transports, Local / GitHub / GitLab providers
 - [contentrain](https://ai.contentrain.io/packages/cli): CLI: init, import, serve (review UI + MCP transports), validate, generate, diff, merge, reconcile, prune, studio commands
 - [@contentrain/query](https://ai.contentrain.io/packages/sdk): universal query SDK; `contentrain generate` emits a typed client into .contentrain/client/ (#contentrain imports); optional CDN transport plus public forms/comments clients
 - [@contentrain/types](https://ai.contentrain.io/packages/types): shared contract: model/field/config/provider types, the migration contracts (RawIR, ProjectIR, CapabilityManifest, MigrationHandoff), plus pure, browser-safe validate/serialize functions
