@@ -96,7 +96,7 @@ Report to the user:
 - What was created in `.contentrain/`.
 - Which models were set up.
 - How to import content in their code (show the `#contentrain` import).
-- **Next step: Run `npx contentrain generate` to create the typed SDK client.** Without this, `#contentrain` imports won't work. See: **contentrain-generate** skill.
+- **Next step: Run `npx contentrain@0.18.24 generate` to create the typed SDK client.** Without this, `#contentrain` imports won't work. See: **contentrain-generate** skill.
 - Start the dev server and verify imports work.
 
 ### Post-Init: Start Review UI

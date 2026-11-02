@@ -9,8 +9,8 @@
 ### 1.1 SDK Installation
 
 ```bash
-pnpm add @contentrain/query   # or npm/yarn
-npx contentrain generate
+pnpm add @contentrain/query@7.6.63   # or npm/yarn
+npx contentrain@0.18.24 generate
 ```
 
 The generator reads `.contentrain/models/` and produces a typed client in `.contentrain/client/`. Your `package.json` must include the subpath import:
@@ -35,8 +35,8 @@ The generator adds this automatically. Restart the SvelteKit dev server after in
 Run the generator alongside SvelteKit dev:
 
 ```bash
-npx contentrain generate --watch &
-npx vite dev
+npx contentrain@0.18.24 generate --watch &
+npm run dev
 ```
 
 ---
@@ -294,7 +294,7 @@ export function entries() {
 ### 7.3 Build and Deploy
 
 ```bash
-npx vite build
+npm run build   # vite build
 ```
 
 Use the appropriate SvelteKit adapter for your platform (`adapter-static`, `adapter-vercel`, `adapter-netlify`, `adapter-cloudflare`).

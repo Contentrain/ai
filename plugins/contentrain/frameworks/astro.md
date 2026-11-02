@@ -9,8 +9,8 @@
 ### 1.1 SDK Installation
 
 ```bash
-pnpm add @contentrain/query   # or npm/yarn
-npx contentrain generate
+pnpm add @contentrain/query@7.6.63   # or npm/yarn
+npx contentrain@0.18.24 generate
 ```
 
 The generator reads `.contentrain/models/` and produces a typed client in `.contentrain/client/`. Your `package.json` must include the subpath import:
@@ -35,8 +35,8 @@ The generator adds this automatically. Restart the Astro dev server after initia
 Run the generator alongside Astro dev:
 
 ```bash
-npx contentrain generate --watch &
-npx astro dev
+npx contentrain@0.18.24 generate --watch &
+npm run dev
 ```
 
 ---
@@ -300,7 +300,7 @@ The content is embedded in the static HTML. The island component receives it as 
 Astro builds static HTML by default. All SDK calls resolve at build time:
 
 ```bash
-npx astro build
+npm run build   # astro build
 ```
 
 Output goes to `dist/`. Content is baked into the HTML — zero runtime dependencies.

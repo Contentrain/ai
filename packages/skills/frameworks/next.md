@@ -36,7 +36,7 @@ Run the generator alongside Next.js dev:
 
 ```bash
 npx contentrain generate --watch &
-npx next dev
+npm run dev
 ```
 
 ---
