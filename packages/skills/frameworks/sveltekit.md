@@ -36,7 +36,7 @@ Run the generator alongside SvelteKit dev:
 
 ```bash
 npx contentrain generate --watch &
-npx vite dev
+npm run dev
 ```
 
 ---
@@ -294,7 +294,7 @@ export function entries() {
 ### 7.3 Build and Deploy
 
 ```bash
-npx vite build
+npm run build   # vite build
 ```
 
 Use the appropriate SvelteKit adapter for your platform (`adapter-static`, `adapter-vercel`, `adapter-netlify`, `adapter-cloudflare`).

@@ -61,7 +61,7 @@ Run the generator in watch mode alongside Nuxt dev:
 
 ```bash
 npx contentrain generate --watch &
-npx nuxt dev
+npm run dev
 ```
 
 Any model or content change under `.contentrain/` triggers client regeneration automatically.
@@ -263,7 +263,7 @@ For document-kind entries, the `body` field contains markdown. Render it with `@
 Contentrain content is file-based. `nuxt generate` reads all content at build time:
 
 ```bash
-npx nuxt generate
+npm run generate   # nuxt generate
 ```
 
 All SDK calls resolve to static JSON reads — no runtime API calls during generation.

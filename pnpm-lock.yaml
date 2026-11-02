@@ -377,6 +377,15 @@ importers:
       '@contentrain/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
+      '@contentrain/query':
+        specifier: workspace:*
+        version: link:../../packages/sdk/js
+      '@contentrain/verify':
+        specifier: workspace:*
+        version: link:../../packages/verify
+      contentrain:
+        specifier: workspace:*
+        version: link:../../packages/cli
 
 packages:
 

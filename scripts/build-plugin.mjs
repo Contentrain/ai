@@ -268,6 +268,114 @@ function writeOpenAiPlugin(version) {
   })
 }
 
+/**
+ * The Claude plugin directory reviews a version and then trusts it, so
+ * anything the plugin runs must not change after review. Its reviewer sent
+ * 1.0.6 back for exactly this: "The plugin runs a package without an exact
+ * version (for example `npx some-package` or `some-package@latest`), in its
+ * MCP launcher or in its skill or script text." `claude plugin validate
+ * --strict` does not check the text, so this build does.
+ *
+ * The skills are shared with @contentrain/skills, whose npm users run
+ * whatever CLI version their project has, so the source stays unpinned and
+ * only the plugin copy gets exact versions: every workspace package the text
+ * runs (`npx contentrain …`) or installs (`pnpm add @contentrain/query`) is
+ * rewritten to `<name>@<version>` from its package.json. The plugin package
+ * depends on each of them (workspace:*), so a release of any one bumps the
+ * plugin and `version-packages` rewrites the pins in the same commit.
+ * Framework binaries (`npx next dev`) are written as the project's own
+ * scripts in the source instead, so nothing is fetched at all.
+ */
+const LAUNCHER = String.raw`(?:npx|pnpm dlx|bunx|uvx|yarn dlx|npm exec)`
+const INSTALLER = String.raw`(?:npm (?:install|i|add)|pnpm (?:add|install|i)|yarn add|bun add)`
+const EXACT = /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+(?:@\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?|==\d+\.\d+\.\d+)$/i
+
+function workspaceVersions() {
+  const versions = new Map()
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (!e.isDirectory() || e.name === 'node_modules' || e.name.startsWith('.')) continue
+      const pkgPath = join(dir, e.name, 'package.json')
+      try {
+        const pkg = readJson(pkgPath)
+        if (pkg.name && pkg.version && !pkg.private) versions.set(pkg.name, pkg.version)
+      }
+      catch {}
+      walk(join(dir, e.name))
+    }
+  }
+  walk(join(ROOT, 'packages'))
+  return versions
+}
+
+function pinPluginText(versions) {
+  const names = [...versions.keys()].toSorted((a, b) => b.length - a.length)
+    .map(name => name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'))
+  const pkg = `(${names.join('|')})(?![@\\w/.-])`
+  const run = new RegExp(String.raw`(\b${LAUNCHER}(?:\s+-{1,2}[\w-]+)*\s+)${pkg}`, 'g')
+  const install = new RegExp(String.raw`(\b${INSTALLER}(?:\s+-{1,2}[\w-]+)*\s+)${pkg}`, 'g')
+  let pinned = 0
+  for (const file of pluginTextFiles()) {
+    const text = readFileSync(file, 'utf-8')
+    const next = text
+      .replace(run, (_, lead, name) => { pinned++; return `${lead}${name}@${versions.get(name)}` })
+      .replace(install, (_, lead, name) => { pinned++; return `${lead}${name}@${versions.get(name)}` })
+    if (next !== text) writeFileSync(file, next, 'utf-8')
+  }
+  return pinned
+}
+
+function pluginTextFiles() {
+  const out = []
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules') continue
+      const full = join(dir, e.name)
+      if (e.isDirectory()) walk(full)
+      else if (/\.(md|mdc|json|sh|mjs|js|ts|txt|ya?ml)$/.test(e.name) && e.name !== 'CHANGELOG.md' && e.name !== 'package.json') out.push(full)
+    }
+  }
+  walk(PLUGIN_DIR)
+  return out
+}
+
+/**
+ * The gate: nothing in the plugin may run or install a package without an
+ * exact version, or name `@latest`. It runs on the finished payload, so it
+ * also catches text a future skill brings in that the pinning above does not
+ * know about (a third-party `npx`, a `uvx`).
+ */
+function checkExactPins() {
+  const problems = []
+  const run = new RegExp(String.raw`\b${LAUNCHER}((?:\s+-{1,2}[\w-]+)*)\s+([^\s\`'")\]]+)`, 'g')
+  const install = new RegExp(String.raw`\b${INSTALLER}((?:\s+-{1,2}[\w-]+)*)((?:\s+[^\s\`'")\]#;&|]+)*)`, 'g')
+  for (const file of pluginTextFiles()) {
+    const rel = file.slice(PLUGIN_DIR.length + 1)
+    readFileSync(file, 'utf-8').split('\n').forEach((line, i) => {
+      const at = `${rel}:${i + 1}`
+      if (/@latest\b/.test(line)) problems.push(`${at} names @latest`)
+      for (const m of line.matchAll(run)) {
+        if (!EXACT.test(m[2])) problems.push(`${at} runs ${m[2]} without an exact version`)
+      }
+      for (const m of line.matchAll(install)) {
+        for (const spec of m[2].trim().split(/\s+/).filter(Boolean)) {
+          if (!spec.startsWith('-') && !EXACT.test(spec)) problems.push(`${at} installs ${spec} without an exact version`)
+        }
+      }
+    })
+  }
+  for (const [name, server] of Object.entries(readJson(PLUGIN_MCP).mcpServers ?? {})) {
+    if (/^(npx|bunx|uvx)$/.test(server.command)) {
+      const spec = (server.args ?? []).find(arg => !arg.startsWith('-'))
+      if (!EXACT.test(spec ?? '')) problems.push(`.mcp.json server "${name}" runs ${spec} without an exact version`)
+    }
+  }
+  if (problems.length > 0) {
+    console.error(`✘ The plugin runs or installs packages without an exact version (the directory rejects this):\n  ${problems.join('\n  ')}`)
+    process.exit(1)
+  }
+}
+
 function build() {
   const skillsOut = join(PLUGIN_DIR, 'skills')
   const frameworksOut = join(PLUGIN_DIR, 'frameworks')
@@ -287,12 +395,14 @@ function build() {
   }
   cpSync(FRAMEWORKS_SRC, frameworksOut, { recursive: true })
 
+  const pinned = pinPluginText(workspaceVersions())
   const version = syncVersion()
   checkCursorManifests()
   const mcpSpec = writeMcpConfig()
+  checkExactPins()
   writeOpenAiPlugin(version)
   const frameworkCount = readdirSync(frameworksOut).filter(f => f.endsWith('.md')).length
-  console.log(`✔ plugins/contentrain@${version} — ${CURATED_SKILLS.length} skills, ${frameworkCount} framework guides, MCP ${mcpSpec}`)
+  console.log(`✔ plugins/contentrain@${version} — ${CURATED_SKILLS.length} skills, ${frameworkCount} framework guides, MCP ${mcpSpec}, ${pinned} package references pinned`)
   console.log(`✔ plugins/contentrain-openai@${version} — remote MCP ${REMOTE_MCP_URL}`)
 }
 

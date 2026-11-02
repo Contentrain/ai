@@ -7,8 +7,8 @@
 ## 1. Setup
 
 ```bash
-pnpm add @contentrain/query
-npx contentrain generate
+pnpm add @contentrain/query@7.6.63
+npx contentrain@0.18.24 generate
 ```
 
 Restart Vite after the first generation so `#contentrain` imports resolve.

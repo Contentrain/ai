@@ -8,6 +8,7 @@
     "name": "Contentrain",
     "url": "https://contentrain.io"
   },
+  "icon": "./.claude-plugin/icon.png",
   "homepage": "https://ai.contentrain.io",
   "repository": "https://github.com/Contentrain/ai",
   "license": "MIT",

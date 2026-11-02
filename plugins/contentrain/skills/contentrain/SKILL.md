@@ -24,7 +24,7 @@ Contentrain consists of 9 packages that work together:
 | @contentrain/skills | Procedural workflows (this file) | On-demand by agent |
 | @contentrain/wp-import | WordPress WXR/REST → `RawIR` → a `.contentrain` store | `contentrain import wordpress` |
 | @contentrain/emitter-astro | `ProjectIR` → a complete Astro project | Called by the migration engine |
-| @contentrain/verify | Offline SEO, indexing, link and asset gates for a built site | `npx @contentrain/verify dist` |
+| @contentrain/verify | Offline SEO, indexing, link and asset gates for a built site | `npx @contentrain/verify@0.3.3 dist` |
 
 ### CLI Serve — Review & Approval Bridge
 
@@ -162,7 +162,7 @@ These are enforced by MCP — violating them causes errors. Know them upfront:
 - MUST call `contentrain_describe_format` before creating models or content
 - MUST use `dry_run: true` before `contentrain_apply` execute
 - MUST call `contentrain_validate` before `contentrain_submit`
-- MUST run `npx contentrain generate` after model/content changes that affect SDK
+- MUST run `npx contentrain@0.18.24 generate` after model/content changes that affect SDK
 - MUST NOT write to `.contentrain/meta/`, `.contentrain/client/`, `.contentrain/context.json` directly
 - MUST NOT auto-merge normalize branches (always review mode)
 

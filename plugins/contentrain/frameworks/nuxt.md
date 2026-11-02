@@ -9,8 +9,8 @@
 ### 1.1 SDK Installation
 
 ```bash
-pnpm add @contentrain/query   # or npm/yarn
-npx contentrain generate
+pnpm add @contentrain/query@7.6.63   # or npm/yarn
+npx contentrain@0.18.24 generate
 ```
 
 The generator reads `.contentrain/models/` and produces a typed client in `.contentrain/client/`. Your `package.json` must include the subpath import:
@@ -60,8 +60,8 @@ Also add a `paths` entry to `tsconfig.json` so the TypeScript language server re
 Run the generator in watch mode alongside Nuxt dev:
 
 ```bash
-npx contentrain generate --watch &
-npx nuxt dev
+npx contentrain@0.18.24 generate --watch &
+npm run dev
 ```
 
 Any model or content change under `.contentrain/` triggers client regeneration automatically.
@@ -263,7 +263,7 @@ For document-kind entries, the `body` field contains markdown. Render it with `@
 Contentrain content is file-based. `nuxt generate` reads all content at build time:
 
 ```bash
-npx nuxt generate
+npm run generate   # nuxt generate
 ```
 
 All SDK calls resolve to static JSON reads — no runtime API calls during generation.
