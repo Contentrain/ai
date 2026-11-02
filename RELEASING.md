@@ -207,14 +207,17 @@ So, for a new package:
    git push origin "refs/tags/@contentrain/<new>@<version>"
    ```
 
-### The MCP Registry step does not catch up on its own
+### The MCP Registry catches up from npm
 
-`Publish to MCP Registry` runs only when the same workflow run published
-`@contentrain/mcp`. If a run publishes mcp and then fails on a later package,
-the registry step is skipped and stays behind — and re-running does not fix it,
-because `changeset publish` will not republish a version already on npm, so mcp
-is absent from `publishedPackages` the second time. Either run `mcp-publisher`
-by hand or accept that the registry catches up at the next mcp release.
+`Publish to MCP Registry` no longer depends on what the same run published. A
+check before it reads the latest `io.github.Contentrain/contentrain` version on
+the registry and the `@contentrain/mcp` version on npm, and publishes when npm
+is ahead (and matches `packages/mcp/package.json`). So when a run publishes mcp
+and then fails on a later package, re-running the failed job catches the
+registry up, even though `changeset publish` does not republish mcp and it is
+absent from `publishedPackages` the second time. A `workflow_dispatch` on main
+does the same. The check is skipped while a release PR is open, because main
+then holds versions that are not on npm yet.
 
 ## 📦 Notes
 
