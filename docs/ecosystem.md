@@ -97,7 +97,7 @@ Studio docs should point back to AI packages whenever they explain:
 |---|---|---|
 | Contentrain Studio | The team web surface for review, roles, media and delivery | [contentrain.io/studio](https://contentrain.io/studio) |
 | Studio MCP Cloud | A hosted MCP endpoint that lets external agents operate a connected Studio project | [docs.contentrain.io/developer/mcp-cloud](https://docs.contentrain.io/developer/mcp-cloud) |
-| Contentrain Migrate | A paid service that moves WordPress sites to Astro | [migrate.contentrain.io](https://migrate.contentrain.io) |
+| Contentrain Migrate | A paid service that moves WordPress sites to Astro | [migrate.contentrain.io](https://migrate.contentrain.io/?utm_source=ai.contentrain.io&utm_medium=site&utm_content=ecosystem) |
 | Contentrain Bridge | A free WordPress plugin that exports a site as a Contentrain store | [wordpress.org/plugins/contentrain-bridge](https://wordpress.org/plugins/contentrain-bridge/) |
 
 ## Docs Map
