@@ -321,7 +321,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Released under the MIT License.<br><span class="footer-social-links"><a href="https://discord.gg/8XbFKfgeZx" target="_blank" rel="noopener" aria-label="Discord">Discord</a> · <a href="https://x.com/Contentrain_io" target="_blank" rel="noopener" aria-label="X">X</a> · <a href="https://www.linkedin.com/company/contentrain" target="_blank" rel="noopener" aria-label="LinkedIn">LinkedIn</a> · <a href="https://www.youtube.com/@contentrain" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a> · <a href="https://www.instagram.com/contentrain_" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a> · <a href="https://www.facebook.com/Contentrain.io" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a></span>',
+      message: 'Released under the MIT License. <a href="https://contentrain.io/legal/privacy-policy">Privacy</a><br><span class="footer-social-links"><a href="https://discord.gg/8XbFKfgeZx" target="_blank" rel="noopener" aria-label="Discord">Discord</a> · <a href="https://x.com/Contentrain_io" target="_blank" rel="noopener" aria-label="X">X</a> · <a href="https://www.linkedin.com/company/contentrain" target="_blank" rel="noopener" aria-label="LinkedIn">LinkedIn</a> · <a href="https://www.youtube.com/@contentrain" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a> · <a href="https://www.instagram.com/contentrain_" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a> · <a href="https://www.facebook.com/Contentrain.io" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a></span>',
       copyright: 'Copyright © 2024-present Contentrain',
     },
 
