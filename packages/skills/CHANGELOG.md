@@ -1,5 +1,12 @@
 # @contentrain/skills
 
+## 0.9.12
+
+### Patch Changes
+
+- de349ac: The tool count now says what a user gets: 22 MCP tools from the local `@contentrain/mcp` server, plus 5 media tools on a media-capable provider such as Studio. The earlier "27" was the registry size, and the media tools never appear on a local, GitHub or GitLab provider. `contentrain_model_save` is now annotated `destructiveHint: true`: a save replaces the whole model definition, so a field left out of the input is dropped. Clients that gate destructive tools will ask before running it.
+- 2cdc5d7: The plugin now pins every package it tells the agent to run or install to an exact version, adds a 1024×1024 PNG icon, and the framework guides start dev servers and builds through the project's own scripts instead of `npx`.
+
 ## 0.9.11
 
 ### Patch Changes

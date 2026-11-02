@@ -8,12 +8,16 @@
     {
       "src": "https://ai.contentrain.io/logo/contentrain-512.png",
       "mimeType": "image/png",
-      "sizes": ["512x512"]
+      "sizes": [
+        "512x512"
+      ]
     },
     {
       "src": "https://ai.contentrain.io/favicon.svg",
       "mimeType": "image/svg+xml",
-      "sizes": ["any"]
+      "sizes": [
+        "any"
+      ]
     }
   ],
   "repository": {
@@ -21,13 +25,13 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "3.11.22",
+  "version": "3.11.23",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@contentrain/mcp",
-      "version": "3.11.22",
+      "version": "3.11.23",
       "transport": {
         "type": "stdio"
       }

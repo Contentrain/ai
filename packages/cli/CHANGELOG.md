@@ -1,5 +1,17 @@
 # contentrain
 
+## 0.18.25
+
+### Patch Changes
+
+- Updated dependencies [d61346b]
+- Updated dependencies [de349ac]
+- Updated dependencies [2cdc5d7]
+- Updated dependencies [de349ac]
+  - @contentrain/mcp@3.11.23
+  - @contentrain/rules@0.7.9
+  - @contentrain/skills@0.9.12
+
 ## 0.18.24
 
 ### Patch Changes

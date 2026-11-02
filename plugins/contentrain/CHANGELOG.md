@@ -1,5 +1,19 @@
 # @contentrain/claude-plugin
 
+## 1.0.10
+
+### Patch Changes
+
+- d6ad45e: The Cursor manifests now pass Cursor's published schemas. `author` and `owner` carry an email instead of a URL, because Cursor allows only `name` and `email` there, and the plugin has a display name. `pnpm plugin:build` checks these rules.
+- de349ac: The tool count now says what a user gets: 22 MCP tools from the local `@contentrain/mcp` server, plus 5 media tools on a media-capable provider such as Studio. The earlier "27" was the registry size, and the media tools never appear on a local, GitHub or GitLab provider. `contentrain_model_save` is now annotated `destructiveHint: true`: a save replaces the whole model definition, so a field left out of the input is dropped. Clients that gate destructive tools will ask before running it.
+- 2cdc5d7: The plugin now pins every package it tells the agent to run or install to an exact version, adds a 1024×1024 PNG icon, and the framework guides start dev servers and builds through the project's own scripts instead of `npx`.
+- de349ac: Ready for the plugin and MCP directories. The MCP server now sends a title, website and icons at `initialize`, and the registry entry lists the same icons. The plugin pins the MCP server to an exact version, as the Claude plugin directory requires; every MCP release now bumps the plugin with it. The plugin logo is a square SVG without a stylesheet, which the directory's icon check accepts.
+- Updated dependencies [d61346b]
+- Updated dependencies [de349ac]
+- Updated dependencies [de349ac]
+  - @contentrain/mcp@3.11.23
+  - contentrain@0.18.25
+
 ## 1.0.9
 
 ### Patch Changes

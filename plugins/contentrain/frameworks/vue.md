@@ -8,7 +8,7 @@
 
 ```bash
 pnpm add @contentrain/query@7.6.63
-npx contentrain@0.18.24 generate
+npx contentrain@0.18.25 generate
 ```
 
 Restart the Vite dev server after the first generate.
