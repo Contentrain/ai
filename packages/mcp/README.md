@@ -89,9 +89,9 @@ All write operations are designed around git-backed safety:
 | `contentrain_doctor` | Project health report (env, structure, models, orphans, local + remote branches, SDK) | Yes | — |
 | `contentrain_init` | Create `.contentrain/` structure and base config | — | — |
 | `contentrain_scaffold` | Apply a starter template such as blog, docs, landing, saas | — | — |
-| `contentrain_model_save` | Create or update a model definition | — | — |
+| `contentrain_model_save` | Create or update a model definition | — | **Yes** |
 | `contentrain_model_delete` | Delete a model definition | — | **Yes** |
-| `contentrain_content_save` | Save content entries for any model kind | — | — |
+| `contentrain_content_save` | Save content entries for any model kind | — | **Yes** |
 | `contentrain_content_delete` | Delete content entries | — | **Yes** |
 | `contentrain_content_list` | Read content entries | Yes | — |
 | `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |

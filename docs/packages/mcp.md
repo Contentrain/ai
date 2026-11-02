@@ -81,11 +81,11 @@ The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable p
 | `contentrain_doctor` | Project Health Report | Yes | — |
 | `contentrain_init` | Initialize Project | — | — |
 | `contentrain_scaffold` | Scaffold Template | — | — |
-| `contentrain_model_save` | Save Model | — | — |
+| `contentrain_model_save` | Save Model | — | **Yes** |
 | `contentrain_model_delete` | Delete Model | — | **Yes** |
 | `contentrain_vocabulary_save` | Save Vocabulary Terms | — | — |
 | `contentrain_vocabulary_delete` | Delete Vocabulary Terms | — | **Yes** |
-| `contentrain_content_save` | Save Content | — | — |
+| `contentrain_content_save` | Save Content | — | **Yes** |
 | `contentrain_content_delete` | Delete Content | — | **Yes** |
 | `contentrain_content_list` | List Content | Yes | — |
 | `contentrain_validate` | Validate Project | — | — |
@@ -265,7 +265,7 @@ Three tools take a `dry_run` parameter:
 2. Review the output
 3. Run with `dry_run: false` to commit
 
-The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`. `model_save` is also annotated `destructiveHint: true`: it replaces the whole model definition, so a field left out of the input is dropped. It needs no `confirm`, but clients that gate destructive tools will ask before running it.
+The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`. `model_save` is also annotated `destructiveHint: true`: it replaces the whole model definition, so a field left out of the input is dropped. `content_save` is annotated the same way: a singleton save replaces the whole file, and an update to an existing collection entry replaces that entry, so send every field you want to keep (dictionary and document saves merge). Neither needs `confirm`, but clients that gate destructive tools will ask before running them.
 
 ::: warning Never Skip the Apply Preview
 Always call `contentrain_apply` with `dry_run: true` first and review the plan. It is the only tool that can touch source code — skipping the preview risks unreviewed source patches.
