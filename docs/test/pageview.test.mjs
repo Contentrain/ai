@@ -11,7 +11,7 @@ let sent
 const realFetch = globalThis.fetch
 beforeEach(() => {
   sent = []
-  process.env.POSTHOG_KEY = 'phc_test'
+  process.env.POSTHOG_KEY = 'phc_0123456789abcdefghijABCDEFGHIJ'
   process.env.POSTHOG_HOST = 'https://eu.i.posthog.com'
   process.env.ANALYTICS_SALT_SECRET = 'test-secret'
   globalThis.fetch = async (_url, init) => { sent.push(JSON.parse(init.body)); return new Response(null, { status: 200 }) }
@@ -79,4 +79,11 @@ test('behind Cloudflare the visitor is cf-connecting-ip; the same header from an
   assert.equal(sent[0].properties.$geoip_country_code, 'TR')
   assert.equal(sent[1].distinct_id, visitorId('test-secret', '198.51.100.9', CHROME, now))
   assert.equal(sent[1].properties.$geoip_country_code, 'DE')
+})
+
+test('a key that is not a project key (a copied masked value) turns page views off instead of vanishing', async () => {
+  process.env.POSTHOG_KEY = '****************GJdy'
+  const response = await pageview(beacon(), PRODUCTION)
+  assert.equal(response.headers.get('x-analytics'), 'off')
+  assert.equal(sent.length, 0)
 })
