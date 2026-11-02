@@ -48,6 +48,7 @@ plugin can add this repository as a marketplace:
 
 ```
 codex plugin marketplace add Contentrain/ai
+codex plugin add contentrain@contentrain
 ```
 
 ## What it includes
