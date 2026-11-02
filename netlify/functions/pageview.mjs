@@ -20,7 +20,7 @@
 //
 // Not counted (204, nothing sent): a deploy that is not production or a `*.netlify.app` host, a crawler or monitor, and
 // an emulated Chrome (Lighthouse), whose `sec-ch-ua` lacks the GREASE brand every real Chromium browser adds.
-// No `POSTHOG_KEY` or `POSTHOG_HOST` → 204 with `x-analytics: off`, and the page stops sending.
+// No `POSTHOG_KEY` (or not a `phc_` project key) or no `POSTHOG_HOST` → 204 with `x-analytics: off`, and the page stops sending.
 
 import { createHmac } from 'node:crypto'
 import { BlockList, isIP } from 'node:net'
@@ -171,6 +171,12 @@ export default async (request, context) => {
   const key = process.env.POSTHOG_KEY
   const host = process.env.POSTHOG_HOST
   if (!key || !host) return answer(204, { 'x-analytics': 'off' })
+  // PostHog's capture endpoint answers 200 to any key and drops a wrong one later, so a key that is not a project key
+  // (`phc_…`; a copied masked value is `****…`) is caught here, or every page view vanishes behind a 204.
+  if (!/^phc_[A-Za-z0-9]{20,}$/.test(key)) {
+    console.warn('[analytics] POSTHOG_KEY is not a PostHog project key (phc_…); page views are off')
+    return answer(204, { 'x-analytics': 'off' })
+  }
   if (request.method !== 'POST') return answer(405)
 
   const site = request.headers.get('sec-fetch-site')
@@ -196,7 +202,7 @@ export default async (request, context) => {
   }
 
   try {
-    await fetch(`${host.replace(/\/+$/, '')}/i/v0/e/`, {
+    const response = await fetch(`${host.replace(/\/+$/, '')}/i/v0/e/`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -224,6 +230,8 @@ export default async (request, context) => {
         },
       }),
     })
+    // An outage or a refused request is an HTTP error, not a thrown one: say so, or the 204 hides it.
+    if (!response.ok) console.warn('[analytics] PostHog send failed:', response.status)
   }
   catch (error) {
     console.warn('[analytics] PostHog send failed:', error instanceof Error ? error.message : 'error')
