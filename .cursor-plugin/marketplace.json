@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Content governance for AI agents",
-    "version": "1.0.12"
+    "version": "1.0.13"
   },
   "plugins": [
     {
