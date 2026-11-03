@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "contentrain@0.18.28",
+        "contentrain@0.18.29",
         "serve",
         "--stdio"
       ]

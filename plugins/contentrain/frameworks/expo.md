@@ -8,7 +8,7 @@
 
 ```bash
 pnpm add @contentrain/query@7.6.63
-npx contentrain@0.18.28 generate
+npx contentrain@0.18.29 generate
 ```
 
 The generated client exposes a CommonJS bootstrap path for Metro-like consumers.
