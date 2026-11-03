@@ -25,13 +25,13 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "3.12.1",
+  "version": "3.12.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@contentrain/mcp",
-      "version": "3.12.1",
+      "version": "3.12.2",
       "transport": {
         "type": "stdio"
       }
