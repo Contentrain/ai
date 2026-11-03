@@ -155,7 +155,17 @@ export interface MigrateStudioClaimBilling {
   /** The first invoice the customer saw (Migrate fee + Studio year 1), in cents. > 0. */
   quoted_total_cents: number
   currency: 'usd'
+  /**
+   * Who takes the payment. `migrate`: Migrate charges the whole bundle in its own checkout, and Studio
+   * opens none (`MigrateProvisionReserved`); Studio's year starts when Migrate reports the payment
+   * (`/api/migrate/grants/activate`). Absent or `studio_polar`: Studio opens the bundle's Polar checkout
+   * (`MigrateProvisionCheckout`), as before.
+   */
+  collector?: MigrateBundleCollector
 }
+
+export const MIGRATE_BUNDLE_COLLECTORS = ['studio_polar', 'migrate'] as const
+export type MigrateBundleCollector = (typeof MIGRATE_BUNDLE_COLLECTORS)[number]
 
 /**
  * The v2 payload ("Migrate with Studio"): a v1 claim without `trial_days`, plus
@@ -327,6 +337,9 @@ function validateClaim(
     if (!isObject(b) || !isCents(b.migrate_fee_cents) || !isCents(b.quoted_total_cents) || b.quoted_total_cents <= 0
       || b.currency !== 'usd' || b.quoted_total_cents < b.migrate_fee_cents) {
       errors.push('billing: invalid')
+    }
+    else if (b.collector !== undefined && !(MIGRATE_BUNDLE_COLLECTORS as readonly unknown[]).includes(b.collector)) {
+      errors.push('billing.collector: unknown')
     }
   }
 
@@ -525,14 +538,20 @@ export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] 
  * Where the order's Studio grant stands:
  * - `claimed`: provisioned, the Studio year not started (checkout not completed).
  * - `bound`: tied to a Studio workspace, the subscription not running yet
- *   (checkout open or its webhook late).
- * - `redeemed`: the subscription is running (trial or paid). Only now may the
- *   customer connect GitHub, or Studio could not open a project (402).
+ *   (checkout open or its webhook late; or, collected by Migrate, the payment
+ *   not reported yet).
+ * - `redeemed`: the subscription is running (trial or paid), or the Studio year
+ *   Migrate collected is active. Only now may the customer connect GitHub, or
+ *   Studio could not open a project (402).
  * - `revoked`: the grant was withdrawn (by the founder, or after a refund).
  *   It may still be `installed` (withdrawn after the App was installed); Migrate
  *   shows it as "not ready", like an unknown state.
  */
 export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
+
+export const MIGRATE_GRANT_RENEWALS = ['none', 'scheduled'] as const
+/** Whether a Studio year Migrate collected continues as the customer's own subscription (`MigrateGrantStatusResponse.renewal`). */
+export type MigrateGrantRenewal = (typeof MIGRATE_GRANT_RENEWALS)[number]
 
 /** What the handoff can give Studio to run instead of WordPress, as the status answer reports it. */
 export const MIGRATE_GRANT_CAPABILITIES = ['comments', 'forms', 'media'] as const
@@ -574,6 +593,12 @@ export interface MigrateGrantStatusResponse {
   trial_days?: number
   /** Seconds since the epoch: the trial's end, or the end of the running period of the plan the site lives on. */
   ends_at?: number
+  /**
+   * A Studio year Migrate collected (`kind: 'bundle'`) does not renew by itself: `scheduled` — the customer set up
+   * their own Studio subscription to start when the year ends; `none` — not (yet). Bundle only; absent otherwise,
+   * and from a Studio that predates it.
+   */
+  renewal?: MigrateGrantRenewal
   /** The plan the site lives on has ended (the workspace has no running subscription). Absent otherwise. */
   ended?: true
   /** Studio's own text for the ended plan; Migrate shows it as is. Only with `ended`. */
@@ -682,6 +707,8 @@ export function validateMigrateGrantStatusResponse(input: unknown):
   if (input.ended !== undefined && input.ended !== true) errors.push('ended: only true when present')
   if (input.notice !== undefined && !isText(input.notice)) errors.push('notice: invalid')
   if (input.notice !== undefined && input.ended !== true) errors.push('notice: only with ended')
+  if (input.renewal !== undefined && !(MIGRATE_GRANT_RENEWALS as readonly unknown[]).includes(input.renewal)) errors.push('renewal: unknown')
+  if (input.renewal !== undefined && input.kind !== undefined && input.kind !== 'bundle') errors.push('renewal: only for a bundle')
   if (input.workspace_github_account !== undefined) {
     const account = input.workspace_github_account
     if (!isObject(account) || !isText(account.login) || (account.type !== 'User' && account.type !== 'Organization')) errors.push('workspace_github_account: invalid')
@@ -727,18 +754,20 @@ function isGithubInstallUrl(x: unknown): x is string {
 // ─── Revoke (refund or failed delivery withdraws the Studio side) ───
 //
 // `POST /api/migrate/grants/revoke`. Migrate asks Studio, server to server, to withdraw an order's
-// grant: the Studio year that rode on the bundle's checkout is cancelled (no renewal) and the grant
-// becomes `revoked`. It is Migrate's half of a refund: the money itself is refunded in Polar by an
-// operator; this call only stops Studio from continuing a year nobody pays for. Idempotent: revoking a
+// grant: the Studio year that rode on the bundle's payment ends now (no renewal: a subscription bound to
+// it, or one the customer set up to follow it, is cancelled) and the grant becomes `revoked`. It is
+// Migrate's half of a refund: the money itself is refunded by an operator with the provider that took
+// it; this call only stops Studio from continuing a year nobody pays for. Idempotent: revoking a
 // revoked grant answers the same `revoked` state. The request is signed and single-use by `jti` under
 // its own purpose, like the status and install-url requests.
 
-export const MIGRATE_REVOKE_REASONS = ['refund_before_delivery', 'refund_after_delivery', 'delivery_failed', 'ops'] as const
+export const MIGRATE_REVOKE_REASONS = ['refund_before_delivery', 'refund_after_delivery', 'delivery_failed', 'studio_not_delivered', 'ops'] as const
 /**
  * Why the grant is withdrawn (kept on the grant for support):
  * - `refund_before_delivery`: the customer was refunded in full before the site was delivered.
  * - `refund_after_delivery`: the customer asked within the refund window after delivery (Studio's share refunded pro rata).
  * - `delivery_failed`: the move could not be delivered and the order is refunded.
+ * - `studio_not_delivered`: Migrate collected the Studio year and Studio could not start it; Studio's share alone is refunded.
  * - `ops`: an operator withdrew it for another reason.
  */
 export type MigrateRevokeReason = (typeof MIGRATE_REVOKE_REASONS)[number]
@@ -783,13 +812,16 @@ export function validateMigrateRevokeResponse(input: unknown):
 // ─── Provision (Migrate with Studio: one checkout for the move and the Studio year) ───
 //
 // `POST /api/migrate/provision`. Migrate asks Studio, server to server, to set up the
-// customer's Studio side before they pay: find or create the user by GitHub id, record the
-// grant, and open ONE Polar checkout whose first invoice is the whole bundle
-// (`billing.quoted_total_cents`: Migrate fee + Studio year 1). The request is the signed
-// `MigrateStudioClaimV2` itself, POSTed as `{ token }` and single-use by `jti` under its own
-// purpose, so a provision token cannot also be replayed as a claim link. Studio recomputes the
-// Studio line (`MigrateAccountStateResponse`) and refuses a quote it does not agree with.
-// The customer then pays at `checkout_url`; Migrate learns of the payment from its own webhook.
+// customer's Studio side before they pay: find or create the user by GitHub id and record the
+// grant. The request is the signed `MigrateStudioClaimV2` itself, POSTed as `{ token }` and
+// single-use by `jti` under its own purpose, so a provision token cannot also be replayed as a
+// claim link. Studio recomputes the Studio line (`MigrateAccountStateResponse`) and refuses a
+// quote it does not agree with. Who opens the ONE checkout for the whole bundle
+// (`billing.quoted_total_cents`: Migrate fee + Studio year 1) is `billing.collector`:
+// - `migrate`: Studio opens none and answers the Studio line it reserved (`MigrateProvisionReserved`);
+//   Migrate charges the bundle in its own checkout and reports the payment (`grants/activate`).
+// - `studio_polar` (or absent): Studio opens a Polar checkout for it (`MigrateProvisionCheckout`);
+//   the customer pays at `checkout_url`, and Migrate learns of the payment from its own webhook.
 
 /** What every provision answer carries. */
 interface MigrateProvisionBase {
@@ -811,6 +843,7 @@ export interface MigrateProvisionCheckout extends MigrateProvisionBase {
   amount_cents: number
   /** When `checkout_url` stops being payable, seconds since the epoch. */
   checkout_expires_at: number
+  collector?: undefined
 }
 
 /**
@@ -825,19 +858,41 @@ export interface MigrateProvisionCovered extends MigrateProvisionBase {
   checkout_url?: undefined
   amount_cents?: undefined
   checkout_expires_at?: undefined
+  collector?: undefined
+}
+
+/**
+ * Migrate collects the bundle (`billing.collector: 'migrate'`): Studio reserved the grant and opened no
+ * checkout. `amount_cents` is the Studio line Migrate puts in its own checkout, and must equal the
+ * request's `quoted_total_cents − migrate_fee_cents`. The Studio year starts when Migrate reports the
+ * payment (`grants/activate`); until then the grant is `bound` (or `claimed`, before a workspace).
+ */
+export interface MigrateProvisionReserved extends MigrateProvisionBase {
+  state: 'claimed' | 'bound'
+  collector: 'migrate'
+  workspace_slug?: string
+  /** The Studio line, in cents (Studio year 1). > 0. */
+  amount_cents: number
+  checkout_url?: undefined
+  checkout_expires_at?: undefined
 }
 
 /** Studio's answer to a provision request. */
-export type MigrateProvisionResponse = MigrateProvisionCheckout | MigrateProvisionCovered
+export type MigrateProvisionResponse = MigrateProvisionCheckout | MigrateProvisionCovered | MigrateProvisionReserved
 
 /**
- * Check Studio's provision answer before Migrate redirects a browser to it. `quoted_total_cents` is the
- * request's quote (required, like `requested` in the account-state check: an answer only means something
- * against its question); a different amount is refused, and so is an expired checkout when `now` is given.
- * A `redeemed` answer (the account's running plan covers the order) is the other shape: it must name the
+ * Check Studio's provision answer before Migrate acts on it. `quoted_total_cents` is the request's quote
+ * (required, like `requested` in the account-state check: an answer only means something against its
+ * question). `collector` is the request's `billing.collector`, and decides which answer is the right one:
+ * - `studio_polar` (the default): a Polar checkout for exactly the quoted total, not expired when `now`
+ *   is given. A reserved answer is refused: Migrate did not ask to collect.
+ * - `migrate`: a reserved Studio line of exactly `quoted_total_cents − migrate_fee_cents` (both required),
+ *   with no checkout address. A checkout answer is refused, so an older Studio that still opens a Polar
+ *   checkout fails closed: no customer is sent to pay Studio for a bundle Migrate charges.
+ * A `redeemed` answer (the account's running plan covers the order) is right for both: it must name the
  * workspace and carry no checkout, amount or expiry, so a browser is never sent anywhere to pay Studio.
  */
-export function validateMigrateProvisionResponse(input: unknown, options: { quoted_total_cents: number, now?: number }):
+export function validateMigrateProvisionResponse(input: unknown, options: { quoted_total_cents: number, now?: number, collector?: MigrateBundleCollector, migrate_fee_cents?: number }):
   | { ok: true, response: MigrateProvisionResponse }
   | { ok: false, errors: string[] } {
   if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
@@ -849,10 +904,14 @@ export function validateMigrateProvisionResponse(input: unknown, options: { quot
   if (input.state === 'redeemed') {
     // Covered by a running plan: nothing to pay at Studio, so nothing to follow or to compare with the quote.
     if (typeof input.workspace_slug !== 'string') errors.push('workspace_slug: required when the plan covers the order')
-    for (const key of ['checkout_url', 'amount_cents', 'checkout_expires_at'] as const)
+    for (const key of ['checkout_url', 'amount_cents', 'checkout_expires_at', 'collector'] as const)
       if (input[key] !== undefined) errors.push(`${key}: not allowed when the plan covers the order`)
     return errors.length === 0 ? { ok: true, response: input as unknown as MigrateProvisionResponse } : { ok: false, errors }
   }
+  const collector = (options as { collector?: unknown } | undefined)?.collector ?? 'studio_polar'
+  if (collector === 'migrate') return checkReserved(input, options, errors)
+  if (collector !== 'studio_polar') return { ok: false, errors: [...errors, 'collector: unknown'] }
+  if (input.collector !== undefined) errors.push('collector: Migrate did not ask to collect')
   if (!isPolarCheckoutUrl(input.checkout_url)) errors.push('checkout_url: not a Polar checkout address')
   const quoted = (options as { quoted_total_cents?: unknown } | undefined)?.quoted_total_cents
   if (!isCents(input.amount_cents) || input.amount_cents === 0) errors.push('amount_cents: invalid')
@@ -870,4 +929,117 @@ function isPolarCheckoutUrl(x: unknown): x is string {
   catch { return false }
   return url.protocol === 'https:' && (url.hostname === 'polar.sh' || url.hostname === 'sandbox.polar.sh') && !url.port && !url.username && !url.password && !url.hash
     && url.pathname.startsWith('/checkout/')
+}
+
+/** The reserved answer to a provision Migrate collects (`collector: 'migrate'`); `errors` carries the base checks. */
+function checkReserved(input: Record<string, unknown>, options: { quoted_total_cents?: unknown, migrate_fee_cents?: unknown }, errors: string[]):
+  | { ok: true, response: MigrateProvisionResponse }
+  | { ok: false, errors: string[] } {
+  if (input.collector !== 'migrate') errors.push('collector: must be migrate')
+  if (input.state !== 'claimed' && input.state !== 'bound') errors.push('state: not a reserved grant')
+  for (const key of ['checkout_url', 'checkout_expires_at'] as const)
+    if (input[key] !== undefined) errors.push(`${key}: not allowed when Migrate collects`)
+  const quoted = options.quoted_total_cents
+  const fee = options.migrate_fee_cents
+  if (!isCents(input.amount_cents) || input.amount_cents === 0) errors.push('amount_cents: invalid')
+  // Fail closed: without both numbers of the question (a caller bypassing the types) nothing passes.
+  else if (!isCents(quoted) || !isCents(fee) || quoted <= fee || input.amount_cents !== quoted - fee) errors.push('amount_cents: not the quoted Studio line')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateProvisionResponse } : { ok: false, errors }
+}
+
+// ─── Activate (Migrate collected the bundle: the Studio year starts) ───
+//
+// `POST /api/migrate/grants/activate`. After a provision with `billing.collector: 'migrate'`, Migrate's
+// checkout takes the whole bundle. Once the payment is complete, Migrate tells Studio, server to server,
+// which payment it was and what it held for Studio; Studio then starts the prepaid Studio year on the
+// grant's workspace — no subscription, no renewal of its own — from `paid_at` for
+// `MIGRATE_PREPAID_YEAR_SECONDS`. The refund rules count Studio's unused days from the same `paid_at`.
+//
+// Signed and single-use by `jti` under its own purpose, like the other requests. Idempotent per order:
+// the same `transaction_id` again answers the same year. Studio refuses (409) a different transaction
+// for a grant already active or revoked, and a workspace that took a running subscription since the
+// provision; the order then waits for an operator. The order's own payment after a revoke (the refund
+// came first) answers `revoked`: nothing is started, and nothing is wrong.
+
+/** The prepaid Studio year Migrate collects: 365 days from the payment. */
+export const MIGRATE_PREPAID_YEAR_SECONDS = 365 * 86_400
+
+export const MIGRATE_BUNDLE_PAYMENT_PROVIDERS = ['paddle'] as const
+export type MigrateBundlePaymentProvider = (typeof MIGRATE_BUNDLE_PAYMENT_PROVIDERS)[number]
+
+/** The payment Migrate took for the bundle. */
+export interface MigrateGrantActivatePayment {
+  provider: MigrateBundlePaymentProvider
+  /** The provider's id of the payment (Paddle transaction id). */
+  transaction_id: string
+  /** When the payment completed, seconds since the epoch. The Studio year starts here. */
+  paid_at: number
+  /** What the payment held for Studio, in cents, before tax: the provision's reserved `amount_cents`. */
+  studio_amount_cents: number
+  currency: 'usd'
+}
+
+/** `POST /api/migrate/grants/activate`. */
+export interface MigrateGrantActivateRequest extends MigrateS2sEnvelope {
+  payment: MigrateGrantActivatePayment
+}
+
+/** Studio's answer: the year is active, or the grant was revoked before the payment was reported. */
+export type MigrateGrantActivateResponse =
+  | {
+    state: 'redeemed'
+    plan: MigrateStudioPlan
+    /** The workspace the year runs on. */
+    workspace_slug: string
+    /** Seconds since the epoch: the request's `paid_at`. */
+    starts_at: number
+    /** Seconds since the epoch: `starts_at + MIGRATE_PREPAID_YEAR_SECONDS`. */
+    ends_at: number
+  }
+  | { state: 'revoked' }
+
+/** Check the signed activate request Studio receives: the envelope rules, plus the payment. A payment dated in the future is refused when `now` is given. */
+export function validateMigrateGrantActivateRequest(input: unknown, options: { now?: number } = {}):
+  | { ok: true, request: MigrateGrantActivateRequest }
+  | { ok: false, errors: string[] } {
+  const base = checkS2sEnvelope(input, options)
+  const errors = base.ok ? [] : [...base.errors]
+  const p = isObject(input) ? input.payment : undefined
+  if (!isObject(p)) errors.push('payment: required')
+  else {
+    if (!(MIGRATE_BUNDLE_PAYMENT_PROVIDERS as readonly unknown[]).includes(p.provider)) errors.push('payment.provider: unknown')
+    if (!isText(p.transaction_id) || p.transaction_id.length > 128) errors.push('payment.transaction_id: required')
+    if (!isSeconds(p.paid_at)) errors.push('payment.paid_at: invalid')
+    else if (options.now !== undefined && p.paid_at > options.now + MIGRATE_STUDIO_CLAIM_CLOCK_SKEW_SECONDS) errors.push('payment.paid_at: in the future')
+    if (!isCents(p.studio_amount_cents) || p.studio_amount_cents === 0) errors.push('payment.studio_amount_cents: invalid')
+    if (p.currency !== 'usd') errors.push('payment.currency: must be usd')
+  }
+  return errors.length === 0 ? { ok: true, request: input as unknown as MigrateGrantActivateRequest } : { ok: false, errors }
+}
+
+/**
+ * Check Studio's activate answer against the request: an active year must start at the payment's `paid_at`
+ * and last exactly `MIGRATE_PREPAID_YEAR_SECONDS` (the refund's pro-rata days rest on both), on a named
+ * workspace and a known plan. `revoked` carries nothing else.
+ */
+export function validateMigrateGrantActivateResponse(input: unknown, options: { paid_at: number }):
+  | { ok: true, response: MigrateGrantActivateResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (input.state === 'revoked') {
+    for (const key of ['plan', 'workspace_slug', 'starts_at', 'ends_at'] as const)
+      if (input[key] !== undefined) errors.push(`${key}: not allowed when revoked`)
+    return errors.length === 0 ? { ok: true, response: { state: 'revoked' } } : { ok: false, errors }
+  }
+  if (input.state !== 'redeemed') return { ok: false, errors: ['state: must be redeemed or revoked'] }
+  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)) errors.push('plan: unknown plan')
+  if (typeof input.workspace_slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(input.workspace_slug)) errors.push('workspace_slug: invalid')
+  const paidAt = (options as { paid_at?: unknown } | undefined)?.paid_at
+  if (!isSeconds(input.starts_at)) errors.push('starts_at: invalid')
+  // Fail closed: without the request's `paid_at` no year can be checked.
+  else if (!isSeconds(paidAt) || input.starts_at !== paidAt) errors.push('starts_at: not the payment time')
+  if (!isSeconds(input.ends_at)) errors.push('ends_at: invalid')
+  else if (isSeconds(input.starts_at) && input.ends_at !== input.starts_at + MIGRATE_PREPAID_YEAR_SECONDS) errors.push('ends_at: not one prepaid year')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantActivateResponse } : { ok: false, errors }
 }

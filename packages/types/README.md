@@ -553,6 +553,21 @@ if (!result.ok) throw new Error(result.errors.join('; '))
 
 **Claim v2 ("Migrate with Studio").** `MigrateStudioClaimV2` (`v: 2`, `validateMigrateStudioClaimV2`, or `validateMigrateStudioClaimAny` to route by `v`) carries no `trial_days`: the Studio year is part of the order's first invoice, and Studio creates that checkout itself, server to server. It adds `github_user_id` (decimal string, from the Migrate sign-in), `email_verified` (Studio binds by email only when true), `return_url` and a signed `billing` quote (`migrate_fee_cents`, `quoted_total_cents`, `currency: 'usd'`) that Studio checks against its own Studio-year price before opening the checkout. The Offer-time exchange is `MigrateAccountStateRequest` / `MigrateAccountStateResponse` (`state: none | covers | too_small`, `year1_cents`). The request's `github_user_id` is optional: without it (before sign-in) the Offer asks for the sized plan's list price, and Studio answers `none`. Studio checks the request with `validateMigrateAccountStateRequest` and keeps a `jti` replay record for it, as for claims; Migrate checks the answer with `validateMigrateAccountStateResponse(response, { requested })` (`requested` is required: an answer is only checked against its question), which requires `plan` to be the requested plan for `none` / `too_small`, `current_plan` below it for `too_small`, at least it for `covers`, and no `current_plan` for `none`. v1 and `validateMigrateStudioClaim` are unchanged.
 
+**Who collects the bundle.** `billing.collector` says who takes the one payment.
+
+- **`studio_polar`** (or absent): Studio opens the bundle's Polar checkout (`MigrateProvisionCheckout`).
+- **`migrate`**: Studio opens no checkout. It answers `MigrateProvisionReserved`, the Studio line it reserved: `amount_cents` = `quoted_total_cents − migrate_fee_cents`.
+  - Migrate charges the whole bundle in its own checkout.
+  - Once paid, Migrate reports the payment with `MigrateGrantActivateRequest` (`POST /api/migrate/grants/activate`: provider, `transaction_id`, `paid_at`, `studio_amount_cents`).
+  - Studio starts a prepaid Studio year with no subscription, from `paid_at` for `MIGRATE_PREPAID_YEAR_SECONDS`.
+  - The year does not renew by itself. The grant status answers `renewal: none | scheduled`, the latter once the customer has set up their own subscription to follow it.
+
+`validateMigrateProvisionResponse(response, { quoted_total_cents, collector, migrate_fee_cents })` accepts only the answer the collector asked for. An older Studio's Polar checkout is refused when Migrate collects (fail closed).
+
+`validateMigrateGrantActivateResponse(response, { paid_at })` requires the year to start at `paid_at` and last exactly one prepaid year, because the refund's pro-rata days rest on both.
+
+The revoke reason `studio_not_delivered` covers a Studio year Migrate collected but Studio could not start; Studio's share alone is refunded.
+
 ## Project plan
 
 `ProjectPlan` (`contentrain-project-plan@1`) is the one holistic decision of a
