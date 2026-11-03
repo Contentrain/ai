@@ -95,8 +95,54 @@ jobs:
           #   org=Contentrain, repo=ai, workflow=release.yml
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Whether the MCP Registry is behind npm, read from both rather than from
+      # what this run published. A run that published only some packages (a
+      # re-run after a partial failure, or a workflow_dispatch) still catches
+      # the registry up: 3.11.23 reached npm in one attempt, and the re-run that
+      # published the rest skipped the registry because it had not published
+      # @contentrain/mcp itself. Skipped while a release PR is open, since main
+      # then holds versions that are not on npm yet.
+      - name: Check MCP Registry against npm
+        id: registry
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        working-directory: packages/mcp
+        env:
+          PUBLISHED: ${{ steps.changesets.outputs.published }}
+        run: |
+          LOCAL=$(node -p "require('./package.json').version")
+          NAME=$(jq -r .name server.json)
+          NPM=$(npm view @contentrain/mcp version 2>/dev/null || true)
+          STATUS=$(curl -s -o registry.json -w '%{http_code}' \
+            "https://registry.modelcontextprotocol.io/v0/servers/$(jq -rn --arg n "$NAME" '$n|@uri')/versions/latest")
+          case "$STATUS" in
+            200) REGISTRY=$(jq -r '.server.version' registry.json) ;;
+            404) REGISTRY=none ;;
+            *) echo "::error::MCP Registry answered $STATUS for $NAME"; exit 1 ;;
+          esac
+          rm -f registry.json
+          echo "package.json $LOCAL, npm $NPM, registry $REGISTRY"
+          # Exit 0 when the first version is newer than the second.
+          newer() {
+            node -e '
+              const [a, b] = process.argv.slice(1).map(v => v.split("-")[0].split(".").map(Number))
+              const i = a.findIndex((n, k) => n !== b[k])
+              process.exit(i >= 0 && a[i] > b[i] ? 0 : 1)
+            ' "$1" "$2"
+          }
+          if [ "$NPM" != "$LOCAL" ] && [ "$PUBLISHED" = "true" ]; then
+            # Published in this run but not visible yet: the next step waits.
+            echo "behind=true" >> "$GITHUB_OUTPUT"
+          elif [ "$NPM" != "$LOCAL" ]; then
+            echo "npm serves ${NPM:-nothing}, not $LOCAL; nothing to send to the registry"
+          elif [ "$REGISTRY" = none ] || newer "$NPM" "$REGISTRY"; then
+            echo "behind=true" >> "$GITHUB_OUTPUT"
+            echo "registry $REGISTRY is behind npm $NPM"
+          else
+            echo "registry is up to date"
+          fi
+
       - name: Publish to MCP Registry
-        if: steps.changesets.outputs.published == 'true' && contains(steps.changesets.outputs.publishedPackages, '@contentrain/mcp')
+        if: steps.registry.outputs.behind == 'true'
         working-directory: packages/mcp
         run: |
           # Install mcp-publisher
