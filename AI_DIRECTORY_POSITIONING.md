@@ -44,7 +44,7 @@ alone, which the plugin copy then contradicted in its own first paragraph.
 |---|---|
 | Name (both listings) | `Contentrain` |
 | **Slug (permanent)** | `contentrain` |
-| Connector categories | **Developer Tools** (primary) + one secondary picked from the portal's own list, never a name with "CMS" in it |
+| Connector categories | **Developer Tools** (primary) + **CMS & Web** (secondary; re-check the exact label in the portal). Studio is a CMS (AI- and Git-native); the Contentrain umbrella is not. |
 | Tagline strategy | **Split by entry point, one spine** |
 
 ### Taglines (55 char limit)
@@ -59,6 +59,10 @@ i18n path." The connector user's moment is "let my AI client edit our content
 safely." Same product, different door.
 
 ## Why not "CMS"
+
+This is about the Contentrain name and the plugin entry point. Studio is a
+CMS (AI- and Git-native) and may be categorized as one; its connector
+tagline still leads with the operation, not the category.
 
 The directory holds ~440–840 connectors. Leading with CMS puts Contentrain
 next to Contentful, Sanity, and Strapi — a brand-size fight it loses. The
