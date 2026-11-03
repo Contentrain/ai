@@ -3,7 +3,8 @@
     "contentrain": {
       "command": "npx",
       "args": [
-        "contentrain",
+        "-y",
+        "contentrain@0.18.27",
         "serve",
         "--stdio"
       ]
