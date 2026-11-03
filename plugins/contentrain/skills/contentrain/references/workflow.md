@@ -162,13 +162,13 @@ Contentrain's storage format is designed to minimize Git merge conflicts:
 The `contentrain` branch normally contains the base branch, so advancing the base is always a fast-forward. The invariant breaks legitimately in exactly one case: a **dual-domain migration** — a package bump and a `.contentrain/` schema change that must ship as one atomic PR to the base branch. After it lands, the branches have **diverged**.
 
 - Divergence is a product state, not an error. Writes still land on `contentrain` and report `base_advance: "blocked_diverged"`; nothing is lost.
-- The exit is `contentrain_reconcile` (CLI: `npx contentrain@0.18.26 reconcile`) — a content-aware three-way merge. Always dry-run first.
+- The exit is `contentrain_reconcile` (CLI: `npx contentrain@0.18.27 reconcile`) — a content-aware three-way merge. Always dry-run first.
 - Everything one side changed merges mechanically (entry-, key-, and term+locale-level). Only the same item changed differently on both sides becomes a `ConflictItem`.
 - Conflicts are content decisions: take them to the editor/user, collect `{ id, choose }` resolutions, run again. NEVER guess a side.
 - Conflict ids hash position AND values — a decision made against a stale preview is dropped and re-asked. This is intended, not a bug.
 - The result is a two-parent merge commit on `contentrain`; the fast-forward advance works again afterwards.
 
-**Dual-domain migration recipe**: (1) build the migration on an isolated branch and land it on the base branch via PR — never hand-edit `.contentrain/` on the base outside this exception; (2) immediately after the PR merges, run the reconcile (Studio does this from its health check; locally run `npx contentrain@0.18.26 reconcile`); (3) resume normal writes.
+**Dual-domain migration recipe**: (1) build the migration on an isolated branch and land it on the base branch via PR — never hand-edit `.contentrain/` on the base outside this exception; (2) immediately after the PR merges, run the reconcile (Studio does this from its health check; locally run `npx contentrain@0.18.27 reconcile`); (3) resume normal writes.
 
 ---
 

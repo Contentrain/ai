@@ -163,7 +163,7 @@ These are enforced by MCP — violating them causes errors. Know them upfront:
 - MUST call `contentrain_describe_format` before creating models or content
 - MUST use `dry_run: true` before `contentrain_apply` execute
 - MUST call `contentrain_validate` before `contentrain_submit`
-- MUST run `npx contentrain@0.18.26 generate` after model/content changes that affect SDK
+- MUST run `npx contentrain@0.18.27 generate` after model/content changes that affect SDK
 - MUST NOT write to `.contentrain/meta/`, `.contentrain/client/`, `.contentrain/context.json` directly
 - MUST NOT auto-merge normalize branches (always review mode)
 
