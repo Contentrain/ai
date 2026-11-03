@@ -640,6 +640,33 @@ describe('contentrain_validate', () => {
   })
 })
 
+describe('contentrain_validate publish-state drift', () => {
+  // The notice itself names no tool (a remote session has no contentrain_bulk);
+  // a local session, which lists bulk, gets the restore step from the tool.
+  it('offers contentrain_bulk to restore drafts where bulk is listed', async () => {
+    client = await createModel(client, 'guides', 'collection', 'marketing', {
+      title: { type: 'string', required: true },
+    })
+    const saved = await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: { model: 'guides', entries: [{ locale: 'en', data: { title: 'A' } }, { locale: 'en', data: { title: 'B' } }] },
+    })
+    const ids = (parseResult(saved)['results'] as Array<Record<string, unknown>>).map(r => r['id'] as string)
+    await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'update_status', model: 'guides', entry_ids: [ids[0]], status: 'published', locale: 'en' },
+    })
+
+    client = await createClient(testDir)
+    const data = parseResult(await client.callTool({ name: 'contentrain_validate', arguments: {} }))
+    const issues = data['issues'] as Array<{ message: string }>
+    const drift = issues.find(i => i.message.startsWith('Publish-state drift'))
+    expect(drift).toBeDefined()
+    expect(drift!.message).not.toContain('contentrain_bulk')
+    expect((data['next_steps'] as string[]).some(s => s.includes('contentrain_bulk update_status'))).toBe(true)
+  })
+})
+
 describe('contentrain_submit', () => {
   it('returns error if no remote', async () => {
     const result = await client.callTool({

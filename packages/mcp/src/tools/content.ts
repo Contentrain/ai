@@ -12,6 +12,7 @@ import { normalizeOperationError } from '../git/errors.js'
 import { validateProject } from '../core/validator/index.js'
 import { OverlayReader } from '../core/overlay-reader.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { isToolAvailable } from './availability.js'
 import { commitThroughProvider, divergenceNextSteps, gitReport, type CommitThroughProviderResult } from './commit-plan.js'
 import { refSource } from './guards.js'
 
@@ -20,6 +21,13 @@ export function registerContentTools(
   provider: ToolProvider,
   projectRoot: string | undefined,
 ): void {
+  // Status changes go through contentrain_bulk, which a remote session does
+  // not list. Name it only where the agent can call it.
+  const canSetStatus = isToolAvailable('contentrain_bulk', provider, projectRoot)
+  const publishHint = canSetStatus
+    ? 'Publish with contentrain_bulk update_status.'
+    : 'Publishing is a separate status change, which this server does not offer.'
+
   // ─── contentrain_content_save ───
   server.tool(
     'contentrain_content_save',
@@ -31,7 +39,7 @@ export function registerContentTools(
         slug: z.string().optional().describe('Slug (document only)'),
         locale: z.string().optional().describe('Locale code (defaults to config default)'),
         data: z.record(z.string(), z.unknown()).describe('Content data. For documents, include "body" key for markdown content.'),
-        publish_at: z.string().nullable().optional().describe('Scheduled publish date, ISO 8601. Stored in meta only — never in the content file — and it does NOT change status: a draft stays a draft, and a published entry is delivered only once this date has passed. Publish with contentrain_bulk update_status. Pass null to clear a previously set date; omit to leave it unchanged.'),
+        publish_at: z.string().nullable().optional().describe(`Scheduled publish date, ISO 8601. Stored in meta only — never in the content file — and it does NOT change status: a draft stays a draft, and a published entry is delivered only once this date has passed. ${publishHint} Pass null to clear a previously set date; omit to leave it unchanged.`),
         expire_at: z.string().nullable().optional().describe('Scheduled expiry, ISO 8601, must be after publish_at. Same rules as publish_at: meta only, never changes status, null clears, omit leaves unchanged.'),
       })).describe('Content entries to save'),
     },
@@ -223,7 +231,7 @@ export function registerContentTools(
           } : {}),
           ...(warnings.length > 0 ? { warnings } : {}),
           ...(schedulingTouched ? {
-            scheduling_note: 'publish_at/expire_at were written to meta only — not to the content file — and status is unchanged: a draft is still a draft. They gate delivery of a *published* entry (served once publish_at has passed, until expire_at). To publish, call contentrain_bulk update_status.',
+            scheduling_note: `publish_at/expire_at were written to meta only — not to the content file — and status is unchanged: a draft is still a draft. They gate delivery of a *published* entry (served once publish_at has passed, until expire_at). ${publishHint}`,
           } : {}),
           validation: { valid: true, errors: [] },
           context_updated: true,
@@ -231,7 +239,11 @@ export function registerContentTools(
             ...divergenceNextSteps(commit),
             ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
             ...(warnings.length > 0 ? ['REVIEW: see warnings above — the save was not blocked by them'] : []),
-            ...(schedulingTouched ? ['PUBLISH: publish_at did not change status — use contentrain_bulk update_status if this entry should go live'] : []),
+            ...(schedulingTouched
+              ? [canSetStatus
+                  ? 'PUBLISH: publish_at did not change status — use contentrain_bulk update_status if this entry should go live'
+                  : 'PUBLISH: publish_at did not change status — the entry goes live only when its status is set to published']
+              : []),
             ...(model.kind === 'collection'
               ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
               : ['Use contentrain_content_list to verify']),

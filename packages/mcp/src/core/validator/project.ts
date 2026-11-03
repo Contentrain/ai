@@ -455,7 +455,10 @@ async function validateCollectionModel(
           message:
             `Publish-state drift: ${draftIds.length} draft entr${draftIds.length === 1 ? 'y' : 'ies'} `
             + `alongside ${publishedCount} published in the same collection — [${draftIds.join(', ')}]. `
-            + 'If these were published before, restore them with contentrain_bulk update_status.',
+            // No tool name: this text reaches surfaces without contentrain_bulk
+            // (a remote session, the CLI). The validate tool adds that step
+            // where bulk is listed.
+            + 'If these were published before, set their status back to published.',
         })
       }
     }

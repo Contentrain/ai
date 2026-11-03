@@ -183,6 +183,10 @@ export function registerWorkflowTools(
         const nextSteps: string[] = []
         if (result.summary.errors > 0) nextSteps.push('Fix errors in content using contentrain_content_save')
         if (result.summary.warnings > 0) nextSteps.push('Review warnings')
+        if (isToolAvailable('contentrain_bulk', provider, projectRoot)
+          && result.issues.some(i => i.message.startsWith('Publish-state drift'))) {
+          nextSteps.push('If the drafts in the publish-state drift notice were published before, restore them with contentrain_bulk update_status')
+        }
         // Only suggest submit where it can actually run. validate itself works
         // over any provider, but contentrain_submit needs a local worktree and
         // a pushable remote — on a remote provider it is not even registered,
