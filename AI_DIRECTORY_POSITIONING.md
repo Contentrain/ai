@@ -87,8 +87,9 @@ locale, review, typed, validated*.
 > cannot invent a field, break a locale, or corrupt a model.
 >
 > • Ask what content exists — models, fields, entries, locales, branch status
-> • Draft, update, delete and publish entries; publishing is owner/admin
->   only and follows the review workflow
+> • Draft, update, delete and publish entries across collections,
+>   singletons, documents, and dictionaries; publishing is owner/admin only
+>   and follows the review workflow
 > • Work in any configured locale and keep translations consistent
 > • Validate a project and get an actionable report before publishing
 > • Manage media assets on eligible plans
