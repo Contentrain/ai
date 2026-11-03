@@ -224,6 +224,29 @@ describe('contentrain_content_status on a remote session', () => {
     await client.close()
   })
 
+  it('rejects a slug or entry ID that is not one, and commits nothing', async () => {
+    // A meta record waits where each traversal would land, so only the
+    // identity check — not a missing file — can stop the write.
+    const draft = JSON.stringify({ status: 'draft', source: 'agent', updated_by: 'test' })
+    const provider = seeded({
+      '.contentrain/meta/guides/../x/en.json': draft,
+      '.contentrain/meta/x/en.json': draft,
+    })
+    const client = await connect(provider)
+    const before = JSON.stringify(provider.snapshot())
+
+    const slug = await call(client, 'contentrain_content_status', { model: 'guides', slugs: ['../x'], status: 'published' })
+    expect(slug.isError).toBe(true)
+    expect(slug.data.error).toMatch(/^Invalid slug "\.\.\/x"/)
+    const id = await call(client, 'contentrain_content_status', { model: 'posts', entry_ids: ['../x'], status: 'published' })
+    expect(id.isError).toBe(true)
+    expect(id.data.error).toMatch(/^Invalid entry ID "\.\.\/x"/)
+
+    expect(provider.commits.length).toBe(0)
+    expect(JSON.stringify(provider.snapshot())).toBe(before)
+    await client.close()
+  })
+
   it('stops at a blocked write-readiness gate', async () => {
     const provider = seeded({
       '.contentrain/content/blog/posts/en.json': JSON.stringify({ p1: { title: 'A' } }),

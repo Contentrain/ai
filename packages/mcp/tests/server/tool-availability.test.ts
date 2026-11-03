@@ -13,7 +13,7 @@ vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
 /**
  * Capability-aware registration: `createServer` consults TOOL_REQUIREMENTS
  * so `tools/list` only advertises tools that can succeed for the resolved
- * provider + projectRoot pair. Local flows keep the full 19-tool surface;
+ * provider + projectRoot pair. Local flows keep every core tool;
  * remote sessions see exactly the subset their provider supports.
  */
 

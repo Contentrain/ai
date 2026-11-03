@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
+import { validateEntryId, validateSlug } from '@contentrain/types'
 import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
@@ -68,6 +69,16 @@ export function registerContentStatusTools(
       }
       if (!keyedByEntry && !keyedBySlug && hasEntryIds) {
         return errorResult({ error: `Model "${input.model}" is a ${model.kind} model — it has one meta record per locale, so entry_ids do not apply. Omit entry_ids.` })
+      }
+      // Same identity checks content_save runs: a slug names a meta path, so
+      // one that is not a slug must never reach it.
+      for (const id of input.entry_ids ?? []) {
+        const err = validateEntryId(id)
+        if (err) return errorResult({ error: err })
+      }
+      for (const slug of input.slugs ?? []) {
+        const err = validateSlug(slug)
+        if (err) return errorResult({ error: err })
       }
       if (input.locale && !config.locales.supported.includes(input.locale)) {
         return errorResult({ error: `Locale "${input.locale}" is not supported. Supported: [${config.locales.supported.join(', ')}]` })
