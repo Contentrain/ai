@@ -262,6 +262,14 @@ async function handleMultiTenantRequest(
     }
     return
   }
+  // A session id this process does not hold (expired, or minted before a
+  // restart) answers 404, as the Streamable HTTP spec requires: the client
+  // then re-initializes. Falling through to a fresh transport would answer
+  // 400 "Server not initialized", which clients do not recover from.
+  if (existingSessionId) {
+    writeJson(res, 404, { error: 'Session not found' })
+    return
+  }
 
   try {
     const provider = await ctx.resolveProvider(req)

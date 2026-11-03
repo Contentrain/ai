@@ -863,6 +863,38 @@ describe('startHttpMcpServer', () => {
     }
   })
 
+  it('answers an unknown session id with 404, and the client re-initializes', async () => {
+    const handle = await startHttpMcpServerWith({
+      resolveProvider: () => makeReadOnlyTenantProvider('alpha'),
+      port: 0,
+    })
+    try {
+      // A session id from before a restart: this process never minted it.
+      const stale = await fetch(handle.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
+          'mcp-session-id': 'f0e1d2c3-0000-4000-8000-000000000000',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+      })
+      expect(stale.status).toBe(404)
+      expect((await stale.json() as { error: string }).error).toBe('Session not found')
+
+      const client = new Client({ name: 'reconnect-client', version: '1.0.0' })
+      await client.connect(new StreamableHTTPClientTransport(new URL(handle.url)))
+      try {
+        const { tools } = await client.listTools()
+        expect(tools.length).toBeGreaterThan(0)
+      } finally {
+        await client.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
   it('rejects resolver failures with a 500 instead of hanging the request', async () => {
     const handle = await startHttpMcpServerWith({
       resolveProvider: () => { throw new Error('tenant not found') },
