@@ -22,7 +22,7 @@ Phase 1 alone is valuable: content becomes manageable in Studio, translatable, a
 - MUST scan before extract (`contentrain_scan` → `contentrain_apply`)
 - MUST `dry_run: true` before `dry_run: false` for every `contentrain_apply` call
 - MUST merge Phase 1 branch before starting Phase 2
-- MUST run `npx contentrain@0.18.29 generate` after Phase 2 completes
+- MUST run `npx contentrain@0.18.30 generate` after Phase 2 completes
 - MUST NOT reuse without scoped model or domain (whole-project patching is blocked)
 - MUST NOT patch `.contentrain/` files via reuse (content files are read-only for reuse)
 - MUST NOT exceed 100 patches per `contentrain_apply` call
@@ -181,7 +181,7 @@ After all reuse operations are complete, source files now use `#contentrain` imp
 The SDK client MUST be regenerated:
 
 ```bash
-npx contentrain@0.18.29 generate
+npx contentrain@0.18.30 generate
 ```
 
 Without this, `#contentrain` imports will fail at build time.
