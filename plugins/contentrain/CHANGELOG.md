@@ -1,5 +1,13 @@
 # @contentrain/claude-plugin
 
+## 1.0.12
+
+### Patch Changes
+
+- Updated dependencies [5bfa1af]
+  - @contentrain/mcp@3.12.0
+  - contentrain@0.18.27
+
 ## 1.0.11
 
 ### Patch Changes
