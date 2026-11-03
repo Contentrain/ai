@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * Keeps `templates/astro-starter/.mcp.json` on an exact `contentrain` CLI
- * version. The starter does not depend on the CLI, so an unpinned
- * `npx contentrain serve --stdio` fetched whatever `latest` was on every start
- * of every delivered site. The plugin pins its launcher the same way
- * (`scripts/build-plugin.mjs`). The starter is not a workspace package, so
- * changesets never bumps it: `version-packages` runs this after the CLI bump,
- * and the release PR carries the new pin.
+ * Keeps `templates/astro-starter/.mcp.json` on the `contentrain` CLI version
+ * it pins. The file is what the CLI's `writeMcpConfig` writes for Claude Code
+ * (`packages/cli/src/utils/ide.ts`, held byte for byte by
+ * `packages/cli/tests/utils/ide.test.ts`), so the launcher's shape lives there
+ * and this script moves only the version. The starter is not a workspace
+ * package, so changesets never touches it: `version-packages` runs this after
+ * the CLI bump, and the release PR carries the new pin.
  *
- *   node scripts/sync-starter-mcp.mjs          # write the pin (run by `pnpm version-packages`)
+ *   node scripts/sync-starter-mcp.mjs          # write the version (run by `pnpm version-packages`)
  *   node scripts/sync-starter-mcp.mjs --check  # exit 1 when it differs (run by `pnpm docs:check`)
  */
 
@@ -22,24 +22,25 @@ const PKG = join(ROOT, 'packages/cli/package.json')
 const CONFIG = join(ROOT, 'templates/astro-starter/.mcp.json')
 
 const { name, version } = JSON.parse(readFileSync(PKG, 'utf8'))
-if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) {
-  console.error(`starter-mcp: cannot read an exact version from packages/cli/package.json (got ${JSON.stringify(version)})`)
+const raw = readFileSync(CONFIG, 'utf8')
+const config = JSON.parse(raw)
+const args = config.mcpServers?.contentrain?.args ?? []
+const at = args.findIndex(arg => arg.startsWith(`${name}@`))
+
+if (at === -1) {
+  console.error(`starter-mcp: templates/astro-starter/.mcp.json runs no ${name}@<version>; it must be what the CLI's writeMcpConfig writes for Claude Code.`)
   process.exit(1)
 }
 
-const config = JSON.parse(readFileSync(CONFIG, 'utf8'))
-const args = ['-y', `${name}@${version}`, 'serve', '--stdio']
-const current = config.mcpServers?.contentrain
-const stale = current?.command !== 'npx' || JSON.stringify(current?.args) !== JSON.stringify(args)
-
+const pinned = `${name}@${version}`
 if (process.argv.includes('--check')) {
-  if (stale) {
-    console.error(`starter-mcp: templates/astro-starter/.mcp.json runs ${JSON.stringify([current?.command, ...(current?.args ?? [])].join(' '))}; expected "npx ${args.join(' ')}". Run \`node scripts/sync-starter-mcp.mjs\`.`)
+  if (args[at] !== pinned) {
+    console.error(`starter-mcp: templates/astro-starter/.mcp.json runs ${args[at]}; ${name} is ${version}. Run \`node scripts/sync-starter-mcp.mjs\`.`)
     process.exit(1)
   }
-  console.log(`starter-mcp: templates/astro-starter/.mcp.json is on ${name}@${version}`)
-} else if (stale) {
-  config.mcpServers = { ...config.mcpServers, contentrain: { ...current, command: 'npx', args } }
+  console.log(`starter-mcp: templates/astro-starter/.mcp.json is on ${pinned}`)
+} else if (args[at] !== pinned) {
+  args[at] = pinned
   writeFileSync(CONFIG, `${JSON.stringify(config, null, 2)}\n`)
-  console.log(`starter-mcp: templates/astro-starter/.mcp.json → ${name}@${version}`)
+  console.log(`starter-mcp: templates/astro-starter/.mcp.json → ${pinned}`)
 }
