@@ -2,6 +2,7 @@ import { dirname, join } from 'node:path'
 import { readFile, writeFile, appendFile } from 'node:fs/promises'
 import { createGit } from '@contentrain/mcp/git/identity'
 import { ensureDir, pathExists } from '@contentrain/mcp/util/fs'
+import packageJson from '../../package.json' with { type: 'json' }
 
 // ─── Skill list: read from the @contentrain/skills package ───
 
@@ -104,11 +105,18 @@ export const MCP_CONFIGS: Record<string, string> = {
   codex: '.codex/config.toml',
 }
 
+/**
+ * The server runs this CLI's own exact version: an unpinned `npx contentrain`
+ * fetches whatever `latest` is on every agent start. The version comes from
+ * package.json, so a release bump moves the pin with it.
+ */
+export const MCP_SERVER_ARGS = ['-y', `${packageJson.name}@${packageJson.version}`, 'serve', '--stdio']
+
 const STANDARD_MCP_CONFIG = {
   mcpServers: {
     contentrain: {
       command: 'npx',
-      args: ['contentrain', 'serve', '--stdio'],
+      args: MCP_SERVER_ARGS,
     },
   },
 }
@@ -117,7 +125,7 @@ const STANDARD_MCP_CONFIG = {
 const CODEX_MCP_BLOCK = [
   '[mcp_servers.contentrain]',
   'command = "npx"',
-  'args = ["contentrain", "serve", "--stdio"]',
+  `args = [${MCP_SERVER_ARGS.map(arg => JSON.stringify(arg)).join(', ')}]`,
 ].join('\n')
 
 // ─── IDE detection ───

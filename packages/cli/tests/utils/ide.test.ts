@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { MCP_CONFIGS, IDE_CONFIGS, detectIdes, writeMcpConfig, installIdeRulesAndSkills, listAgentSkillNames, createPackageResolver } from '../../src/utils/ide.js'
+import { version } from '../../package.json' with { type: 'json' }
 
 let root: string
 
@@ -45,6 +46,14 @@ describe('detectIdes', () => {
   })
 })
 
+describe('writeMcpConfig pins the server', () => {
+  it('runs this CLI\'s own exact version, never a bare `npx contentrain`', async () => {
+    await writeMcpConfig(root, 'claude-code')
+    const config = JSON.parse(await readFile(join(root, '.mcp.json'), 'utf-8'))
+    expect(config.mcpServers.contentrain).toEqual({ command: 'npx', args: ['-y', `contentrain@${version}`, 'serve', '--stdio'] })
+  })
+})
+
 describe('the Astro starter\'s .mcp.json', () => {
   it('is byte for byte what writeMcpConfig writes for Claude Code', async () => {
     // templates/astro-starter ships .mcp.json for every delivered site; the CLI's config is its only source.
@@ -63,7 +72,7 @@ describe('writeMcpConfig for codex', () => {
     const written = await readFile(join(root, '.codex/config.toml'), 'utf-8')
     expect(written).toContain('[mcp_servers.contentrain]')
     expect(written).toContain('command = "npx"')
-    expect(written).toContain('args = ["contentrain", "serve", "--stdio"]')
+    expect(written).toContain(`args = ["-y", "contentrain@${version}", "serve", "--stdio"]`)
     // TOML, not JSON — the JSON writer would have produced an object.
     expect(written.trimStart().startsWith('{')).toBe(false)
   })
