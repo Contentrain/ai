@@ -60,7 +60,7 @@ They are listed as optional dependencies. The scanner still works without them, 
 All write operations are designed around git-backed safety:
 
 - a dedicated `contentrain` branch serves as the content state single source of truth
-- each write creates a temporary worktree on a feature branch forked from `contentrain` (branch name: `cr/{scope}/{target}/{timestamp}-{suffix}`, e.g. `cr/content/blog-post/1730000000-a1b2`; bulk locale copies and scaffold add a `{locale}` segment before the timestamp)
+- each write creates a temporary worktree on a feature branch forked from `contentrain` (branch name: `cr/{scope}/{target}/{timestamp}-{suffix}`, e.g. `cr/content/blog-post/1730000000-a1b2`; bulk locale copies, locale-scoped status changes and scaffold add a `{locale}` segment before the timestamp)
 - auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree when the base branch is the one checked out
 - baseBranch = `CONTENTRAIN_BRANCH` env → `repository.default_branch` → remote HEAD → `main` → `master` → checked-out branch → `main` (fallback). A write made on a feature branch never merges, moves or pushes that branch
 - plans are read from the working tree but committed on the fetched `contentrain` tip: JSON changes are carried over key by key, so entries another writer pushed are kept; a same-value conflict writes nothing and returns `CONTENT_WORKING_TREE_STALE`
@@ -77,9 +77,9 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-22 MCP tools, plus 5 media tools on a media-capable provider such as Studio, with [annotations](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#tool) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
+23 MCP tools, plus 5 media tools on a media-capable provider such as Studio, with [annotations](https://modelcontextprotocol.io/specification/2025-03-26/server/tools#tool) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
-**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
+**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 23 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `content_status`, `vocabulary_save`, `vocabulary_delete`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -93,7 +93,8 @@ All write operations are designed around git-backed safety:
 | `contentrain_model_delete` | Delete a model definition | — | **Yes** |
 | `contentrain_content_save` | Save content entries for any model kind | — | **Yes** |
 | `contentrain_content_delete` | Delete content entries | — | **Yes** |
-| `contentrain_content_list` | Read content entries | Yes | — |
+| `contentrain_content_list` | Read content entries, each with its publish state under `meta` | Yes | — |
+| `contentrain_content_status` | Change entry status — publish, unpublish, archive (publishing validates first) | — | **Yes** |
 | `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
 | `contentrain_submit` | Push `cr/*` branches to remote, then lazily prune merged local + remote leftovers | — | — |
 | `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model); deletes its remote copy | — | Yes |
@@ -102,7 +103,7 @@ All write operations are designed around git-backed safety:
 | `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch locally and on the remote (contentrain branch protected) | — | **Yes** |
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
-| `contentrain_bulk` | Bulk locale copy, status updates, and deletes (`dry_run` previews) | — | — |
+| `contentrain_bulk` | Bulk locale copy and deletes (`dry_run` previews; local only) | — | **Yes** |
 | `contentrain_vocabulary_save` | Add or update canonical vocabulary terms (merges with what exists) | — | — |
 | `contentrain_vocabulary_delete` | Remove canonical vocabulary terms by slug (`confirm: true`) | — | **Yes** |
 | `contentrain_media_list` | List media assets (search, tag filter, cursor pagination) | Yes | — |

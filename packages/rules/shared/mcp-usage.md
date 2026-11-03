@@ -57,7 +57,8 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 |------|---------|------------|
 | `contentrain_content_save` | Create or update content entries (upsert) | `model`, `entries` (array of entry objects) |
 | `contentrain_content_delete` | Delete a content entry | `model`, `id?`, `slug?`, `locale?`, `confirm: true` |
-| `contentrain_content_list` | List content entries for a model (read-only) | `model`, `locale?`, `filter?`, `resolve?`, `limit?`, `offset?` |
+| `contentrain_content_list` | List content entries for a model (read-only); each entry carries its status under `meta` | `model`, `locale?`, `filter?`, `resolve?`, `limit?`, `offset?` |
+| `contentrain_content_status` | Change entry status: publish, unpublish, archive | `model`, `status`, `entry_ids?`, `slugs?`, `locale?` |
 | `contentrain_vocabulary_save` | Add or update canonical vocabulary terms (merges) | `terms` |
 | `contentrain_vocabulary_delete` | Remove canonical terms | `terms`, `confirm: true` |
 
@@ -86,6 +87,14 @@ Each entry in the `entries` array has this shape:
 - For **document**: use `slug` to identify the entry.
 - For **singleton/dictionary**: use `locale` to identify which locale file to delete.
 - On an **`i18n: false` model**, do NOT pass `locale` — content is locale-agnostic (`data.json`), so a locale-scoped delete is rejected. Omit `locale` to delete the entry; use `contentrain_validate` with `fix: true` to remove stray per-locale meta.
+
+#### contentrain_content_status parameters
+
+- `contentrain_content_status` is the only way to change publish state, on every session — local and remote. `publish_at` on `contentrain_content_save` does not publish — it gates delivery of an entry that is already `published`.
+- Address records by the model's meta layout: `entry_ids` for a `collection`, `slugs` for a `document`, and neither for a `singleton` or `dictionary` (one meta record per locale).
+- Pass `locale` to scope the change; otherwise every supported locale is rewritten.
+- Setting `published` validates the targeted entries first. An error in one of them means nothing is committed — fix it with `contentrain_content_save` and call again.
+- Records already at the requested status come back in `unchanged` and are not rewritten; IDs or slugs with no meta come back in `not_found`.
 
 ### 2.5 Normalize Tools
 
@@ -166,19 +175,18 @@ Each entry in the `entries` array has this shape:
 
 | Tool | Purpose | Parameters |
 |------|---------|------------|
-| `contentrain_bulk` | Run git-backed batch operations on existing content entries | `operation`, `model`, `source_locale?`, `target_locale?`, `entry_ids?`, `slugs?`, `locale?`, `status?`, `confirm?` |
+| `contentrain_bulk` | Run git-backed batch operations on existing content entries (local only) | `operation`, `model`, `source_locale?`, `target_locale?`, `entry_ids?`, `confirm?`, `dry_run?` |
 
 #### contentrain_bulk operations
 
 - `copy_locale`: copy one locale to another for an i18n-enabled `collection`, `singleton`, or `dictionary` model. Requires `source_locale` and `target_locale`.
-- `update_status`: update entry metadata status. Requires `status`, plus the list that matches the model's meta layout: `entry_ids` for a `collection`, `slugs` for a `document`, and neither for a `singleton` or `dictionary` (one meta record per locale). Pass `locale` to scope the change; otherwise every supported locale is rewritten.
 - `delete_entries`: delete multiple entries from a `collection` model. Requires `entry_ids` and `confirm: true`.
 
 #### contentrain_bulk rules
 
 - ALWAYS verify the target model with `contentrain_describe` or `contentrain_status` before running a bulk operation.
 - `copy_locale` MUST NOT be used on non-i18n models.
-- `update_status` is the only way to change publish state. `publish_at` on `contentrain_content_save` does not publish — it gates delivery of an entry that is already `published`.
+- Status changes are not a bulk operation: use `contentrain_content_status`, which takes many `entry_ids` or `slugs` at once.
 - `delete_entries` is a collection-only operation.
 - Bulk operations create branches and commits like other write tools; validate afterward when content shape may have changed.
 

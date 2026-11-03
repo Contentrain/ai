@@ -1,4 +1,4 @@
-import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry, Vocabulary } from '@contentrain/types'
+import type { ModelDefinition, ContentrainConfig, ContentStatus, EntryMeta, LocaleStrategy, DocumentEntry, Vocabulary } from '@contentrain/types'
 import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, preservedKeyConflicts, serializeMarkdownFrontmatter } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
@@ -6,7 +6,7 @@ import { contentrainDir, readDir, readJson, readText, writeJson, writeText } fro
 import { readMeta, writeMeta, deleteMeta, mergeEntryMeta } from './meta-manager.js'
 import { readModel } from './model-manager.js'
 import type { RepoReader } from './contracts/index.js'
-import { contentDirPath, contentFilePath, documentFilePath } from './ops/paths.js'
+import { contentDirPath, contentFilePath, documentFilePath, metaFilePath } from './ops/paths.js'
 
 // Re-export for backward compatibility (MCP internal consumers)
 export { validateSlug, validateEntryId, validateLocale }
@@ -106,6 +106,66 @@ export interface ListOpts {
   resolve?: boolean
   limit?: number
   offset?: number
+}
+
+/**
+ * The part of an entry's meta a listing shows: its publish state, read from
+ * the meta of the listed locale. Without it an agent cannot tell which entries
+ * are drafts, and cannot see that a status change landed.
+ *
+ * Nested under `meta` rather than spread beside the fields, because a model may
+ * have a field named `status` and the listing must not hide it.
+ */
+export interface ListedMeta {
+  status: ContentStatus
+  publish_at?: string
+  expire_at?: string
+}
+
+/** Reads the meta record of the listed locale — whole file, or one document's. */
+type MetaLookup = (slug?: string) => Promise<unknown>
+
+function listedMeta(meta: unknown): ListedMeta | undefined {
+  const m = meta as Partial<EntryMeta> | null | undefined
+  if (!m || typeof m !== 'object' || !m.status) return undefined
+  return {
+    status: m.status,
+    ...(m.publish_at ? { publish_at: m.publish_at } : {}),
+    ...(m.expire_at ? { expire_at: m.expire_at } : {}),
+  }
+}
+
+/** `{ meta }` when the record has meta, nothing otherwise — for spreading. */
+function metaKey(meta: unknown): { meta?: ListedMeta } {
+  const listed = listedMeta(meta)
+  return listed ? { meta: listed } : {}
+}
+
+/** A collection entry's listed shape: id, then meta, then its fields — a field named `id` or `meta` still wins. */
+function listedCollectionEntries(
+  data: Record<string, Record<string, unknown>>,
+  metaMap: unknown,
+): Array<Record<string, unknown>> {
+  const byId = (metaMap ?? {}) as Record<string, unknown>
+  return Object.entries(data).map(([id, fields]) => {
+    const entry: Record<string, unknown> = { id }
+    const meta = listedMeta(byId[id])
+    if (meta) entry['meta'] = meta
+    Object.assign(entry, fields)
+    return entry
+  })
+}
+
+/** Attach each document's meta, looked up by slug. */
+async function withDocumentMeta(
+  entries: DocumentEntry[],
+  lookup: MetaLookup,
+): Promise<Array<DocumentEntry & { meta?: ListedMeta }>> {
+  const out: Array<DocumentEntry & { meta?: ListedMeta }> = []
+  for (const entry of entries) {
+    out.push({ ...entry, ...metaKey(await lookup(entry.slug)) })
+  }
+  return out
 }
 
 // ─── writeContent ───
@@ -447,20 +507,17 @@ async function listContentLocal(
 ): Promise<unknown> {
   const cDir = resolveContentDir(projectRoot, model)
   const locale = opts.locale ?? config.locales.default
+  const lookupMeta: MetaLookup = slug => readMeta(projectRoot, model, { locale, slug, defaultLocale: config.locales.default })
 
   switch (model.kind) {
     case 'singleton': {
       const data = await readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, locale))
-      return { kind: 'singleton', data: data ?? {}, locale }
+      return { kind: 'singleton', data: data ?? {}, locale, ...metaKey(await lookupMeta()) }
     }
 
     case 'collection': {
       const data = await readJson<Record<string, Record<string, unknown>>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
-      let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => {
-        const entry: Record<string, unknown> = { id }
-        Object.assign(entry, fields)
-        return entry
-      })
+      let entries = listedCollectionEntries(data, await lookupMeta())
 
       // Filter
       if (opts.filter) {
@@ -551,14 +608,14 @@ async function listContentLocal(
       const total = entries.length
       const offset = opts.offset ?? 0
       const limit = opts.limit ?? entries.length
-      const paged = entries.slice(offset, offset + limit)
+      const paged = await withDocumentMeta(entries.slice(offset, offset + limit), lookupMeta)
 
       return { kind: 'document', data: paged, total, locale, offset, limit }
     }
 
     case 'dictionary': {
       const data = await readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
-      return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
+      return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale, ...metaKey(await lookupMeta()) }
     }
   }
 }
@@ -594,11 +651,13 @@ async function listContentViaReader(
 
   const cDir = contentDirPath(model)
   const locale = opts.locale ?? config.locales.default
+  const lookupMeta: MetaLookup = slug =>
+    tryReadJsonViaReader(reader, metaFilePath(model, locale, config.locales.default, slug))
 
   switch (model.kind) {
     case 'singleton': {
       const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, contentFilePath(model, locale))
-      return { kind: 'singleton', data: data ?? {}, locale }
+      return { kind: 'singleton', data: data ?? {}, locale, ...metaKey(await lookupMeta()) }
     }
 
     case 'collection': {
@@ -606,11 +665,7 @@ async function listContentViaReader(
         reader,
         contentFilePath(model, locale),
       ) ?? {}
-      let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => {
-        const entry: Record<string, unknown> = { id }
-        Object.assign(entry, fields)
-        return entry
-      })
+      let entries = listedCollectionEntries(data, await lookupMeta())
 
       if (opts.filter) {
         entries = entries.filter(entry => {
@@ -678,14 +733,14 @@ async function listContentViaReader(
       const total = entries.length
       const offset = opts.offset ?? 0
       const limit = opts.limit ?? entries.length
-      const paged = entries.slice(offset, offset + limit)
+      const paged = await withDocumentMeta(entries.slice(offset, offset + limit), lookupMeta)
 
       return { kind: 'document', data: paged, total, locale, offset, limit }
     }
 
     case 'dictionary': {
       const data = await tryReadJsonViaReader<Record<string, string>>(reader, contentFilePath(model, locale)) ?? {}
-      return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
+      return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale, ...metaKey(await lookupMeta()) }
     }
   }
 }

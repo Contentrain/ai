@@ -420,7 +420,7 @@ interface EntryMeta {
 | `archived` | No longer active | `draft` |
 
 ::: info Conventions, not a state machine
-The transitions above are the intended editorial flow — MCP does not enforce them. `contentrain_bulk update_status` can set any status directly; the lifecycle discipline lives in your workflow (and Studio's review UI), not in a validator gate.
+The transitions above are the intended editorial flow — MCP does not enforce them. `contentrain_content_status` can set any status directly; the lifecycle discipline lives in your workflow (and Studio's review UI), not in a validator gate.
 :::
 
 ### Content Sources
@@ -450,7 +450,7 @@ The dates are a **delivery gate on top of `status`**, not a replacement for it.
 The CDN serves an entry when its status is `published` *and* `publish_at` has
 passed *and* `expire_at` has not. The record above is therefore still a draft:
 a `publish_at` in the past never flips `status`. Publishing stays a deliberate
-`contentrain_bulk update_status` call.
+`contentrain_content_status` call.
 
 Set the dates with `contentrain_content_save` — as `publish_at` / `expire_at`
 on the entry, next to `data`, never inside it. They live in meta only and are

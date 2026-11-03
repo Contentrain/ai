@@ -91,7 +91,7 @@ import {
 } from '@contentrain/rules'
 
 // The full registry — not the subset any one session lists
-console.log(MCP_TOOLS.length)                           // 27
+console.log(MCP_TOOLS.length)                           // 28
 console.log(MCP_TOOLS.includes('contentrain_validate')) // true
 console.log(MCP_TOOLS.includes('contentrain_reconcile')) // true
 console.log(MCP_TOOLS.includes('contentrain_doctor'))   // true

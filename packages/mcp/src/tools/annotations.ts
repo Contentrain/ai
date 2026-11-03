@@ -121,6 +121,16 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     idempotentHint: true,
     openWorldHint: false,
   },
+  // Destructive: publishing puts an entry in front of readers, and setting
+  // draft or archived takes a live one out of delivery. Idempotent: a record
+  // already at the requested status is not rewritten, so a repeat changes nothing.
+  contentrain_content_status: {
+    title: 'Change Entry Status',
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 
   // ─── Workflow (mixed) ───
   contentrain_validate: {
@@ -185,10 +195,12 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   },
 
   // ─── Bulk (write + git) ───
+  // Destructive: delete_entries removes entries, and copy_locale replaces the
+  // target locale file.
   contentrain_bulk: {
     title: 'Bulk Operations',
     readOnlyHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
     idempotentHint: false,
     openWorldHint: false,
   },

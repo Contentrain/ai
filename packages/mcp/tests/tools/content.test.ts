@@ -608,7 +608,7 @@ describe('contentrain_content_save scheduling on a document', () => {
 
     expect(data['status']).toBe('committed')
     expect(String(data['scheduling_note'])).toContain('status is unchanged')
-    expect((data['next_steps'] as string[]).some(s => s.includes('contentrain_bulk update_status'))).toBe(true)
+    expect((data['next_steps'] as string[]).some(s => s.includes('contentrain_content_status'))).toBe(true)
 
     const raw = await readText(docPath())
     expect(raw).not.toContain('publish_at')

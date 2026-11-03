@@ -43,7 +43,7 @@ Contentrain AI inverts the traditional CMS workflow:
 
 ### 1. MCP (Infrastructure)
 
-22 tools that AI agents call to manage content, plus 5 media tools on a media-capable provider such as Studio:
+23 tools that AI agents call to manage content, plus 5 media tools on a media-capable provider such as Studio:
 
 - **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_doctor`, `contentrain_content_list`
 - **Project setup:** `contentrain_init`, `contentrain_scaffold`
@@ -54,7 +54,7 @@ Contentrain AI inverts the traditional CMS workflow:
 
 MCP is **deterministic infrastructure** — it doesn't make content decisions. The agent decides what to create; MCP executes it.
 
-MCP runs over two transports (stdio for IDE agents, HTTP for Studio / CI / remote drivers) and three provider backends: **Local** (simple-git + worktree), **GitHub** (Octokit over the Git Data API), and **GitLab** (gitbeaker over the REST API). The tool list depends on the provider: tools whose capabilities the provider lacks are not registered, so a GitHub or GitLab session without a local project root lists 11 of the 22 core tools — see [Providers and transports](/guides/providers) for the capability matrix.
+MCP runs over two transports (stdio for IDE agents, HTTP for Studio / CI / remote drivers) and three provider backends: **Local** (simple-git + worktree), **GitHub** (Octokit over the Git Data API), and **GitLab** (gitbeaker over the REST API). The tool list depends on the provider: tools whose capabilities the provider lacks are not registered, so a GitHub or GitLab session without a local project root lists 12 of the 23 core tools — see [Providers and transports](/guides/providers) for the capability matrix.
 
 ### 2. Agent (Intelligence)
 

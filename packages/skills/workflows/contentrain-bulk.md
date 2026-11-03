@@ -9,7 +9,7 @@
 Use this when the user wants to:
 
 - copy one locale to another
-- update status on many entries
+- change the status of many entries — with `contentrain_content_status`
 - delete multiple collection entries
 
 This skill is for existing content, not for schema design.
@@ -31,14 +31,14 @@ Confirm:
 ### 2. Pick the Correct Bulk Operation
 
 - `copy_locale`: clone one locale to another for i18n-enabled `collection`, `singleton`, or `dictionary` models
-- `update_status`: update metadata state for many collection entries
 - `delete_entries`: remove many collection entries at once
 
 ### 3. Apply Safety Rules
 
 - never use `copy_locale` on non-i18n models
-- `update_status` and `delete_entries` are collection-only
-- **preview first**: `dry_run: true` runs the operation in a throwaway worktree and reports what would change (`would_copy`/`would_replace`, `would_update` + `not_found`, `would_delete` + `files_to_remove`) without committing anything. A preview needs no `confirm`
+- `delete_entries` is collection-only
+- to change status — publish, unpublish, archive — use `contentrain_content_status`, not bulk
+- **preview first**: `dry_run: true` runs the operation in a throwaway worktree and reports what would change (`would_copy`/`would_replace`, `would_delete` + `files_to_remove`) without committing anything. A preview needs no `confirm`
 - `copy_locale` REPLACES the target locale — the preview's `would_replace` is how many records that costs
 - confirm entry IDs before delete operations
 - batch only related entries together
@@ -53,15 +53,6 @@ Examples:
   "model": "ui-labels",
   "source_locale": "en",
   "target_locale": "tr"
-}
-```
-
-```json
-{
-  "operation": "update_status",
-  "model": "blog-post",
-  "entry_ids": ["post_001", "post_002"],
-  "status": "in_review"
 }
 ```
 

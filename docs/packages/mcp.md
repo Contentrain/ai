@@ -1,6 +1,6 @@
 ---
 title: MCP Tools
-description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 22 deterministic tools over stdio or HTTP
+description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 23 deterministic tools over stdio or HTTP
 order: 1
 slug: mcp
 ---
@@ -67,10 +67,10 @@ Use the local stdio server when the agent should work against a checkout on your
 
 ## Tool Catalog
 
-The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable provider such as Studio (the registry holds 27; a session lists only the tools its provider can serve). They are organized by function. Each tool includes [MCP annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **23 tools**, plus **5 media tools** on a media-capable provider such as Studio (the registry holds 28; a session lists only the tools its provider can serve). They are organized by function. Each tool includes [MCP annotations](https://modelcontextprotocol.io/specification/2026-07-28/schema#toolannotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
-`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 22 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
+`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 23 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `content_status`, `vocabulary_save`, `vocabulary_delete`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
 :::
 
 | Tool | Title | Read-only | Destructive |
@@ -88,6 +88,7 @@ The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable p
 | `contentrain_content_save` | Save Content | — | **Yes** |
 | `contentrain_content_delete` | Delete Content | — | **Yes** |
 | `contentrain_content_list` | List Content | Yes | — |
+| `contentrain_content_status` | Change Entry Status | — | **Yes** |
 | `contentrain_validate` | Validate Project | — | — |
 | `contentrain_submit` | Submit Branches | — | — |
 | `contentrain_merge` | Merge Branch | — | **Yes** |
@@ -96,7 +97,7 @@ The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable p
 | `contentrain_branch_delete` | Delete Branch | — | **Yes** |
 | `contentrain_scan` | Scan Source Code | Yes | — |
 | `contentrain_apply` | Apply Normalize | — | — |
-| `contentrain_bulk` | Bulk Operations | — | — |
+| `contentrain_bulk` | Bulk Operations | — | **Yes** |
 | `contentrain_media_list` | List Media Assets | Yes | — |
 | `contentrain_media_get` | Get Media Asset | Yes | — |
 | `contentrain_media_ingest` | Ingest Media From URL | — | — |
@@ -113,7 +114,7 @@ The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable p
 | `contentrain_describe` | Model deep-dive | Full schema, sample data, field types for any model |
 | `contentrain_describe_format` | Format reference | File structure, JSON formats, markdown conventions, locale strategies |
 | `contentrain_doctor` | Health diagnostics | Setup validation, SDK freshness, orphan content, local branch limits, remote `cr/*` count, unused keys, missing translations |
-| `contentrain_content_list` | Read content | List entries with `filter`, optional relation resolution (`resolve`), and `limit`/`offset` pagination |
+| `contentrain_content_list` | Read content | List entries with `filter`, optional relation resolution (`resolve`), and `limit`/`offset` pagination; each entry shows its publish state under `meta` |
 
 ### Write Tools (Git-Backed, Branch-Isolated)
 
@@ -125,6 +126,7 @@ The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable p
 | `contentrain_model_delete` | Remove models | Delete a model definition and its content |
 | `contentrain_content_save` | Write content | Save entries for any model kind (collection, singleton, dictionary, document) |
 | `contentrain_content_delete` | Remove content | Delete specific content entries |
+| `contentrain_content_status` | Publish | Change entry status — publish, unpublish, archive; publishing validates the entries first |
 | `contentrain_vocabulary_save` | Write vocabulary | Add or update canonical terms — `{ "term-slug": { "en": "…" } }`, merges with what exists |
 | `contentrain_vocabulary_delete` | Write vocabulary | Remove canonical terms by slug (`confirm: true`) |
 | `contentrain_validate` | Check & fix | Validate content against schemas, optionally auto-fix structural issues |
@@ -140,7 +142,7 @@ The MCP server exposes **22 tools**, plus **5 media tools** on a media-capable p
 |------|---------|-------------|
 | `contentrain_scan` | Find hardcoded strings | Graph-based component scan with candidate detection |
 | `contentrain_apply` | Extract or reuse | Two-phase normalize: extract content or patch source files |
-| `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes; `dry_run: true` runs the operation in a throwaway worktree and commits nothing (default `false`) |
+| `contentrain_bulk` | Batch operations | Bulk locale copy and deletes (local only); `dry_run: true` runs the operation in a throwaway worktree and commits nothing (default `false`) |
 
 ### Field constraints
 
@@ -185,12 +187,18 @@ delivery: a collection entry is served only when its status is `published`.
 - **`contentrain_content_save` never changes status.** Editing a field is not a
   publish decision — an existing entry keeps its `status`, `approved_by`, and
   `version`. Only a brand-new entry starts at `draft`.
-- **`contentrain_bulk update_status` is the only way to publish.** Each meta
-  layout has its own address: pass `entry_ids` for collections, `slugs` for
-  documents (their meta is one file per slug, the same identity
-  `contentrain_content_save` uses), and neither for singletons and dictionaries,
-  which have one meta record per locale. Pass `locale` to scope the change, or
-  every supported locale is rewritten.
+- **`contentrain_content_status` is the only way to publish.** It is listed on
+  every session, local and remote. Each meta layout has its own address: pass
+  `entry_ids` for collections, `slugs` for documents (their meta is one file
+  per slug, the same identity `contentrain_content_save` uses), and neither for
+  singletons and dictionaries, which have one meta record per locale. Pass
+  `locale` to scope the change, or every supported locale is rewritten.
+  Publishing validates the targeted entries first: an error in one of them
+  means nothing is committed. A record already at the requested status is
+  reported as `unchanged` and not rewritten.
+- **`contentrain_content_list` shows the status.** Each entry carries
+  `meta: { status, publish_at?, expire_at? }`, read from the listed locale's
+  meta; singletons and dictionaries carry it at the top level.
 - **`contentrain_validate` flags publish-state drift** — drafts sitting beside
   published entries in one collection — as a notice. It never auto-fixes it:
   publishing is a content decision, and MCP does not make those.
@@ -265,7 +273,7 @@ Three tools take a `dry_run` parameter:
 2. Review the output
 3. Run with `dry_run: false` to commit
 
-The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`. `model_save` is also annotated `destructiveHint: true`: it replaces the whole model definition, so a field left out of the input is dropped. `content_save` is annotated the same way: a singleton save replaces the whole file, and an update to an existing collection entry replaces that entry, so send every field you want to keep (dictionary and document saves merge). Neither needs `confirm`, but clients that gate destructive tools will ask before running them.
+The other write tools are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `vocabulary_delete`, `branch_delete`, `merge`, `media_delete`, `bulk delete_entries`) require an explicit `confirm: true`. `content_status` is annotated destructive because publishing puts an entry in front of readers and unpublishing takes one out; it needs no `confirm`, and publishing is validated like `content_save`. `bulk` is annotated destructive because `delete_entries` removes entries and `copy_locale` replaces the target locale file. `model_save` is also annotated `destructiveHint: true`: it replaces the whole model definition, so a field left out of the input is dropped. `content_save` is annotated the same way: a singleton save replaces the whole file, and an update to an existing collection entry replaces that entry, so send every field you want to keep (dictionary and document saves merge). Neither needs `confirm`, but clients that gate destructive tools will ask before running them.
 
 ::: warning Never Skip the Apply Preview
 Always call `contentrain_apply` with `dry_run: true` first and review the plan. It is the only tool that can touch source code — skipping the preview risks unreviewed source patches.
@@ -533,7 +541,7 @@ claude mcp add --transport http contentrain \
 | Trust Level | Tools | Risk | Notes |
 |-------------|-------|------|-------|
 | **HIGH** (read-only) | `status`, `describe`, `describe_format`, `doctor`, `content_list`, `branch_list`, `scan`, `media_list`, `media_get` | None | Safe to call anytime, no side effects — `scan` reads source but never writes |
-| **MEDIUM** (git-isolated writes) | `init`, `scaffold`, `model_save`, `model_delete`, `content_save`, `content_delete`, `vocabulary_save`, `vocabulary_delete`, `validate`, `bulk` | Low | Writes go through git transactions on isolated `cr/*` branches; destructive tools require `confirm: true` |
+| **MEDIUM** (git-isolated writes) | `init`, `scaffold`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_status`, `vocabulary_save`, `vocabulary_delete`, `validate`, `bulk` | Low | Writes go through git transactions on isolated `cr/*` branches; destructive tools require `confirm: true` |
 | **MEDIUM** (branch lifecycle) | `submit`, `merge`, `reconcile`, `branch_delete` | Medium | `submit` pushes to the remote (requires network); `reconcile` defaults to `dry_run: true`; `merge` and `branch_delete` are local git operations — network is used only for best-effort remote-copy cleanup |
 | **MEDIUM** (provider media) | `media_ingest`, `media_update`, `media_delete` | Medium | Provider-side media stack; `media_delete` is destructive and does not rewrite content references |
 | **LOW** (source modification) | `apply` | High | `mode: "reuse"` patches source files — always run `dry_run: true` first |

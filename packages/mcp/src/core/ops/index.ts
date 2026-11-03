@@ -2,6 +2,14 @@ export { applyChangesToWorktree } from './apply-to-worktree.js'
 export { planContentDelete } from './content-delete.js'
 export type { ContentDeleteInput, ContentDeletePlan } from './content-delete.js'
 export { planContentSave } from './content-save.js'
+export { planContentStatus } from './content-status.js'
+export type {
+  ContentStatusChange,
+  ContentStatusInput,
+  ContentStatusPlan,
+  ContentStatusResult,
+  ContentStatusUnchanged,
+} from './content-status.js'
 export { planModelDelete } from './model-delete.js'
 export type { ModelDeleteInput, ModelDeletePlan } from './model-delete.js'
 export { planModelSave } from './model-save.js'

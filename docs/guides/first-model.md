@@ -188,11 +188,10 @@ Status lives elsewhere: each new entry starts as `draft` in `.contentrain/meta/f
 
 ## Step 4 — Publish
 
-Publishing is a deliberate, separate act — the only tool that changes status is `contentrain_bulk`:
+Publishing is a deliberate, separate act — the only tool that changes status is `contentrain_content_status`. Publishing validates the entries first; if one has an error, nothing is committed:
 
 ```json
 {
-  "operation": "update_status",
   "model": "faq",
   "entry_ids": ["898df4b18fc4", "ee920ffa2a68"],
   "status": "published"
@@ -204,12 +203,16 @@ Response:
 ```json
 {
   "status": "committed",
-  "operation": "update_status",
-  "message": "Updated 2 meta record(s) to status \"published\" across locales [en].",
-  "updated": 2,
-  "updated_by_locale": { "en": ["898df4b18fc4", "ee920ffa2a68"] },
+  "message": "Changed 2 record(s) to status \"published\".",
+  "content_status": "published",
+  "changes": [
+    { "id": "898df4b18fc4", "locale": "en", "from": "draft", "to": "published" },
+    { "id": "ee920ffa2a68", "locale": "en", "from": "draft", "to": "published" }
+  ],
+  "unchanged": [],
+  "validation": { "valid": true, "errors": [] },
   "git": {
-    "branch": "cr/bulk/faq/1784311678-ebde",
+    "branch": "cr/status/faq/1784311678-ebde",
     "action": "auto-merged",
     "commit": "09025eb5dba8e2f49281caa591f0f0bde97302af"
   }
@@ -230,7 +233,7 @@ And the meta file now reads:
 
 ## Step 5 — Read It Back
 
-`contentrain_content_list` returns the **output format** — an array with `id` injected, not the storage object-map:
+`contentrain_content_list` returns the **output format** — an array with `id` and the entry's publish state (`meta`) injected, not the storage object-map:
 
 ```json
 {
@@ -238,12 +241,14 @@ And the meta file now reads:
   "data": [
     {
       "id": "898df4b18fc4",
+      "meta": { "status": "published" },
       "answer": "Git-native content governance: your agent writes content through deterministic MCP tools, humans review through branches.",
       "category": "general",
       "question": "What is Contentrain?"
     },
     {
       "id": "ee920ffa2a68",
+      "meta": { "status": "published" },
       "answer": "No. The core is local-first and MIT-licensed — content lives in your repo.",
       "category": "general",
       "question": "Do I need a cloud account?"
