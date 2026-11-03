@@ -1,19 +1,17 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import type { ValidationError } from '@contentrain/types'
 import type { ToolProvider } from '../server.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
 import { planContentDelete, planContentSave } from '../core/ops/index.js'
-import type { ContentSaveEntryResult } from '../core/ops/types.js'
 import { buildBranchName } from '../git/transaction.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { validateProject } from '../core/validator/index.js'
 import { OverlayReader } from '../core/overlay-reader.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
-import { isToolAvailable } from './availability.js'
 import { commitThroughProvider, divergenceNextSteps, gitReport, type CommitThroughProviderResult } from './commit-plan.js'
+import { describeIssue, touchesSavedEntries } from './entry-issues.js'
 import { refSource } from './guards.js'
 
 export function registerContentTools(
@@ -21,12 +19,9 @@ export function registerContentTools(
   provider: ToolProvider,
   projectRoot: string | undefined,
 ): void {
-  // Status changes go through contentrain_bulk, which a remote session does
-  // not list. Name it only where the agent can call it.
-  const canSetStatus = isToolAvailable('contentrain_bulk', provider, projectRoot)
-  const publishHint = canSetStatus
-    ? 'Publish with contentrain_bulk update_status.'
-    : 'Publishing is a separate status change, which this server does not offer.'
+  // Status changes go through contentrain_content_status, which every
+  // session lists, local and remote.
+  const publishHint = 'Publish with contentrain_content_status.'
 
   // ─── contentrain_content_save ───
   server.tool(
@@ -240,9 +235,7 @@ export function registerContentTools(
             ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
             ...(warnings.length > 0 ? ['REVIEW: see warnings above — the save was not blocked by them'] : []),
             ...(schedulingTouched
-              ? [canSetStatus
-                  ? 'PUBLISH: publish_at did not change status — use contentrain_bulk update_status if this entry should go live'
-                  : 'PUBLISH: publish_at did not change status — the entry goes live only when its status is set to published']
+              ? ['PUBLISH: publish_at did not change status — use contentrain_content_status if this entry should go live']
               : []),
             ...(model.kind === 'collection'
               ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
@@ -357,7 +350,7 @@ export function registerContentTools(
   // ─── contentrain_content_list ───
   server.tool(
     'contentrain_content_list',
-    'List content entries (read-only). Returns data from .contentrain/ — do NOT manually create or modify content files.',
+    'List content entries (read-only). Each entry carries its publish state under "meta" — status, plus publish_at/expire_at when set — read from the listed locale\'s meta; singletons and dictionaries carry it at the top level. Local and remote sessions return the same shape. Change status with contentrain_content_status. Returns data from .contentrain/ — do NOT manually create or modify content files.',
     {
       model: z.string().describe('Model ID'),
       locale: z.string().optional().describe('Locale code (defaults to config default)'),
@@ -414,40 +407,4 @@ export function registerContentTools(
       }
     },
   )
-}
-
-/** Trim a validation issue to the fields that locate it, dropping empty ones. */
-function describeIssue(issue: ValidationError): Record<string, string> {
-  const out: Record<string, string> = {}
-  if (issue.entry) out['entry'] = issue.entry
-  if (issue.slug) out['slug'] = issue.slug
-  if (issue.locale) out['locale'] = issue.locale
-  if (issue.field) out['field'] = issue.field
-  out['message'] = issue.message
-  return out
-}
-
-/**
- * Does a validation issue belong to one of the entries this save is writing?
- *
- * The write gate blocks on errors, but `validateProject` inspects the whole model.
- * Without this filter, a pre-existing bad entry somewhere else in the model would
- * block an unrelated — and perfectly valid — save, leaving the caller stuck behind
- * a problem they did not create and may not be able to fix.
- *
- * Matching is by identity: entry ID for collections, slug for documents, and
- * locale alone for singletons and dictionaries, which have one record per locale.
- */
-function touchesSavedEntries(
-  issue: { entry?: string, slug?: string, locale?: string },
-  results: ContentSaveEntryResult[],
-): boolean {
-  return results.some((r) => {
-    if (issue.locale && r.locale && issue.locale !== r.locale) return false
-    if (r.id) return issue.entry === r.id
-    if (r.slug) return issue.slug === r.slug
-    // Singleton / dictionary: the locale is the whole identity, and an issue with
-    // no entry or slug is about the record itself.
-    return !issue.entry && !issue.slug
-  })
 }

@@ -138,7 +138,7 @@ export function registerWorkflowTools(
 
               const nextSteps: string[] = [...divergenceNextSteps(gitResult)]
               if (changes.length > 0) {
-                nextSteps.push(`Review the ${changes.length} entr${changes.length === 1 ? 'y' : 'ies'} in visibility_changes, then merge ${branch} with contentrain_merge, or restore a status with contentrain_bulk update_status`)
+                nextSteps.push(`Review the ${changes.length} entr${changes.length === 1 ? 'y' : 'ies'} in visibility_changes, then merge ${branch} with contentrain_merge, or restore a status with contentrain_content_status`)
               }
               if (result!.summary.errors > 0) nextSteps.push('Fix remaining errors manually')
               if (result!.summary.warnings > 0) nextSteps.push('Review warnings')
@@ -183,9 +183,8 @@ export function registerWorkflowTools(
         const nextSteps: string[] = []
         if (result.summary.errors > 0) nextSteps.push('Fix errors in content using contentrain_content_save')
         if (result.summary.warnings > 0) nextSteps.push('Review warnings')
-        if (isToolAvailable('contentrain_bulk', provider, projectRoot)
-          && result.issues.some(i => i.message.startsWith('Publish-state drift'))) {
-          nextSteps.push('If the drafts in the publish-state drift notice were published before, restore them with contentrain_bulk update_status')
+        if (result.issues.some(i => i.message.startsWith('Publish-state drift'))) {
+          nextSteps.push('If the drafts in the publish-state drift notice were published before, restore them with contentrain_content_status')
         }
         // Only suggest submit where it can actually run. validate itself works
         // over any provider, but contentrain_submit needs a local worktree and

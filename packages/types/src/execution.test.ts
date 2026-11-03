@@ -45,11 +45,11 @@ const plan: ExecutionPlan = {
   steps: [
     {
       id: 's1',
-      tool: 'contentrain_bulk',
+      tool: 'contentrain_content_status',
       summary: 'Move 12 blog-post entries from in_review to published',
       risk: 'bulk_content',
       scope: { models: ['blog-post'], locales: ['en'], entries: Array.from({ length: 12 }, (_, i) => `e${i}`) },
-      input: { operation: 'update_status', status: 'published' },
+      input: { status: 'published' },
     },
     {
       id: 's2',
@@ -67,7 +67,7 @@ const plan: ExecutionPlan = {
     external_domains: ['api.netlify.com'],
   },
   estimate: { items: 12, duration_ms: 90_000, currency: 'USD', cost: 0.4, bytes_stored: 4_194_304, bytes_out: 1_048_576 },
-  rollback: { available: true, command: 'contentrain_bulk --operation update_status --status in_review', revert_to: 'abc1234' },
+  rollback: { available: true, command: 'contentrain_content_status --status in_review', revert_to: 'abc1234' },
   project: { branch: 'main', commit_sha: 'abc1234', content_commit_sha: 'def5678' },
   created_at: '2026-09-11T09:00:00Z',
   created_by: author,
@@ -246,7 +246,7 @@ describe('plan hash', () => {
   // Python produces this same digest. That is the contract — any consumer,
   // in any language, must be able to recompute a plan's hash and get this.
   it('pins the payload composition — a golden hash for the fixture plan', async () => {
-    expect(await computePlanHash(plan)).toBe('a45b5e5db97c502436aa2eb6195da6cf11590bbfe5d93092efd5a10178dbc0b1')
+    expect(await computePlanHash(plan)).toBe('4d50e7b8188462d717f4a72a01f508d570cc493b477ec3d37fdc0221f1c24fbf')
   })
 
   it.each([

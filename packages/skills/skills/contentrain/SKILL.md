@@ -16,7 +16,7 @@ Contentrain consists of 9 packages that work together:
 
 | Package | Role | How agent uses it |
 |---|---|---|
-| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) | MCP tool calls |
+| @contentrain/mcp | 23 MCP tools (scan, apply, validate, merge, reconcile, doctor...) | MCP tool calls |
 | contentrain (CLI) | init, serve, generate, doctor, diff, status, import | Shell commands |
 | @contentrain/types | Shared TypeScript contracts | Type safety |
 | @contentrain/query | Generated SDK client (Prisma-pattern) | `import from '#contentrain'` |
@@ -120,7 +120,8 @@ slug: getting-started
 | `contentrain_model_delete` | Delete a model and its content |
 | `contentrain_content_save` | Create or update content entries (upsert) |
 | `contentrain_content_delete` | Delete a content entry |
-| `contentrain_content_list` | List content entries for a model |
+| `contentrain_content_list` | List content entries for a model, each with its status under `meta` |
+| `contentrain_content_status` | Publish, unpublish or archive entries |
 | `contentrain_scan` | Scan project for structure or content candidates |
 | `contentrain_apply` | Apply normalize operation (extract or reuse) |
 | `contentrain_validate` | Validate content against model schemas |

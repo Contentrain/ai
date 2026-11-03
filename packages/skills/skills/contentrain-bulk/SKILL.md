@@ -1,6 +1,6 @@
 ---
 name: contentrain-bulk
-description: "Batch operations on Contentrain content: copy locales, update status, delete multiple entries. Use when performing bulk content operations."
+description: "Batch operations on Contentrain content: copy locales, change status of many entries, delete multiple entries. Use when performing bulk content operations."
 metadata:
   author: Contentrain
   version: "1.0.0"
@@ -17,7 +17,7 @@ metadata:
 Use this when the user wants to:
 
 - copy one locale to another
-- update status on many entries
+- change the status of many entries (publish, unpublish, archive) — with `contentrain_content_status`
 - delete multiple collection entries
 
 This skill is for existing content, not for schema design.
@@ -36,27 +36,28 @@ Confirm:
 - whether `i18n` is enabled
 - which locales are supported
 
-### 2. Pick the Correct Bulk Operation
+### 2. Pick the Correct Tool
 
-- `copy_locale`: clone one locale to another for i18n-enabled `collection`, `singleton`, or `dictionary` models
-- `update_status`: update metadata state — many entries at once for `collection` (by `entry_ids`) or `document` (by `slugs`), or the single record of a `singleton`/`dictionary`
-- `delete_entries`: remove many collection entries at once
+- `contentrain_bulk` `copy_locale`: clone one locale to another for i18n-enabled `collection`, `singleton`, or `dictionary` models
+- `contentrain_bulk` `delete_entries`: remove many collection entries at once
+- `contentrain_content_status`: change status — many entries at once for `collection` (by `entry_ids`) or `document` (by `slugs`), or the single record of a `singleton`/`dictionary`. It is listed on every session, local and remote; `contentrain_bulk` needs a local project
 
 ### 3. Apply Safety Rules
 
 - never use `copy_locale` on non-i18n models
-- `update_status` addresses records the way their meta is laid out: `entry_ids` for `collection` models, `slugs` for `document` models (meta is one file per slug — the same identity `contentrain_content_save` uses), and **neither** for `singleton`/`dictionary`, which have one meta record per locale. The wrong list is rejected with a message naming the right one.
-- `publish_at` on `contentrain_content_save` does **not** publish — it gates delivery of an already-published entry. `update_status` is the only way to change status.
+- `contentrain_content_status` addresses records the way their meta is laid out: `entry_ids` for `collection` models, `slugs` for `document` models (meta is one file per slug — the same identity `contentrain_content_save` uses), and **neither** for `singleton`/`dictionary`, which have one meta record per locale. The wrong list is rejected with a message naming the right one.
+- `publish_at` on `contentrain_content_save` does **not** publish — it gates delivery of an already-published entry. `contentrain_content_status` is the only way to change status.
+- publishing validates the targeted entries first — an error in one of them means nothing is committed. Records already at the requested status come back in `unchanged`; `contentrain_content_list` shows each entry's status under `meta`
 - `delete_entries` is collection-only
-- `update_status` rewrites every supported locale unless you pass `locale`. Pass it when restoring one locale's status, or you will change the other's too.
-- **preview first**: `dry_run: true` runs the operation in a throwaway worktree and reports what would change (`would_copy`/`would_replace`, `would_update` + `not_found`, `would_delete` + `files_to_remove`) without committing anything. A preview needs no `confirm`
+- `contentrain_content_status` rewrites every supported locale unless you pass `locale`. Pass it when restoring one locale's status, or you will change the other's too.
+- **preview first**: `dry_run: true` runs the operation in a throwaway worktree and reports what would change (`would_copy`/`would_replace`, `would_delete` + `files_to_remove`) without committing anything. A preview needs no `confirm`
 - `copy_locale` REPLACES the target locale — the preview's `would_replace` is how many records that costs
 - confirm entry IDs before delete operations
 - batch only related entries together
 
-### 4. Execute with `contentrain_bulk`
+### 4. Execute
 
-Examples:
+`contentrain_bulk` examples:
 
 ```json
 {
@@ -69,7 +70,17 @@ Examples:
 
 ```json
 {
-  "operation": "update_status",
+  "operation": "delete_entries",
+  "model": "faq-items",
+  "entry_ids": ["faq_01", "faq_02"],
+  "confirm": true
+}
+```
+
+`contentrain_content_status` examples:
+
+```json
+{
   "model": "blog-post",
   "entry_ids": ["post_001", "post_002"],
   "status": "in_review"
@@ -80,7 +91,6 @@ Scoped to one locale — leaves every other locale's status untouched:
 
 ```json
 {
-  "operation": "update_status",
   "model": "blog-post",
   "entry_ids": ["post_001"],
   "status": "published",
@@ -92,7 +102,6 @@ A document model — meta is one file per slug, so pass `slugs`, not `entry_ids`
 
 ```json
 {
-  "operation": "update_status",
   "model": "guide-sections",
   "slugs": ["instagram-9", "instagram-10", "instagram-11"],
   "status": "published",
@@ -104,18 +113,8 @@ A singleton or dictionary — one meta record, so no `entry_ids` or `slugs`:
 
 ```json
 {
-  "operation": "update_status",
   "model": "site-settings",
   "status": "published"
-}
-```
-
-```json
-{
-  "operation": "delete_entries",
-  "model": "faq-items",
-  "entry_ids": ["faq_01", "faq_02"],
-  "confirm": true
 }
 ```
 
@@ -125,7 +124,7 @@ After `copy_locale` or status-heavy cleanup, call `contentrain_validate` if cont
 
 ### 6. Submit
 
-Bulk operations still create branches/commits. Call `contentrain_submit` if the project is in review flow.
+Bulk operations and status changes still create branches/commits. Call `contentrain_submit` if the project is in review flow.
 
 ### 7. Final Summary
 

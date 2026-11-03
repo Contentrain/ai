@@ -150,7 +150,7 @@ Each entry in the `entries` array:
 | **Singleton** | `locale`, `data` | No `id` or `slug` needed |
 | **Dictionary** | `locale`, `data` | `data` is flat key-value: `{ "auth.login": "Log In" }` |
 
-**Scheduling** (`publish_at`, `expire_at`, optional, ISO 8601) sits next to `data`, never inside it. It is stored in meta only and **never changes `status`** — a past `publish_at` does not publish a draft; the dates gate delivery of an entry that is already `published`. Pass `null` to clear a date; omit the key to leave it unchanged. To publish, use `contentrain_bulk update_status`.
+**Scheduling** (`publish_at`, `expire_at`, optional, ISO 8601) sits next to `data`, never inside it. It is stored in meta only and **never changes `status`** — a past `publish_at` does not publish a draft; the dates gate delivery of an entry that is already `published`. Pass `null` to clear a date; omit the key to leave it unchanged. To publish, use `contentrain_content_status`.
 
 **NEVER include system fields** (`status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`) in `data`.
 
@@ -223,6 +223,40 @@ List content entries for a model (read-only).
 | `resolve` | boolean | No | Resolve relations |
 | `limit` | number | No | Max entries to return |
 | `offset` | number | No | Pagination offset |
+
+Each entry carries its publish state under `meta` — `{ "status": "draft" }`,
+plus `publish_at` / `expire_at` when set — read from the listed locale's meta.
+Singletons and dictionaries carry `meta` at the top level. Local and remote
+sessions return the same shape.
+
+### contentrain_content_status
+
+Change the status of content entries: publish, unpublish, archive. The only
+way to change status, listed on every session — local and remote.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | Yes | Model ID |
+| `status` | string | Yes | `"draft"`, `"in_review"`, `"published"`, `"rejected"`, `"archived"` |
+| `entry_ids` | string[] | Conditional | Collections only |
+| `slugs` | string[] | Conditional | Documents only — documents are keyed by slug, not entry ID |
+| `locale` | string | No | Scope to one locale (i18n models); default is every supported locale |
+
+Singletons and dictionaries take neither `entry_ids` nor `slugs`: they have one
+meta record per locale.
+
+```json
+{ "model": "blog-post", "entry_ids": ["post_001", "post_002"], "status": "published", "locale": "en" }
+```
+
+Returns `changes[{ id | slug, locale, from, to }]`, `unchanged[]` (already at
+that status — not rewritten, so a repeat commits nothing), `not_found[]`,
+`validation` and `git`.
+
+Notes:
+- Publishing validates the targeted entries over the change first. An error in one of them means nothing is committed — fix it with `contentrain_content_save` and call again
+- `publish_at` on `contentrain_content_save` never publishes; this tool does
+- The change follows the project's workflow: auto-merged, or left on a `cr/status/…` branch for review
 
 ## Normalize Tools
 
@@ -407,18 +441,17 @@ Returns `{ checks[], summary: { total, passed, failed, warnings }, usage? }`. Ea
 
 ### contentrain_bulk
 
-Run git-backed batch operations on existing content entries.
+Run git-backed batch operations on existing content entries. Needs a local
+project, so remote sessions do not list it. Status changes are
+`contentrain_content_status`.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `operation` | string | Yes | `"copy_locale"`, `"update_status"`, `"delete_entries"` |
+| `operation` | string | Yes | `"copy_locale"`, `"delete_entries"` |
 | `model` | string | Yes | Target model ID |
 | `source_locale` | string | Conditional | For `copy_locale` |
 | `target_locale` | string | Conditional | For `copy_locale` |
-| `entry_ids` | string[] | Conditional | For `update_status` on collections, and for `delete_entries` |
-| `slugs` | string[] | Conditional | For `update_status` on documents — documents are keyed by slug, not entry ID |
-| `locale` | string | No | Scope `update_status` to one locale (i18n models); default is every supported locale |
-| `status` | string | Conditional | For `update_status` |
+| `entry_ids` | string[] | Conditional | For `delete_entries` |
 | `confirm` | boolean | Conditional | For `delete_entries` (must be `true`; not needed while `dry_run: true`) |
 | `dry_run` | boolean | No | Preview: runs the operation in a throwaway worktree and reports what would change, committing nothing. Default `false` |
 
@@ -427,12 +460,11 @@ Run git-backed batch operations on existing content entries.
 | Operation | Applicable Kinds | Required Params |
 |-----------|-----------------|-----------------|
 | `copy_locale` | collection, singleton, dictionary (i18n only) | `source_locale`, `target_locale` |
-| `update_status` | collection (`entry_ids`), document (`slugs`), singleton and dictionary (neither) | `status`, plus the list that matches the kind |
 | `delete_entries` | collection only | `entry_ids`, `confirm: true` |
 
 #### Rules
 
-- ALWAYS preview with `dry_run: true` first — the response carries `would_copy` / `would_replace`, `would_update` + `not_found`, or `would_delete` + `files_to_remove`, and nothing survives the run
+- ALWAYS preview with `dry_run: true` first — the response carries `would_copy` / `would_replace`, or `would_delete` + `files_to_remove`, and nothing survives the run
 - ALWAYS verify the target model with `contentrain_describe` or `contentrain_status` before running bulk
 - `copy_locale` MUST NOT be used on non-i18n models, and it REPLACES the target locale — `would_replace` in the preview is how many records that costs
 - Bulk operations create branches and commits like other write tools

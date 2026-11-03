@@ -128,7 +128,7 @@ This reduces always-loaded context from thousands of lines to just the essential
 
 `@contentrain/skills` is kept in lockstep with the MCP tool registry via cross-package parity tests (`tests/mcp-parity.test.ts`):
 
-- `skills/contentrain/references/mcp-tools.md` must have an `### <tool>` heading for every tool in the MCP `TOOL_NAMES` registry (currently 27: 22 core + 5 media).
+- `skills/contentrain/references/mcp-tools.md` must have an `### <tool>` heading for every tool in the MCP `TOOL_NAMES` registry (currently 28: 23 core + 5 media).
 - Key skills (normalize, translate) must not reference legacy `contentrain/{operation}/...` branch prefixes — MCP now emits `cr/*`.
 
 When MCP's surface changes, these tests fail until the skill docs catch up.

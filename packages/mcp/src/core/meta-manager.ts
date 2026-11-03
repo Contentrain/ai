@@ -84,7 +84,7 @@ export function applyStatusChange(existing: EntryMeta, status: ContentStatus): E
  * never changes `status`: a `publish_at` in the past does not publish a draft.
  * Delivery treats the date as a gate on top of `status: published` — the CDN
  * serves a published entry once `publish_at` has passed and until `expire_at`.
- * Publishing stays a deliberate `contentrain_bulk update_status` call (#125).
+ * Publishing stays a deliberate `contentrain_content_status` call (#125).
  */
 export interface EntrySchedule {
   publish_at?: string | null

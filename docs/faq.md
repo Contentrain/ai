@@ -23,7 +23,7 @@ Any MCP client. `contentrain setup` writes the MCP config for Claude Code, Curso
 
 ## How many MCP tools are there?
 
-27: 22 core tools and 5 media tools. The list is filtered per session: a local stdio server lists the 22 core tools, and the media tools appear only on providers with a media stack, such as Studio MCP Cloud. See [MCP Tools](/packages/mcp).
+28: 23 core tools and 5 media tools. The list is filtered per session: a local stdio server lists the 23 core tools, and the media tools appear only on providers with a media stack, such as Studio MCP Cloud. See [MCP Tools](/packages/mcp).
 
 ## Does the agent write straight to my main branch?
 
@@ -39,7 +39,7 @@ Yes: `contentrain serve --mcpHttp` serves Streamable HTTP at `/mcp`. With `--aut
 
 ## Does it work against GitHub or GitLab without a local checkout?
 
-Yes, through the optional GitHub and GitLab providers. Without a local worktree, the session lists 11 of the 22 core tools, the ones that can run remotely; tools that need a working tree, such as normalize, submit and merge, are not registered. See [Providers & Transports](/guides/providers).
+Yes, through the optional GitHub and GitLab providers. Without a local worktree, the session lists 12 of the 23 core tools, the ones that can run remotely; tools that need a working tree, such as normalize, submit and merge, are not registered. See [Providers & Transports](/guides/providers).
 
 ## How does my app read the content?
 

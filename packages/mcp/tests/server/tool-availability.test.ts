@@ -13,7 +13,7 @@ vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
 /**
  * Capability-aware registration: `createServer` consults TOOL_REQUIREMENTS
  * so `tools/list` only advertises tools that can succeed for the resolved
- * provider + projectRoot pair. Local flows keep the full 19-tool surface;
+ * provider + projectRoot pair. Local flows keep every core tool;
  * remote sessions see exactly the subset their provider supports.
  */
 
@@ -61,6 +61,8 @@ const REMOTE_SAFE_TOOLS = [
   'contentrain_content_save',
   'contentrain_content_delete',
   'contentrain_content_list',
+  // Status changes go through commitThroughProvider too.
+  'contentrain_content_status',
   'contentrain_validate',
   // Vocabulary writes go through commitThroughProvider like content and
   // models, so they work over any provider and are not capability-gated.
@@ -72,7 +74,7 @@ const MEDIA_TOOLS = TOOL_NAMES.filter(name => name.startsWith('contentrain_media
 const NON_MEDIA_TOOLS = TOOL_NAMES.filter(name => !name.startsWith('contentrain_media_'))
 
 describe('capability-aware tool registration', () => {
-  it('registers all 21 core tools for a local project root (media facet absent)', async () => {
+  it('registers every core tool for a local project root (media facet absent)', async () => {
     const client = await connectedClient(join(tmpdir(), 'cr-availability-local'))
     const names = await listedNames(client)
     expect(names.toSorted()).toEqual([...NON_MEDIA_TOOLS].toSorted())

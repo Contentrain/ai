@@ -14,7 +14,7 @@ Typical drivers:
 - **CI runners** — deterministic content operations as part of a pipeline (scaffold, validate, submit).
 - **Remote agents** — any MCP client that wants to operate a Contentrain project without a local checkout.
 
-All three tunnel the same tool surface (22 core + 5 media on media-capable providers) through the same `RepoProvider` contract. Which backend answers depends on how the server is wired — see [Providers & Transports](/guides/providers) for the capability matrix.
+All three tunnel the same tool surface (23 core + 5 media on media-capable providers) through the same `RepoProvider` contract. Which backend answers depends on how the server is wired — see [Providers & Transports](/guides/providers) for the capability matrix.
 
 ## Starting the HTTP server
 
@@ -113,7 +113,7 @@ A GitHub Actions job can:
 4. Drive it with an MCP client (Claude, Cursor-headless, or a custom JSON-RPC client)
 5. Let `contentrain_submit` push the review branch
 
-Because `contentrain serve --mcpHttp` uses `LocalProvider`, all 22 core tools — including normalize and submit — are available. The five `contentrain_media_*` tools are not: `LocalProvider` has no media facet.
+Because `contentrain serve --mcpHttp` uses `LocalProvider`, all 23 core tools — including normalize and submit — are available. The five `contentrain_media_*` tools are not: `LocalProvider` has no media facet.
 
 ### Remote agent
 

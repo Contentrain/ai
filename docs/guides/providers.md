@@ -6,7 +6,7 @@ slug: providers
 
 # Providers & Transports
 
-Contentrain MCP runs the same tool surface (22 core + 5 media on media-capable providers) over three backends:
+Contentrain MCP runs the same tool surface (23 core + 5 media on media-capable providers) over three backends:
 
 - **LocalProvider** — simple-git + a temporary worktree on your disk. Default for `npx contentrain serve --stdio` and the HTTP transport when driven by the CLI.
 - **GitHubProvider** — Octokit over the GitHub Git Data + Repos APIs. No clone, no worktree.
@@ -44,7 +44,7 @@ A separate requirement — a local `projectRoot` on disk, not a capability flag 
 
 The five `contentrain_media_*` tools gate on a separate optional facet, `RepoProvider.media` (an object, not a capability flag). They appear only on providers that expose a media stack — Studio MCP Cloud — and never on Local / GitHub / GitLab.
 
-Read-only tools (`status`, `describe`, `describe_format`, `content_list`, `validate` without `--fix`) work on every provider. Write tools (`content_save`, `content_delete`, `model_save`, `model_delete`) work over any provider too — a remote provider posts the changes as a single atomic commit and always returns `action: pending-review` so Studio (or whoever orchestrates the server) drives the merge.
+Read-only tools (`status`, `describe`, `describe_format`, `content_list`, `validate` without `--fix`) work on every provider. Write tools (`content_save`, `content_delete`, `content_status`, `model_save`, `model_delete`) work over any provider too — a remote provider posts the changes as a single atomic commit and always returns `action: pending-review` so Studio (or whoever orchestrates the server) drives the merge.
 
 `content_list` with `resolve: true` requires local filesystem access today because relation hydration walks other models' content files. The reader-backed path rejects it with a descriptive error.
 

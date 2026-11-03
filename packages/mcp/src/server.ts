@@ -21,6 +21,7 @@ import { registerWorkflowTools } from './tools/workflow.js'
 import { registerReconcileTools } from './tools/reconcile.js'
 import { registerNormalizeTools } from './tools/normalize.js'
 import { registerBulkTools } from './tools/bulk.js'
+import { registerContentStatusTools } from './tools/content-status.js'
 import { registerDoctorTools } from './tools/doctor.js'
 import { registerMediaTools } from './tools/media.js'
 import packageJson from '../package.json' with { type: 'json' }
@@ -141,7 +142,7 @@ export const SERVER_IDENTITY = {
  * (`TOOL_REQUIREMENTS`) cannot be met by the resolved provider +
  * projectRoot pair are not registered, so `tools/list` only advertises
  * tools that can actually succeed. With a `LocalProvider` (stdio and CLI
- * flows) all 22 core tools remain registered — behavior there is unchanged.
+ * flows) all 23 core tools remain registered — behavior there is unchanged.
  */
 export function createServer(projectRoot: string): McpServer
 export function createServer(opts: CreateServerOptions): McpServer
@@ -167,6 +168,7 @@ export function createServer(input: string | CreateServerOptions): McpServer {
   registerSetupTools(server, provider, projectRoot)
   registerModelTools(server, provider, projectRoot)
   registerContentTools(server, provider, projectRoot)
+  registerContentStatusTools(server, provider)
   registerVocabularyTools(server, provider)
   registerWorkflowTools(server, provider, projectRoot)
   registerReconcileTools(server, provider, projectRoot)

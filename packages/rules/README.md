@@ -14,7 +14,7 @@ Start here:
 
 This package is the **policy layer** of the Contentrain ecosystem. It defines how agents should behave when they work with:
 
-- Contentrain MCP tools (22 operations, +5 media on a media-capable provider)
+- Contentrain MCP tools (23 operations, +5 media on a media-capable provider)
 - schema and model design
 - content quality (SEO, accessibility, media, i18n)
 - normalize workflows (extraction + reuse)
@@ -75,7 +75,7 @@ The package root exports constants for tooling:
 
 - `FIELD_TYPES` — 27 flat field types
 - `MODEL_KINDS` — `singleton`, `collection`, `document`, `dictionary`
-- `MCP_TOOLS` — 27 MCP tool names: 22 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
+- `MCP_TOOLS` — 28 MCP tool names: 23 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
 - `ESSENTIAL_RULES_FILE` — path to essential guardrails markdown
 - `STACKS` — framework stacks: `nuxt`, `next`, `astro`, `sveltekit`, `react`, `node`
 - `MODEL_PROPERTIES` — the `ModelDefinition` properties; parity tests check it against MCP's `MODEL_FIELD_ORDER` and the rule docs
@@ -85,7 +85,7 @@ The package root exports constants for tooling:
 ```ts
 import { MCP_TOOLS, ESSENTIAL_RULES_FILE, FIELD_TYPES } from '@contentrain/rules'
 
-console.log(MCP_TOOLS.length)                            // 27
+console.log(MCP_TOOLS.length)                            // 28
 console.log(MCP_TOOLS.includes('contentrain_merge'))     // true
 console.log(MCP_TOOLS.includes('contentrain_doctor'))    // true
 console.log(ESSENTIAL_RULES_FILE)                        // 'essential/contentrain-essentials.md'
