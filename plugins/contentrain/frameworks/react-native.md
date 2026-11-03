@@ -8,7 +8,7 @@
 
 ```bash
 pnpm add @contentrain/query@7.6.63
-npx contentrain@0.18.25 generate
+npx contentrain@0.18.26 generate
 ```
 
 React Native uses the generated CommonJS bootstrap path. Do not expect direct ESM `#contentrain` imports inside Metro components.

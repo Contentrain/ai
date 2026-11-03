@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@contentrain/mcp@3.11.23"
+        "@contentrain/mcp@3.11.24"
       ]
     }
   }
