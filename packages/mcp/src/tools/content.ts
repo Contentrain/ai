@@ -378,10 +378,9 @@ export function registerContentTools(
       }
 
       try {
-        // LocalProvider path keeps the legacy filesystem implementation
-        // (with full `resolve:true` relation hydration). Remote providers
-        // get the reader-based path — `resolve:true` is rejected there
-        // because cross-model relation walks need local disk today.
+        // LocalProvider path keeps the legacy filesystem implementation.
+        // Remote providers (and ref reads) get the reader-based path, which
+        // hydrates `resolve:true` relations through the same reader.
         const listOpts = {
           locale: input.locale,
           filter: input.filter as Record<string, unknown>,

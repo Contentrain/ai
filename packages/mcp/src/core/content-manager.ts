@@ -467,9 +467,8 @@ export async function deleteContent(
  *   uses direct filesystem reads and supports `opts.resolve` for
  *   cross-model relation hydration.
  * - `listContent(reader, model, opts, config)` — reader-backed flow for
- *   remote providers. Basic list works across all four model kinds.
- *   `opts.resolve: true` is rejected with an error on remote readers
- *   because the cross-model walk requires local filesystem access.
+ *   remote providers. Works across all four model kinds, and
+ *   `opts.resolve: true` hydrates relations through the same reader.
  *
  * The reader-based function lives in {@link listContentViaReader}; the
  * projectRoot-based entry point continues to call the legacy body to
@@ -642,13 +641,6 @@ async function listContentViaReader(
   opts: ListOpts,
   config: ContentrainConfig,
 ): Promise<unknown> {
-  if (opts.resolve) {
-    throw new Error(
-      'contentrain_content_list with resolve:true requires local filesystem access. '
-      + 'Use a LocalProvider (stdio or HTTP+LocalProvider) or omit resolve:true.',
-    )
-  }
-
   const cDir = contentDirPath(model)
   const locale = opts.locale ?? config.locales.default
   const lookupMeta: MetaLookup = slug =>
@@ -680,6 +672,10 @@ async function listContentViaReader(
       const offset = opts.offset ?? 0
       const limit = opts.limit ?? entries.length
       entries = entries.slice(offset, offset + limit)
+
+      if (opts.resolve && model.fields) {
+        entries = await resolveRelations(reader, model, entries, locale)
+      }
 
       return { kind: 'collection', data: entries, total, locale, offset, limit }
     }
@@ -779,8 +775,38 @@ export async function readContent(
 
 // ─── Relation resolving ───
 
+/**
+ * The reads relation hydration needs, against a project root on disk or a
+ * provider's reader. Paths are content-root relative (`ops/paths.ts`), so both
+ * backends walk the same files: a remote `content_list` with `resolve: true`
+ * hydrates exactly what the local one does.
+ */
+interface RelationFiles {
+  model: (id: string) => Promise<ModelDefinition | null>
+  json: <T>(path: string) => Promise<T | null>
+  text: (path: string) => Promise<string | null>
+  list: (dir: string) => Promise<string[]>
+}
+
+function relationFiles(input: string | RepoReader): RelationFiles {
+  if (typeof input === 'string') {
+    return {
+      model: id => readModel(input, id),
+      json: path => readJson(join(input, path)),
+      text: path => readText(join(input, path)),
+      list: dir => readDir(join(input, dir)),
+    }
+  }
+  return {
+    model: id => readModel(input, id),
+    json: path => tryReadJsonViaReader(input, path),
+    text: path => tryReadTextViaReader(input, path),
+    list: dir => input.listDirectory(dir),
+  }
+}
+
 async function resolveRelations(
-  projectRoot: string,
+  input: string | RepoReader,
   model: ModelDefinition,
   entries: Array<Record<string, unknown>>,
   locale: string,
@@ -797,6 +823,8 @@ async function resolveRelations(
 
   if (relationFields.length === 0) return entries
 
+  const files = relationFiles(input)
+
   // Load target model contents into cache (with circular reference protection)
   const targetCache: Record<string, Record<string, Record<string, unknown>>> = {}
   const visited = new Set<string>([model.id])
@@ -806,71 +834,52 @@ async function resolveRelations(
       if (targetCache[targetModelId] || visited.has(targetModelId)) continue
       visited.add(targetModelId)
 
-      const targetModel = await readModel(projectRoot, targetModelId)
+      const targetModel = await files.model(targetModelId)
       if (!targetModel) continue
 
       if (targetModel.kind === 'collection') {
-        const targetData = await readJson<Record<string, Record<string, unknown>>>(
-          resolveJsonFilePath(resolveContentDir(projectRoot, targetModel), targetModel, locale),
+        targetCache[targetModelId] = await files.json<Record<string, Record<string, unknown>>>(
+          contentFilePath(targetModel, locale),
         ) ?? {}
-        targetCache[targetModelId] = targetData
       } else if (targetModel.kind === 'document') {
         // Build slug-keyed cache by listing document entries for this locale
         const docCache: Record<string, Record<string, unknown>> = {}
-        const cDir = resolveContentDir(projectRoot, targetModel)
+        const cDir = contentDirPath(targetModel)
         const strategy = resolveLocaleStrategy(targetModel)
+        const addDoc = async (slug: string, path: string): Promise<void> => {
+          const raw = await files.text(path)
+          if (!raw) return
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
+          docCache[slug] = { slug, ...frontmatter, body }
+        }
+
+        // No i18n, or the 'none' strategy: flat {slug}.md files
+        const addFlatDocs = async (): Promise<void> => {
+          for (const f of await files.list(cDir)) {
+            if (!f.endsWith('.md')) continue
+            await addDoc(f.replace('.md', ''), `${cDir}/${f}`)
+          }
+        }
 
         if (!targetModel.i18n) {
-          const files = await readDir(cDir)
-          for (const f of files) {
-            if (!f.endsWith('.md')) continue
-            const slug = f.replace('.md', '')
-            const raw = await readText(join(cDir, f))
-            if (!raw) continue
-            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
-            docCache[slug] = { slug, ...frontmatter, body }
-          }
+          await addFlatDocs()
         } else if (strategy === 'file') {
-          const slugDirs = await readDir(cDir)
-          for (const slug of slugDirs) {
-            const raw = await readText(join(cDir, slug, `${locale}.md`))
-            if (!raw) continue
-            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
-            docCache[slug] = { slug, ...frontmatter, body }
+          for (const slug of await files.list(cDir)) {
+            await addDoc(slug, `${cDir}/${slug}/${locale}.md`)
           }
         } else if (strategy === 'suffix') {
-          const files = await readDir(cDir)
           const suffix = `.${locale}.md`
-          for (const f of files) {
+          for (const f of await files.list(cDir)) {
             if (!f.endsWith(suffix)) continue
-            const slug = f.slice(0, -suffix.length)
-            const raw = await readText(join(cDir, f))
-            if (!raw) continue
-            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
-            docCache[slug] = { slug, ...frontmatter, body }
+            await addDoc(f.slice(0, -suffix.length), `${cDir}/${f}`)
           }
         } else if (strategy === 'directory') {
-          const localeDir = join(cDir, locale)
-          const files = await readDir(localeDir)
-          for (const f of files) {
+          for (const f of await files.list(`${cDir}/${locale}`)) {
             if (!f.endsWith('.md')) continue
-            const slug = f.replace('.md', '')
-            const raw = await readText(join(localeDir, f))
-            if (!raw) continue
-            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
-            docCache[slug] = { slug, ...frontmatter, body }
+            await addDoc(f.replace('.md', ''), `${cDir}/${locale}/${f}`)
           }
         } else {
-          // 'none' strategy
-          const files = await readDir(cDir)
-          for (const f of files) {
-            if (!f.endsWith('.md')) continue
-            const slug = f.replace('.md', '')
-            const raw = await readText(join(cDir, f))
-            if (!raw) continue
-            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
-            docCache[slug] = { slug, ...frontmatter, body }
-          }
+          await addFlatDocs()
         }
 
         targetCache[targetModelId] = docCache
