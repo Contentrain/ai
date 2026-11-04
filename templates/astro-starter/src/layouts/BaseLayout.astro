@@ -143,7 +143,7 @@ const languages = multilingual
       xDefault={xDefault}
       published={published}
       modified={modified}
-      jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...[localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined), ...jsonLd] : jsonLd}
+      jsonLd={[websiteLd(identity), organizationLd(identity), ...(isHome ? [localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined) : []), ...jsonLd]}
     />
     <Analytics />
   </head>
