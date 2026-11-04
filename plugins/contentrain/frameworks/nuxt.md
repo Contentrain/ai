@@ -9,8 +9,8 @@
 ### 1.1 SDK Installation
 
 ```bash
-pnpm add @contentrain/query@7.6.63   # or npm/yarn
-npx contentrain@0.18.30 generate
+pnpm add @contentrain/query@7.6.64   # or npm/yarn
+npx contentrain@0.18.31 generate
 ```
 
 The generator reads `.contentrain/models/` and produces a typed client in `.contentrain/client/`. Your `package.json` must include the subpath import:
@@ -60,7 +60,7 @@ Also add a `paths` entry to `tsconfig.json` so the TypeScript language server re
 Run the generator in watch mode alongside Nuxt dev:
 
 ```bash
-npx contentrain@0.18.30 generate --watch &
+npx contentrain@0.18.31 generate --watch &
 npm run dev
 ```
 

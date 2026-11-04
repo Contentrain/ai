@@ -1,5 +1,12 @@
 # @contentrain/astro-kit
 
+## 0.50.7
+
+### Patch Changes
+
+- Updated dependencies [ff13d28]
+  - @contentrain/types@1.80.0
+
 ## 0.50.6
 
 ### Patch Changes

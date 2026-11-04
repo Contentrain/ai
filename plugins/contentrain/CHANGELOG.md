@@ -1,5 +1,13 @@
 # @contentrain/claude-plugin
 
+## 1.0.16
+
+### Patch Changes
+
+- contentrain@0.18.31
+- @contentrain/mcp@3.12.3
+- @contentrain/query@7.6.64
+
 ## 1.0.15
 
 ### Patch Changes
