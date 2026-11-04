@@ -1,6 +1,6 @@
 # Contentrain Contributor License Agreement
 
-Thank you for your interest in contributing to Contentrain ("Contentrain LLC" or "We"). This Contributor License Agreement ("Agreement") documents the rights granted by contributors to Contentrain. By signing this CLA, you accept and agree to the following terms and conditions for your present and future contributions submitted to Contentrain.
+Thank you for your interest in contributing to Contentrain ("Contentrain, Inc." or "We"). This Contributor License Agreement ("Agreement") documents the rights granted by contributors to Contentrain. By signing this CLA, you accept and agree to the following terms and conditions for your present and future contributions submitted to Contentrain.
 
 This Agreement is adapted from the Apache Software Foundation Individual Contributor License Agreement v2.0 ("Apache ICLA") with additions that permit Contentrain to relicense contributions, including under proprietary terms for commercial editions of its products. If you are contributing on behalf of a company, the employee-authored contributions are covered by this Agreement and the company may also need to sign a separate Corporate CLA.
 
