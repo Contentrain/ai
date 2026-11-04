@@ -66,9 +66,9 @@ describe('the site\'s place of business (site.business)', () => {
     expect(localBusinessLd(SITE, { latitude: 53.54 })).toBeUndefined()
   })
 
-  it('goes on the home only, beside the website and the organization, and the model and content config carry it', async () => {
+  it('goes on the home only, while the website and the organization go on every page, and the model and content config carry it', async () => {
     const layout = await read('src', 'layouts', 'BaseLayout.astro')
-    expect(layout).toContain('jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...[localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined), ...jsonLd] : jsonLd}')
+    expect(layout).toContain('jsonLd={[websiteLd(identity), organizationLd(identity), ...(isHome ? [localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined) : []), ...jsonLd]}')
     const model = JSON.parse(await read('.contentrain', 'models', 'site.json'))
     expect(Object.keys(model.fields.business.fields).toSorted()).toEqual(['city', 'country', 'latitude', 'longitude', 'opening_hours', 'postal_code', 'price_range', 'region', 'serves_cuisine', 'street', 'telephone', 'type'])
     expect(await read('src', 'content.config.ts')).toContain('      business: z.object({')
