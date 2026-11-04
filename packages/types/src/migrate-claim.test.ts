@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MigrateStudioClaim } from './index'
 import {
+  MIGRATE_PREPAID_YEAR_SECONDS,
   MIGRATE_STUDIO_CLAIM_AUDIENCE,
   MIGRATE_STUDIO_CLAIM_ISSUER,
   MIGRATE_STUDIO_CLAIM_MAX_TRIAL_DAYS,
@@ -8,6 +9,8 @@ import {
   isMigrateStudioClaim,
   validateMigrateAccountStateRequest,
   validateMigrateAccountStateResponse,
+  validateMigrateGrantActivateRequest,
+  validateMigrateGrantActivateResponse,
   validateMigrateGrantStatusRequest,
   validateMigrateGrantStatusResponse,
   validateMigrateInstallUrlRequest,
@@ -440,7 +443,7 @@ describe('revoke request and response', () => {
 
   it('accepts a good request, and refuses a missing or unknown reason and every envelope fault', () => {
     expect(validateMigrateRevokeRequest(req(), { now: NOW + 5 })).toEqual({ ok: true, request: req() })
-    for (const reason of ['refund_after_delivery', 'delivery_failed', 'ops'])
+    for (const reason of ['refund_after_delivery', 'delivery_failed', 'studio_not_delivered', 'ops'])
       expect(validateMigrateRevokeRequest(req({ reason })).ok).toBe(true)
     expect(validateMigrateRevokeRequest(req({ reason: 'because' }))).toEqual({ ok: false, errors: ['reason: unknown'] })
     expect(validateMigrateRevokeRequest(req({ reason: undefined }))).toEqual({ ok: false, errors: ['reason: unknown'] })
@@ -454,5 +457,89 @@ describe('revoke request and response', () => {
     expect(validateMigrateRevokeResponse({ state: 'redeemed', installed: false, subscription_canceled: true })).toEqual({ ok: false, errors: ['state: must be revoked'] })
     expect(validateMigrateRevokeResponse({ state: 'revoked' })).toEqual({ ok: false, errors: ['installed: required', 'subscription_canceled: required'] })
     expect(validateMigrateRevokeResponse(null)).toEqual({ ok: false, errors: ['payload: not an object'] })
+  })
+})
+
+describe('validateMigrateProvisionResponse when Migrate collects', () => {
+  const reserved = { grant_id: 'g_1', state: 'bound', plan: 'pro', collector: 'migrate', workspace_slug: 'acme', amount_cents: 49_000 }
+  const opts = { quoted_total_cents: 69_000, migrate_fee_cents: 20_000, collector: 'migrate' as const, now: NOW }
+  const run = (over: Record<string, unknown> = {}, o: Record<string, unknown> = {}) => validateMigrateProvisionResponse({ ...reserved, ...over }, { ...opts, ...o } as typeof opts)
+
+  it('accepts the reserved Studio line: quoted total less the Migrate fee, no checkout', () => {
+    expect(run()).toEqual({ ok: true, response: reserved })
+    expect(run({ state: 'claimed', workspace_slug: undefined }).ok).toBe(true)
+  })
+
+  it('fails closed on a Polar checkout answer, another amount or a missing fee', () => {
+    expect(run({ checkout_url: 'https://polar.sh/checkout/x', checkout_expires_at: NOW + 60 })).toEqual({
+      ok: false,
+      errors: ['checkout_url: not allowed when Migrate collects', 'checkout_expires_at: not allowed when Migrate collects'],
+    })
+    expect(run({ collector: undefined })).toEqual({ ok: false, errors: ['collector: must be migrate'] })
+    expect(run({ amount_cents: 69_000 })).toEqual({ ok: false, errors: ['amount_cents: not the quoted Studio line'] })
+    expect(run({}, { migrate_fee_cents: undefined })).toEqual({ ok: false, errors: ['amount_cents: not the quoted Studio line'] })
+    expect(run({ state: 'revoked' })).toEqual({ ok: false, errors: ['state: not a reserved grant'] })
+  })
+
+  it('keeps the covered answer for both collectors, and refuses a reserved answer Migrate did not ask for', () => {
+    const covered = { grant_id: 'g_1', state: 'redeemed', plan: 'pro', workspace_slug: 'acme' }
+    expect(validateMigrateProvisionResponse(covered, opts).ok).toBe(true)
+    expect(validateMigrateProvisionResponse({ ...covered, collector: 'migrate' }, opts)).toEqual({ ok: false, errors: ['collector: not allowed when the plan covers the order'] })
+    const polar = validateMigrateProvisionResponse(reserved, { quoted_total_cents: 69_000, now: NOW })
+    expect(polar.ok).toBe(false)
+    expect(polar.ok ? [] : polar.errors).toContain('collector: Migrate did not ask to collect')
+  })
+})
+
+describe('validateMigrateStudioClaimV2 billing.collector', () => {
+  const v2 = (billing: Record<string, unknown>) => ({
+    ...claim({ v: 2, trial_days: undefined, repo: undefined, github_user_id: '1234', email_verified: true, return_url: 'https://migrate.example.com/pay' }),
+    billing: { migrate_fee_cents: 20_000, quoted_total_cents: 69_000, currency: 'usd', ...billing },
+  })
+
+  it('takes a known collector or none, and refuses another', () => {
+    expect(validateMigrateStudioClaimV2(v2({}), { now: NOW }).ok).toBe(true)
+    expect(validateMigrateStudioClaimV2(v2({ collector: 'migrate' }), { now: NOW }).ok).toBe(true)
+    expect(validateMigrateStudioClaimV2(v2({ collector: 'studio_polar' }), { now: NOW }).ok).toBe(true)
+    expect(validateMigrateStudioClaimV2(v2({ collector: 'paddle' }), { now: NOW })).toEqual({ ok: false, errors: ['billing.collector: unknown'] })
+  })
+})
+
+describe('grant activate request and response', () => {
+  const payment = { provider: 'paddle', transaction_id: 'txn_01', paid_at: NOW - 30, studio_amount_cents: 49_000, currency: 'usd' }
+  const req = (o: Record<string, unknown> = {}) => ({
+    iss: MIGRATE_STUDIO_CLAIM_ISSUER, aud: MIGRATE_STUDIO_CLAIM_AUDIENCE, jti: 'j-4', iat: NOW, exp: NOW + 600, order_id: 'ord_123', payment, ...o,
+  })
+
+  it('accepts the payment Migrate took, and refuses each bad part of it', () => {
+    expect(validateMigrateGrantActivateRequest(req(), { now: NOW + 5 })).toEqual({ ok: true, request: req() })
+    const bad = (p: Record<string, unknown>) => validateMigrateGrantActivateRequest(req({ payment: { ...payment, ...p } }), { now: NOW })
+    expect(bad({ provider: 'polar' })).toEqual({ ok: false, errors: ['payment.provider: unknown'] })
+    expect(bad({ transaction_id: '' })).toEqual({ ok: false, errors: ['payment.transaction_id: required'] })
+    expect(bad({ paid_at: NOW + 3600 })).toEqual({ ok: false, errors: ['payment.paid_at: in the future'] })
+    expect(bad({ studio_amount_cents: 0 })).toEqual({ ok: false, errors: ['payment.studio_amount_cents: invalid'] })
+    expect(bad({ currency: 'eur' })).toEqual({ ok: false, errors: ['payment.currency: must be usd'] })
+    expect(validateMigrateGrantActivateRequest(req({ payment: undefined }))).toEqual({ ok: false, errors: ['payment: required'] })
+  })
+
+  it('takes a year that starts at the payment and lasts one prepaid year, or a revoked grant', () => {
+    const year = { state: 'redeemed', plan: 'pro', workspace_slug: 'acme', starts_at: payment.paid_at, ends_at: payment.paid_at + MIGRATE_PREPAID_YEAR_SECONDS }
+    expect(validateMigrateGrantActivateResponse(year, { paid_at: payment.paid_at })).toEqual({ ok: true, response: year })
+    expect(validateMigrateGrantActivateResponse({ state: 'revoked' }, { paid_at: payment.paid_at })).toEqual({ ok: true, response: { state: 'revoked' } })
+    expect(validateMigrateGrantActivateResponse({ ...year, starts_at: payment.paid_at + 86_400, ends_at: payment.paid_at + 86_400 + MIGRATE_PREPAID_YEAR_SECONDS }, { paid_at: payment.paid_at }))
+      .toEqual({ ok: false, errors: ['starts_at: not the payment time'] })
+    expect(validateMigrateGrantActivateResponse({ ...year, ends_at: year.ends_at + 86_400 }, { paid_at: payment.paid_at })).toEqual({ ok: false, errors: ['ends_at: not one prepaid year'] })
+    expect(validateMigrateGrantActivateResponse(year, {} as { paid_at: number })).toEqual({ ok: false, errors: ['starts_at: not the payment time'] })
+    expect(validateMigrateGrantActivateResponse({ state: 'revoked', ends_at: 1 }, { paid_at: 1 })).toEqual({ ok: false, errors: ['ends_at: not allowed when revoked'] })
+    expect(validateMigrateGrantActivateResponse({ state: 'bound' }, { paid_at: 1 })).toEqual({ ok: false, errors: ['state: must be redeemed or revoked'] })
+  })
+})
+
+describe('validateMigrateGrantStatusResponse renewal', () => {
+  it('reads renewal on a bundle only', () => {
+    const base = { state: 'redeemed', installed: false, kind: 'bundle', plan: 'pro', ends_at: NOW + 86_400 }
+    expect(validateMigrateGrantStatusResponse({ ...base, renewal: 'scheduled' }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ ...base, renewal: 'auto' })).toEqual({ ok: false, errors: ['renewal: unknown'] })
+    expect(validateMigrateGrantStatusResponse({ ...base, kind: 'trial', trial_days: 30, renewal: 'none' })).toEqual({ ok: false, errors: ['renewal: only for a bundle'] })
   })
 })
