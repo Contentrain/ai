@@ -16,8 +16,9 @@ const cta = tv({
     eyebrow: `text-sm font-semibold tracking-wide uppercase ${muted}`,
     // The text and buttons when a picture stands beside them.
     text: 'flex min-w-0 flex-1 flex-col gap-6',
-    // The buttons with the small print under them.
-    cta: 'flex flex-col gap-2 md:shrink-0',
+    // The buttons with the small print under them. Not shrink-0: beside the text (inline) the row may narrow, and
+    // its buttons wrap instead of pushing the section wider than the screen.
+    cta: 'flex flex-col gap-2',
     note: `text-sm ${muted}`,
     media: 'w-full max-w-sm shrink-0 overflow-hidden rounded-[var(--radius-image,var(--radius-card))] md:w-2/5',
     heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
@@ -26,7 +27,7 @@ const cta = tv({
   },
   variants: {
     layout: {
-      inline: { box: 'md:flex-row md:items-center md:justify-between', actions: 'md:shrink-0' },
+      inline: { box: 'md:flex-row md:items-center md:justify-between' },
       centered: { box: 'items-center text-center', body: 'mx-auto', actions: 'justify-center' },
       // Heading, text and buttons in one column at the start edge, on every width.
       stacked: { box: 'items-start text-start' },
