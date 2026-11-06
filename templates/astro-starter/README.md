@@ -224,7 +224,10 @@ page of a list.
    counts for performance) — accessibility, best practices and SEO at 1 (SEO is not asserted
    on the `noindex` 404 and search pages); performance under 0.95 is a
    warning, not a failure: a shared CI runner's timing varies from run to run,
-   and a red check should mean the site has a fault.
+   and a red check should mean the site has a fault. `lighthouserc.cjs` picks
+   the pages: the ones Lighthouse CI would find on its own, minus redirect
+   pages (a meta refresh paints nothing, and Lighthouse stops on it). Pages
+   you list in `collect.url` are used as they are.
 
 ## Part of the Contentrain ecosystem
 
