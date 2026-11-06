@@ -23,8 +23,11 @@ function pages(root, depth, max) {
       if (urls.length >= max) return
       if (!entry.isFile() || !/\.html?$/.test(entry.name)) continue
       const file = join(at, entry.name)
-      const small = statSync(file).size <= 4096
-      if (small && REDIRECT_PAGE.test(readFileSync(file, 'utf8'))) redirects++
+      // A file that cannot be read (gone, no permission) is left out; it must not stop the whole run.
+      let redirect
+      try { redirect = statSync(file).size <= 4096 && REDIRECT_PAGE.test(readFileSync(file, 'utf8')) }
+      catch { continue }
+      if (redirect) redirects++
       else urls.push(`/${rel}${entry.name}`)
     }
     if (left <= 0) return
