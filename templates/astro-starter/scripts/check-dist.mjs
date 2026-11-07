@@ -1,7 +1,9 @@
 // Checks the built site (dist/) for the things a type checker cannot see:
 //
 //  - one stylesheet: every page links at most one site stylesheet
-//  - no WordPress runtime: no wp-includes / wp-content / jQuery references
+//  - no WordPress runtime: no script or stylesheet from wp-includes /
+//    wp-content / jQuery, no site path into them, no inline script naming
+//    wp-json; a link or image on another site is content, not runtime
 //  - JavaScript only where a feature needs it (search, Studio forms/comments)
 //  - the search index (dist/pagefind/) wherever the search page loads it
 //  - the files crawlers and readers expect: sitemap, robots.txt, RSS, 404
@@ -118,6 +120,17 @@ if (await exists(join(dist, 'wp-query-map.json'))) {
 }
 
 const WP_RUNTIME = /\/wp-(?:includes|content|json)\/|jquery(?:\.min)?\.js/i
+const ABSOLUTE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i
+/** A script or stylesheet from WordPress, a site path into it, or inline script that names it. */
+function wordpressRuntime(html) {
+  for (const [, tag, attributes] of html.matchAll(/<([a-z][a-z0-9-]*)\b([^>]*)>/gi)) {
+    const code = /^(?:script|link)$/i.test(tag)
+    for (const [, value] of attributes.matchAll(/\s(?:href|src|srcset|action|poster|data|content)="([^"]*)"/gi)) {
+      if (WP_RUNTIME.test(value) && (code || !ABSOLUTE.test(value))) return true
+    }
+  }
+  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].some(match => WP_RUNTIME.test(match[1]))
+}
 const pages = await htmlFiles(dist)
 if (pages.length === 0) fail(dist, 'no HTML pages built')
 
@@ -135,7 +148,7 @@ for (const path of pages) {
 
   const scripts = [...html.matchAll(/<script\b([^>]*)>/gi)].filter(match => !/type="application\/ld\+json"/.test(match[1]))
   if (scripts.length > 0) scripted.push(file)
-  if (WP_RUNTIME.test(html)) fail(file, 'references the WordPress runtime')
+  if (wordpressRuntime(html)) fail(file, 'references the WordPress runtime')
   if (base) {
     const addresses = [...html.matchAll(/\s(?:href|src|action|content|bundle-path|base-url)="([^"]*)"/g)].map(match => match[1].replaceAll('&amp;', '&'))
     for (const srcset of html.matchAll(/\ssrcset="([^"]*)"/g)) addresses.push(...srcset[1].split(',').map(candidate => candidate.trim().split(/\s+/)[0]))
