@@ -121,15 +121,23 @@ if (await exists(join(dist, 'wp-query-map.json'))) {
 
 const WP_RUNTIME = /\/wp-(?:includes|content|json)\/|jquery(?:\.min)?\.js/i
 const ABSOLUTE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i
-/** A script or stylesheet from WordPress, a site path into it, or inline script that names it. */
+const sitePath = value => WP_RUNTIME.test(value) && !ABSOLUTE.test(value)
+/** Every url(…) address in CSS text, from a style attribute (entity-quoted) or a <style> element. */
+const cssUrls = css => [...css.replaceAll('&quot;', '"').replaceAll('&#39;', "'").matchAll(/url\(\s*['"]?([^'")]+)/gi)].map(match => match[1].trim())
+/** A script or stylesheet from WordPress, a site path into it (CSS url() included), or inline script that names it. */
 function wordpressRuntime(html) {
   for (const [, tag, attributes] of html.matchAll(/<([a-z][a-z0-9-]*)\b([^>]*)>/gi)) {
     const code = /^(?:script|link)$/i.test(tag)
     for (const [, value] of attributes.matchAll(/\s(?:href|src|srcset|action|poster|data|content)="([^"]*)"/gi)) {
       if (WP_RUNTIME.test(value) && (code || !ABSOLUTE.test(value))) return true
     }
+    const style = /\sstyle="([^"]*)"/i.exec(attributes)
+    if (style && cssUrls(style[1]).some(sitePath)) return true
   }
-  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].some(match => WP_RUNTIME.test(match[1]))
+  if ([...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].some(match => cssUrls(match[1]).some(sitePath))) return true
+  // JSON-LD names addresses, it loads none: an image on another site's wp-content there is content, as in og:image.
+  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+    .some(match => !/type="application\/ld\+json"/.test(match[1]) && WP_RUNTIME.test(match[2]))
 }
 const pages = await htmlFiles(dist)
 if (pages.length === 0) fail(dist, 'no HTML pages built')
